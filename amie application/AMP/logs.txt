@@ -1,0 +1,168 @@
+System initialized
+Waiting for logs...> [FILE] logs.txt
+[FILE] componentSettings.json
+[FILE] packages.json
+> {"11":{"deviceId":"11","pkgs":["https://raw.githubusercontent.com/samging/codeRepository/main/uploads/essay1.pdf","https://raw.githubusercontent.com/samging/codeRepository/main/uploads/parser.py"]},"14":{"deviceId":"14","pkgs":["https://raw.githubusercontent.com/samging/codeRepository/main/uploads/essay1.pdf","https://raw.githubusercontent.com/samging/codeRepository/main/uploads/parser.py"]}}
+> {"11":{"name":"some device\t\t","port":"234\t\t","deviceEndpoint":"endpoint you want"},"12":{"name":"ukhuoi","port":"568","deviceEndpoint":"89"},"13":{"name":"","port":"","deviceEndpoint":""},"14":{"name":"notsam67","port":"tty.Bluetooth-Incoming-Port","deviceEndpoint":"67"}}
+> Extension check completed.
+> Extension check failed or returned no results.
+> Network error
+> Network error: Not Found: The requested service could not be found.
+> Network error: Not Found: The requested service could not be found.
+> Network error: Not Found: The requested service could not be found.
+> Network error: Not Found: The requested service could not be found.
+> Network error: {"timestamp":"2026-08-24T18:57:07.283Z","status":405,"error":"Method Not Allowed","path":"/list-github-metadata"}
+> Network error: {"timestamp":"2026-08-24T18:57:15.461Z","status":405,"error":"Method Not Allowed","path":"/list-github-metadata"}
+> Network error: Check failed
+> Network error: Check failed <---
+> Network error: Check failed <---
+> Network error: Check failed <---
+> Network error: Check failed <---
+> Network error: Connection refused: Ensure the server is running at http://192.168.1.114:8080 <---
+> Network error: Connection refused: Ensure the server is running at http://192.168.1.114:8080 <---
+> Network error: Request timed out: The server is taking too long to respond. <---
+> 2026-08-25T08:14:31.434272Z 0
+> 2026-08-25T08:15:25.417534Z 0
+> 2026-08-25T08:16:26.263441Z 0
+> [FILE] logs.txt
+[FILE] componentSettings.json
+[FILE] packages.json
+> {"11":{"deviceId":"11","pkgs":["https://raw.githubusercontent.com/samging/codeRepository/main/uploads/essay1.pdf","https://raw.githubusercontent.com/samging/codeRepository/main/uploads/parser.py"]},"14":{"deviceId":"14","pkgs":["https://raw.githubusercontent.com/samging/codeRepository/main/uploads/essay1.pdf","https://raw.githubusercontent.com/samging/codeRepository/main/uploads/parser.py"]}}
+> 2026-08-25T08:18:18.966909Z 0
+> 2026-08-25T08:23:58.260438Z 0
+> 2026-08-25T08:24:51.832454Z 0
+> 2026-08-25T08:25:43.826410Z 0
+> 2026-08-25T08:26:55.974605Z 0
+> {0=GithubItemMetadata(name=1, downloadUrl=, id=null, type=dir, endComp=false), 1=GithubItemMetadata(name=2, downloadUrl=, id=null, type=dir, endComp=false), 2=GithubItemMetadata(name=3, downloadUrl=, id=null, type=dir, endComp=false), 3=GithubItemMetadata(name=essay1.pdf, downloadUrl=https://raw.githubusercontent.com/samging/codeRepository/main/uploads/essay1.pdf?token=ALRFULFHNZDQPODSEXJNVQDKRVJQXAA, id=null, type=file, endComp=false), 4=GithubItemMetadata(name=guest-90574852af9bd745, downloadUrl=, id=null, type=dir, endComp=false), 5=GithubItemMetadata(name=parser.py, downloadUrl=https://raw.githubusercontent.com/samging/codeRepository/main/uploads/parser.py?token=ALRFULFQFHATFXOZALB4JQTKRVJQXAA, id=null, type=file, endComp=false), 6=GithubItemMetadata(name=some.onnx.cfg, downloadUrl=https://raw.githubusercontent.com/samging/codeRepository/main/uploads/some.onnx.cfg?token=ALRFULFWHXX73XMZWRRTOW3KRVJQXAA, id=null, type=file, endComp=false), 7=GithubItemMetadata(name=unknown_user, downloadUrl=, id=null, type=dir, endComp=false)}
+> {"0":{"name":"1","downloadUrl":"","type":"dir","endComp":"false"},"1":{"name":"2","downloadUrl":"","type":"dir","endComp":"false"},"2":{"name":"3","downloadUrl":"","type":"dir","endComp":"false"},"3":{"name":"essay1.pdf","downloadUrl":"https://raw.githubusercontent.com/samging/codeRepository/main/uploads/essay1.pdf?token=ALRFULEO2ZFB325VABMBMY3KRVJVZAA","endComp":"false"},"4":{"name":"guest-90574852af9bd745","downloadUrl":"","type":"dir","endComp":"false"},"5":{"name":"parser.py","downloadUrl":"https://raw.githubusercontent.com/samging/codeRepository/main/uploads/parser.py?token=ALRFULHQ2354K3QIE3VREJ3KRVJVZAA","endComp":"false"},"6":{"name":"some.onnx.cfg","downloadUrl":"https://raw.githubusercontent.com/samging/codeRepository/main/uploads/some.onnx.cfg?token=ALRFULA6KSWUHKY5P4MX2WTKRVJVZAA","endComp":"false"},"7":{"name":"unknown_user","downloadUrl":"","type":"dir","endComp":"false"}}
+> 2026-08-25T09:23:07.695385Z 0
+> "[org.example.project.components.terminal.window.controller.TerminalWindowKt$TerminalWindow$3$1$sendCommand$2$$Lambda/0x00000078014ca6f8@438c3531, org.example.project.components.terminal.window.controller.TerminalWindowKt$TerminalWindow$3$1$sendCommand$2$$Lambda/0x00000078014ca6f8@1792de18]"
+> "[org.example.project.components.terminal.window.controller.TerminalWindowKt$TerminalWindow$3$1$sendCommand$2$$Lambda/0x00000070014ce380@5de79ff5, org.example.project.components.terminal.window.controller.TerminalWindowKt$TerminalWindow$3$1$sendCommand$2$$Lambda/0x00000070014ce380@8e14009]"
+> {"time":"2026-08-25T09:47:20.373605Z","status":0,"message":"[org.example.project.components.terminal.window.controller.TerminalWindowKt$TerminalWindow$3$1$sendCommand$2$$Lambda/0x000000b8014d02b0@7eb6665, org.example.project.components.terminal.window.controller.TerminalWindowKt$TerminalWindow$3$1$sendCommand$2$$Lambda/0x000000b8014d02b0@75e1187c]"}
+> Usage: cat <filename>
+> 2026-08-25T09:47:37.458223Z 0
+> 2026-08-25T09:47:42.519144Z 0
+> [FILE] logs.txt
+[FILE] componentSettings.json
+[FILE] packages.json
+> {"time":"2026-08-25T09:47:49.976600Z","status":0,"message":"[org.example.project.components.terminal.window.controller.TerminalWindowKt$TerminalWindow$3$1$sendCommand$2$$Lambda/0x000000b8014d02b0@727ebb97, org.example.project.components.terminal.window.controller.TerminalWindowKt$TerminalWindow$3$1$sendCommand$2$$Lambda/0x000000b8014d02b0@4f2a2747]"}
+> {"time":"2026-08-25T09:52:50.417376Z","status":0,"message":"[false, false]"}
+> {"time":"2026-08-25T10:03:42.582558Z","message":"\\u001b[31m [false, false] \\u001b[0m"}
+> {"time":"2026-08-25T10:06:26.253109Z","message":"\\u001b[31m [false, false] \\u001b[0m"}
+> {"time":"2026-08-25T10:07:02.460115Z","message":"\\u001b[31m [false, false] \\u001b[0m"}
+> {"time":"2026-08-25T10:08:22.777312Z","message":"\\u001b[31m [false, false] \\u001b[0m"}
+> {"time":"2026-08-28T14:55:15.310710Z","message":"\\u001b[31m [false, false] \\u001b[0m"}
+> Usage: cat <filename>
+> [FILE] logs.txt
+[FILE] componentSettings.json
+[FILE] packages.json
+> {"11":{"deviceId":"11","pkgs":["https://raw.githubusercontent.com/samging/codeRepository/main/uploads/essay1.pdf","https://raw.githubusercontent.com/samging/codeRepository/main/uploads/parser.py"]},"14":{"deviceId":"14","pkgs":["https://raw.githubusercontent.com/samging/codeRepository/main/uploads/essay1.pdf","https://raw.githubusercontent.com/samging/codeRepository/main/uploads/parser.py"]}}
+> 2026-08-30T11:30:43.565564Z 0
+> [FILE] logs.txt
+[FILE] componentSettings.json
+[FILE] packages.json
+> 2026-08-30T11:31:02.118032Z 0
+> [FILE] logs.txt
+[FILE] componentSettings.json
+[FILE] packages.json
+> 2026-08-30T11:31:48.752889Z 0
+> 2026-08-30T11:32:37.621778Z 0
+> 2026-08-30T11:35:40.984384Z 0
+> 2026-08-30T11:35:45.343602Z 0
+> 2026-08-30T11:36:33.059826Z 0
+> recognized
+> 2026-08-30T11:37:29.083291Z 0
+> recognized
+> 2026-08-30T11:37:35.343551Z 0
+> recognized
+> 2026-08-30T11:37:39.387198Z 0
+> recognized with run
+> 2026-08-30T11:38:14.112916Z 0
+> recognized with [run, urmom]
+> 2026-08-30T11:40:14.888321Z 0
+> recognized with [run, oijasdf]
+> 2026-08-30T11:40:58.271065Z 0
+> recognized with [oasjdfioas]
+> 2026-08-30T11:42:37.150076Z 0
+> Running oiadsf
+> Running iojads
+> /Users/samuel/Downloads/amieMultiplatform/AMP + pluginDir/ + iojads
+> Running iojasdf
+> /Users/samuel/Downloads/amieMultiplatform/AMP/pluginDiriojasdf | false
+> Running helloworld
+> [FILE] logs.txt
+[FILE] componentSettings.json
+[DIR] pluginDir
+[FILE] packages.json
+> Running hello.kts
+> Running hello
+> 
+> Running hello
+> 
+> Running hello
+> 
+> Running hello
+> 
+> Running hello
+> 
+> Running hello
+> 
+> Running hello
+> 
+> Running hello
+> 
+> Running hellop
+> 
+> Running hello
+> 
+> Running hello
+> 
+> Running hello
+> hiii
+> Running hello
+> hiii
+> Running hello
+> hiii
+> Running "hi"
+> 
+> Running hello
+> 
+> Running hello
+> 
+> Running hello
+> 
+> Running hello
+> 
+> Running hello
+> Running hello
+> Running hello
+> Running hello
+> Running hello
+> recognized with [d]
+> 2026-08-30T13:46:31.146140Z 0
+> Running hello
+> Running hello
+> Running hello
+> Running hello
+> Running hello
+> Running hello
+> Running hello
+> Running hello
+> Running hello
+> Running hello
+> Error: ERROR Cannot access script provided property class 'org.example.project.components.terminal.window.controller.TerminalWindowKt$TerminalWindow$3$$Lambda/0x00000070015913a0'. Check your module classpath for missing or conflicting dependencies (ScriptingHost7afcfafd_Line_0.kts:1:1)
+WARNING Unchecked cast: Any? to (String) -> Unit (ScriptingHost7afcfafd_Line_0.kts:3:27)
+> Running hello
+> Error: ERROR Cannot access script provided property class 'org.example.project.components.terminal.window.controller.TerminalWindowKt$TerminalWindow$3$$Lambda/0x00000070015913a0'. Check your module classpath for missing or conflicting dependencies (ScriptingHost751cfd97_Line_0.kts:1:1)
+WARNING Unchecked cast: Any? to (String) -> Unit (ScriptingHost751cfd97_Line_0.kts:3:27)
+> Running hello
+> Error: ERROR Cannot access script provided property class 'org.example.project.components.terminal.window.controller.TerminalWindowKt$TerminalWindow$3$$Lambda/0x00000070015aba20'. Check your module classpath for missing or conflicting dependencies (ScriptingHost53405a6f_Line_0.kts:1:1)
+> Running hello
+> Error: ERROR Cannot access script provided property class 'org.example.project.components.terminal.window.controller.TerminalWindowKt$TerminalWindow$3$$Lambda/0x00000070015aba20'. Check your module classpath for missing or conflicting dependencies (ScriptingHost7467625e_Line_0.kts:1:1)
+> Running hello
+> Hello from script! Fixed the class access issue.
+> Running hello
+> Hello from script! Fixed the class access issue.
+> Running hello
+> Hello from script! Fixed the class access issue.
+> your mom stinks!
