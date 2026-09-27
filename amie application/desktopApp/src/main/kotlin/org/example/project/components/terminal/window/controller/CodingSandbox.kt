@@ -40,8 +40,8 @@ import org.slf4j.LoggerFactory
 fun CodingSandbox(navController: NavController) {
     var selectedIndex by remember { mutableStateOf(1) }
     val codeField = remember { mutableStateOf("") }
-    var constraintSpecified by remember { mutableStateOf(false) }
-    var goalSpecified by remember { mutableStateOf(false) }
+    var constraintSpecified by remember { mutableStateOf(true) }
+    var goalSpecified by remember { mutableStateOf(true) }
     val coroutineScope = rememberCoroutineScope()
     val loop = rememberCoroutineScope()
     val logger = LoggerFactory.getLogger("CodingSandbox")
@@ -49,7 +49,11 @@ fun CodingSandbox(navController: NavController) {
     var highlights by remember {
         mutableStateOf(
             Highlights.Builder()
-                .code("// Write Kotlin code here...")
+                .code("" +
+                        "val constraints = mutableListOf<String>()\n" +
+                        "val goals = mutableListOf<String>()\n" +
+                        "amie.init()"
+                )
                 .language(SyntaxLanguage.KOTLIN)
                 .theme(SyntaxThemes.default(darkMode = true))
                 .build()
@@ -173,49 +177,45 @@ fun CodingSandbox(navController: NavController) {
             }
 
 
-            Column(modifier = Modifier.padding(16.dp).fillMaxWidth().background(Color(0xFF1E1E1E))) {
+            Column(modifier = Modifier.fillMaxWidth().background(Color(0xFF1E1E1E))) {
 //                Text(
 //                    text = "${codeField.value}",
 //                    modifier = Modifier.padding(bottom = 16.dp)
 //                )
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFF1E1E1E))
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .background(
-                                color = if (constraintSpecified) Color.Green else Color.Red,
-                                shape = CircleShape
-                            )
-                            .align(Alignment.CenterVertically)
-                    ) {}
-
-                    Text(
-                        text = "Constraint: ",
-                        modifier = Modifier
-                            .padding(end = 8.dp)
-                            .background(Color.Black)
-                    )
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                Row(modifier = Modifier.fillMaxWidth().background(Color(0xFF1E1E1E))) {
-                    Box(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .background(
-                                color = if (goalSpecified) Color.Green else Color.Red,
-                                shape = CircleShape
-                            )
-                            .align(Alignment.CenterVertically)
-                    ) {}
-                    Text(
-                        text = "Goal: ",
-                        modifier = Modifier.padding(end = 8.dp).background(Color.Black)
-                    )
-                }
+//                Row(
+//                    modifier = Modifier
+//                        .fillMaxWidth()
+//                ) {
+//                    Box(
+//                        modifier = Modifier
+//                            .size(10.dp)
+//                            .background(
+//                                color = if (constraintSpecified) Color.Green else Color.Red,
+//                                shape = CircleShape
+//                            )
+//                            .align(Alignment.CenterVertically)
+//                    ) {}
+//
+//                    Text(
+//                        text = " Constraint"
+//                    )
+//                }
+                //Spacer(modifier = Modifier.height(16.dp))
+//                Row(modifier = Modifier.fillMaxWidth().background(Color(0xFF1E1E1E))) {
+//                    Box(
+//                        modifier = Modifier
+//                            .size(10.dp)
+//                            .background(
+//                                color = if (goalSpecified) Color.Green else Color.Red,
+//                                shape = CircleShape
+//                            )
+//                            .align(Alignment.CenterVertically)
+//                    ) {}
+//                    Text(
+//                        text = " Goal",
+//                    )
+//                }
+//                Spacer(modifier = Modifier.height(16.dp))
                 TerminalWindow()
             }
         }

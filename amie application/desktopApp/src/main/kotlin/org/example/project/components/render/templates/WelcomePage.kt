@@ -76,6 +76,7 @@ import androidx.navigation.NavHostController
 import org.example.project.ui.theme.FontColor
 import org.jetbrains.compose.resources.painterResource
 import amiemultiplatform.shared.generated.resources.Res
+import androidx.compose.foundation.layout.wrapContentSize
 import amiemultiplatform.shared.generated.resources.ascii_amie_welcome
 
 @Composable
@@ -83,87 +84,42 @@ fun WelcomePage(navController: NavHostController) {
     val sessionModel = remember { SessionModel() }
     val scope = rememberCoroutineScope()
 
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(Color.Black),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Image(
-            painter = painterResource(Res.drawable.ascii_amie_welcome),
-            contentDescription = "Amie Logo",
-            modifier = Modifier
-                .align(Alignment.Center)
-                .offset(y = (-50).dp)
-        )
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(40.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Bottom
-        ) {
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = {
-                   navController.navigate("login")
-                },
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White,
-                    contentColor = Color.White
-                ),
-                enabled = !sessionModel.isLoading
-            ) {
-                Text("LOG IN", fontWeight = FontWeight.Bold, fontFamily = FontFamily.SansSerif, letterSpacing = 1.sp, color = Color.Black)
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            OutlinedButton(
-                onClick = {
-                    navController.navigate("login")
-                },
-                modifier = Modifier.fillMaxWidth().height(48.dp),
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = Color(0xFF878e9c)
-                ),
-                border = BorderStroke(1.dp, Color(0xFF262b36)),
-                enabled = !sessionModel.isLoading
-            ) {
-                Text("GUEST ACCESS", fontSize = 11.sp, fontFamily = FontFamily.SansSerif, letterSpacing = 1.sp)
-            }
-
-            Row(
-                modifier = Modifier.padding(top = 48.dp),
-                horizontalArrangement = Arrangement.spacedBy(24.dp)
-            ) {
-                TextButton(onClick = {
-                    navController.navigate("login")
-                }) {
-                    Text("OVERRIDE", color = Color(0xFF878e9c).copy(alpha = 0.5f), fontSize = 10.sp, fontFamily = FontFamily.SansSerif)
-                }
-
-                TextButton(onClick = {
-                    scope.launch { sessionModel.handleLoginError("Manual failure trigger") }
-                }) {
-                    Text("FAILSAFE", color = Color(0xFF878e9c).copy(alpha = 0.5f), fontSize = 10.sp, fontFamily = FontFamily.SansSerif)
-                }
-            }
-        }
-
-        if (sessionModel.isLoading) {
-            LoadingOverlay()
-        }
-
-        if (sessionModel.dialogResponse) {
-            PrintErrorDialog(
-                message = sessionModel.lastErrorMessage ?: "Unknown error",
-                onDismiss = { sessionModel.dialogResponse = false }
+              Image(
+                painter = painterResource(Res.drawable.ascii_amie_welcome),
+                contentDescription = "Amie Logo",
+//                modifier = Modifier
+//                    .align(Alignment.Center)
+//                    .offset(y = (-50).dp)
             )
+
+
+        Button(
+            onClick = {
+                navController.navigate("home1/")
+            },
+            modifier = Modifier.fillMaxWidth(0.5f).height(52.dp),
+            shape = RoundedCornerShape(0.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.White,
+                contentColor = Color.White
+            ),
+            enabled = !sessionModel.isLoading
+        ) {
+            Text(
+                "Continue",
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.SansSerif,
+                letterSpacing = 1.sp,
+                color = Color.Black
+            )
+
         }
     }
 }

@@ -75,7 +75,10 @@ fun AppBaseTemplate() {
             }
 
             composable(route = "home1/") {
-                var selectedIndex by remember { mutableStateOf(0) }
+                var selectedIndex by remember { mutableStateOf(1) }
+                androidx.compose.runtime.LaunchedEffect(Unit) {
+                    navController.navigate("codingSandbox")
+                }
 
                 Column(modifier = Modifier.fillMaxSize().background(Color(UnifiedBodyBackground.toArgb()))) {
                     WindowHeader(

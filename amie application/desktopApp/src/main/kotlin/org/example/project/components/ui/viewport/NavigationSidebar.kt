@@ -26,10 +26,11 @@ import amiemultiplatform.shared.generated.resources.console_icon
 
 @Composable
 fun NavigationSidebar(
-    selectedIndex: Int,
+    selectedIndex: Int = 1,
     onIndexSelected: (Int) -> Unit,
-    showPlay: Boolean = false,
-    showPlayCallback: () -> Unit = {}
+    showPlay: Boolean = true,
+    showPlayCallback: () -> Unit = {},
+    showTools: Boolean = false,
 ) {
     Row(
         modifier = Modifier
@@ -57,7 +58,10 @@ fun NavigationSidebar(
                     )
                 },
                 modifier = Modifier
-                    .padding(vertical = 4.dp, horizontal = 8.dp) // Gives it margin around the pill
+                    .padding(
+                        vertical = 4.dp,
+                        horizontal = 8.dp
+                    ) // Gives it margin around the pill
                     .drawWithContent {
                         drawContent()
                         if (selectedIndex == 1) {
@@ -76,50 +80,17 @@ fun NavigationSidebar(
                 unselectedContentColor = Color(FontColor.toArgb()),
                 alwaysShowLabel = false
             )
-            NavigationRailItem(
-                selected = selectedIndex == 0,
-                onClick = {
-                    onIndexSelected(0)
-                    println("clicked 0 | index: 0")
-                },
-                icon = {
-                    Icon(
-                        painter = painterResource(Res.drawable.libs_icon),
-                        contentDescription = "Agent"
-                    )
-                },
-                modifier = Modifier
-                    .padding(vertical = 4.dp, horizontal = 8.dp) // Gives it margin around the pill
-                    .drawWithContent {
-                        drawContent()
-                        if (selectedIndex == 0) {
-                            val strokeWidthPx = 2.dp.toPx()
-                            drawLine(
-                                color = Color.White,
-                                start = Offset(size.width - strokeWidthPx / 2, 0f),
-                                end = Offset(size.width - strokeWidthPx / 2, size.height),
-                                strokeWidth = strokeWidthPx
-                            )
-                        }
-                    }
-                    .clip(RoundedCornerShape(8.dp)) // Rounded background corners
-                    .background(if (selectedIndex == 0) Color(AddButton.toArgb()).copy(alpha = 0.2f) else Color.Transparent),
-                selectedContentColor = Color(AddButton.toArgb()),
-                unselectedContentColor = Color(FontColor.toArgb()),
-                alwaysShowLabel = false
-            )
-            if(showPlay) {
-                Spacer(modifier = Modifier.weight(1f))
+
+            if (showTools) {
                 NavigationRailItem(
-                    selected = selectedIndex == 2,
+                    selected = selectedIndex == 0,
                     onClick = {
-                        onIndexSelected(2)
-                        println("clicked 2 | index: 2")
-                        showPlayCallback()
+                        onIndexSelected(0)
+                        println("clicked 0 | index: 0")
                     },
                     icon = {
                         Icon(
-                            imageVector = Icons.Default.PlayArrow,
+                            painter = painterResource(Res.drawable.libs_icon),
                             contentDescription = "Agent"
                         )
                     },
@@ -127,10 +98,10 @@ fun NavigationSidebar(
                         .padding(
                             vertical = 4.dp,
                             horizontal = 8.dp
-                        ) // Gives it margin around the pill
+                        )
                         .drawWithContent {
                             drawContent()
-                            if (selectedIndex == 2) {
+                            if (selectedIndex == 0) {
                                 val strokeWidthPx = 2.dp.toPx()
                                 drawLine(
                                     color = Color.White,
@@ -140,12 +111,51 @@ fun NavigationSidebar(
                                 )
                             }
                         }
-                        .clip(RoundedCornerShape(8.dp)) // Rounded background corners
-                        .background(if (selectedIndex == 2) Color.Green.copy(alpha = 0.2f) else Color.Transparent),
-                    selectedContentColor = Color.Green,
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (selectedIndex == 0) Color(AddButton.toArgb()).copy(alpha = 0.2f) else Color.Transparent),
+                    selectedContentColor = Color(AddButton.toArgb()),
                     unselectedContentColor = Color(FontColor.toArgb()),
                     alwaysShowLabel = false
                 )
+            }
+                if (showPlay) {
+                    Spacer(modifier = Modifier.weight(1f))
+                    NavigationRailItem(
+                        selected = selectedIndex == 2,
+                        onClick = {
+                            onIndexSelected(2)
+                            println("clicked 2 | index: 2")
+                            showPlayCallback()
+                        },
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = "Agent"
+                            )
+                        },
+                        modifier = Modifier
+                            .padding(
+                                vertical = 4.dp,
+                                horizontal = 8.dp
+                            )
+                            .drawWithContent {
+                                drawContent()
+                                if (selectedIndex == 2) {
+                                    val strokeWidthPx = 2.dp.toPx()
+                                    drawLine(
+                                        color = Color.White,
+                                        start = Offset(size.width - strokeWidthPx / 2, 0f),
+                                        end = Offset(size.width - strokeWidthPx / 2, size.height),
+                                        strokeWidth = strokeWidthPx
+                                    )
+                                }
+                            }
+                            .clip(RoundedCornerShape(8.dp)) // Rounded background corners
+                            .background(if (selectedIndex == 2) Color.Green.copy(alpha = 0.2f) else Color.Transparent),
+                        selectedContentColor = Color.Green,
+                        unselectedContentColor = Color(FontColor.toArgb()),
+                        alwaysShowLabel = false
+                    )
             }
         }
     }

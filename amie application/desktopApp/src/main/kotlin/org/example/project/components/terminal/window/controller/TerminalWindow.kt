@@ -145,7 +145,7 @@ fun TerminalWindow(
             }
         }
     }
-    val scope = rememberCoroutineScope() //return CoroutineScope
+    val scope = rememberCoroutineScope()
 
     suspend fun update(body: TerminalTask ) {
         val repoOwner = "samging"
@@ -175,34 +175,12 @@ fun TerminalWindow(
     Card(
         modifier = modifier
             .fillMaxSize()
-            .clip(RoundedCornerShape(8.dp))
-            .border(1.dp, Color(0xFF262b36), RoundedCornerShape(8.dp)),
+            .clip(RoundedCornerShape(0.dp))
+            .border(1.dp, Color.White),
         colors = CardDefaults.cardColors(containerColor = Color(UnifiedBodyBackground.toArgb())),
-        shape = RoundedCornerShape(8.dp)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(color = Color(0xFF171b23))
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF878e9c))
-                )
-                Text(
-                    text = "CONSOLE: $title",
-                    color = Color(0xFF878e9c),
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace,
-                    modifier = Modifier.padding(start = 8.dp)
-                )
-            }
+
 
             Column(
                 modifier = Modifier
@@ -388,8 +366,7 @@ fun TerminalWindow(
 
                 Row(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                        .fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     OutlinedTextField(
