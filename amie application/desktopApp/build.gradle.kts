@@ -52,9 +52,16 @@ compose.desktop {
         mainClass = "org.example.project.MainKt"
 
         nativeDistributions {
+            packageName = "AmieApp"
+            packageVersion = "1.0.0"
+
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "org.example.project"
-            packageVersion = "1.0.0"
+        }
+
+        macOS {
+            iconFile.set(project.file("src/jvmMain/resources/icon.icns"))
+            bundleID = "com.amie.app"
         }
     }
 }
