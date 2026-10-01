@@ -7,6 +7,12 @@ plugins {
     alias(libs.plugins.kotlinSerialization)
 }
 
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    }
+}
+
 //repositories {
 //    intellijPlatform {
 //        defaultRepositories()
@@ -56,12 +62,13 @@ compose.desktop {
             packageVersion = "1.0.0"
 
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "org.example.project"
-        }
+            modules("java.net.http", "java.scripting", "java.sql")
+            packageName = "amie pilot"
 
-        macOS {
-            iconFile.set(project.file("src/jvmMain/resources/icon.icns"))
-            bundleID = "com.amie.app"
+            macOS {
+                iconFile.set(project.file("/Users/samuel/Documents/GitHub/amieAppStable/amie application/shared/src/commonMain/composeResources/drawable/amieDistributionIconNew.icns"))
+                bundleID = "com.amie.app"
+            }
         }
     }
 }
