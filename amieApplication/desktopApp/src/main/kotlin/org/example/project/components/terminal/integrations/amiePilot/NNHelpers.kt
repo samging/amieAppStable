@@ -1,71 +1,96 @@
 package org.example.project.components.terminal.integrations.amiePilot
 
 import org.tensorflow.Graph
-import org.tensorflow.framework.optimizers.GradientDescent
+import org.tensorflow.Operand
+import org.tensorflow.SavedModelBundle
+import org.tensorflow.Session
+import org.tensorflow.Signature
 import org.tensorflow.ndarray.Shape
 import org.tensorflow.op.Ops
+import org.tensorflow.op.core.Assign
 import org.tensorflow.op.core.Placeholder
+import org.tensorflow.op.core.Variable
 import org.tensorflow.types.TFloat32
-import org.tensorflow.Signature
-import java.io.File
-import org.tensorflow.SavedModelBundle
 
 class BertDownstreamClassifier(
-    private val inputDim: Long = 768L,   // Matches BERT contextual vector size
-    private val hiddenDim: Long = 128L,  // Hidden layer neurons
-    private val numClasses: Long = 9L    // e.g., 9 NER classes
+    private val inputDim: Long = 768L,
+    private val hiddenDim: Long = 128L,
+    private val numClasses: Long = 9L
 ) {
 
-    fun trainModel(modelName: String) {
+
+    fun trainAndSaveModel(exportDirPath: String) {
         Graph().use { graph ->
+
             val tf = Ops.create(graph)
 
-            val inputs = tf.placeholder(TFloat32::class.java, Placeholder.shape(Shape.of(-1, inputDim)))
-            val labels = tf.placeholder(TFloat32::class.java, Placeholder.shape(Shape.of(-1, numClasses)))
+            // 1. Placeholders
+            val inputs: Placeholder<TFloat32> = tf.placeholder(
+                TFloat32::class.java,
+                Placeholder.shape(Shape.of(-1, inputDim))
+            )
+            val labels: Placeholder<TFloat32> = tf.placeholder(
+                TFloat32::class.java,
+                Placeholder.shape(Shape.of(-1, numClasses))
+            )
 
-            val w1 = tf.variable(tf.random.truncatedNormal(tf.constant(longArrayOf(inputDim, hiddenDim)), TFloat32::class.java))
-            val b1 = tf.variable(tf.zeros(tf.constant(longArrayOf(hiddenDim)), TFloat32::class.java))
+            // 2. Uninitialized Variables
+            val w1: Variable<TFloat32> = tf.variable(Shape.of(inputDim, numClasses), TFloat32::class.java)
+            val b1: Variable<TFloat32> = tf.variable(Shape.of(numClasses), TFloat32::class.java)
 
-            val hiddenLayer = tf.nn.relu(tf.math.add(tf.linalg.matMul(inputs, w1), b1))
+            // 3. Initial Value Generators & Assign Ops (REPLACES .initializer())
+            val w1InitVal = tf.random.truncatedNormal(tf.constant(longArrayOf(inputDim, numClasses)), TFloat32::class.java)
+            val b1InitVal = tf.zeros(tf.constant(longArrayOf(numClasses)), TFloat32::class.java)
 
-            val w2 = tf.variable(tf.random.truncatedNormal(tf.constant(longArrayOf(hiddenDim, numClasses)), TFloat32::class.java))
-            val b2 = tf.variable(tf.zeros(tf.constant(longArrayOf(numClasses)), TFloat32::class.java))
+            val initW1: Assign<TFloat32> = tf.assign(w1, w1InitVal)
+            val initB1: Assign<TFloat32> = tf.assign(b1, b1InitVal)
 
-            val logits = tf.math.add(tf.linalg.matMul(hiddenLayer, w2), b2)
+            // 4. Forward Pass
+            val matMul = tf.linalg.matMul(inputs, w1)
+            val logits = tf.math.add(matMul, b1)
             val predictions = tf.nn.softmax(logits)
 
-            val crossEntropy = tf.nn.softmaxCrossEntropyWithLogits(logits, labels)
-            val loss = tf.math.mean(crossEntropy.loss(), tf.constant(0))
+            // 5. Loss Operation
+            val lossTensor = tf.nn.softmaxCrossEntropyWithLogits(logits, labels).loss()
+            val loss = tf.math.mean(lossTensor, tf.constant(0))
 
-            val optimizer = GradientDescent(graph, "optimizer", 0.01f)
-            val trainOp = optimizer.minimize(loss)
+            // 6. Execution Session
+            Session(graph).use { session ->
+                // Execute initializers (Run assign ops)
+                session.runner()
+                    .addTarget(initW1)
+                    .addTarget(initB1)
+                    .run()
 
-            println("TensorFlow Java Neural Network constructed successfully.")
+                // Run forward pass / loss computation
+                val lossResult = session.runner()
+                    .fetch(loss)
+                    .run()
 
-                tf.session().use { session ->
-                // Initialize variable weights
-                session.initializer().run()
-
-                // Optional: Run training loop here to update w1 ...
-
-                val signature = Signature.builder()
-                    .input("embedding_inputs", inputs)
-                    .output("class_probabilities", predictions)
+                if (true) {
+                    val resultTensor = lossResult.get(0)
+                    println("Initial Training Loss: $resultTensor")
+                    resultTensor.close()
+                }
+                /*
+                val signature: Signature = Signature.builder()
+                    .input("embedding_inputs", inputs.asOutput().asSymbol())
+                    .output("class_probabilities", predictions.asOutput().asSymbol())
                     .build()
+                 */
 
-                SavedModelBundle.exporter(modelName)
+                SavedModelBundle.exporter(exportDirPath)
                     .withSession(session)
-                    .addTags("serve") // Tag standard for inference/serving
-                    .addSignature("serving_default", signature)
+                    .withTags("serve")
                     .export()
 
-                println("Model successfully saved to: $exportPath")
+
+                println("Model successfully exported to: $exportDirPath")
             }
-        }
         }
     }
 }
 
-fun createModel(inputDim: Long, hiddenDim: Long, numClasses: Long) {
-    BertDownstreamClassifier(inputDim, hiddenDim, numClasses).trainModel("bert_downstream_model")
+fun createModel(inputDim: Long, hiddenDim: Long, numClasses: Long, exportDirPath: String) {
+    BertDownstreamClassifier(inputDim, hiddenDim, numClasses).trainAndSaveModel(exportDirPath)
 }

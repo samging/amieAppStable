@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import kotlinx.coroutines.launch
+import kotlinx.io.files.Path
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.example.project.components.render.templates.Client
@@ -267,10 +268,13 @@ fun TerminalWindow(
                                 val result = org.example.project.components.terminal.integrations.amiePilot.initAmie()
                                 logToConsole(ResponseDto(time = Instant.now(), message = result.joinToString("\n")))
                             }
-                            
-                            override fun modelBuilder() {
-                                org.example.project.components.terminal.integrations.amiePilot.createModel()
+
+
+                            override fun forwardContext(tokens: (matrix: LongArray) -> Unit) {
+                                tokens(LongArray(0))
+                                return org.example.project.components.terminal.integrations.amiePilot.initContext()
                             }
+
                         }
                         
                         val scriptBindings = engine.createBindings().apply {

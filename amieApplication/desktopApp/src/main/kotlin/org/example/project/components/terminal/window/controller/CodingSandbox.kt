@@ -124,8 +124,11 @@ fun CodingSandbox(navController: NavController) {
                         override fun sourceFile(it: String) {}
                         override fun importPlugin(plugin: String) {}
 
-                        override fun modelBuilder(it: () -> Unit): ModelCreationalInterface {
+
+                        override fun modelBuilder(modelName: String, it: () -> Unit): ModelCreationalInterface {
                             it()
+                            val nodes = org.example.project.components.terminal.integrations.amiePilot.getShapeContext()
+                            org.example.project.components.terminal.integrations.amiePilot.createModel(nodes[0], nodes[1], nodes[2], modelName)
                             return object : ModelCreationalInterface() {
 
                             }

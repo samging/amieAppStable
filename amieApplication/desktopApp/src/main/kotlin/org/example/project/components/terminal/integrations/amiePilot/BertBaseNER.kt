@@ -160,3 +160,14 @@ fun initContext() {
         inst.close() //[H]AutoCloseable, check it out!
     }
 }
+
+fun getShapeContext() : List<Long> {
+    val inst = BertOnnxModel("/Users/samuel/Documents/onnx/bert/bge")
+    try {
+        inst.sayHello()
+        val contextTensors = inst.getContextTensor()
+        return listOf(contextTensors.size.toLong(), contextTensors[0].size.toLong(), contextTensors[0][0].size.toLong())
+    } finally {
+        inst.close() //[H]AutoCloseable, check it out!
+    }
+}

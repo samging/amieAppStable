@@ -22,7 +22,7 @@ interface ScriptLogger {
     fun import(it: String) {}
     fun sourceFile(it: String) {}
     fun importPlugin(plugin: String) {}
-    fun modelBuilder(it: () -> Unit): ModelCreationalInterface = object : ModelCreationalInterface() {}
+    fun modelBuilder(modelName: String, it: () -> Unit): ModelCreationalInterface = object : ModelCreationalInterface() {}
 }
 
 abstract class ModelCreationalInterface {
