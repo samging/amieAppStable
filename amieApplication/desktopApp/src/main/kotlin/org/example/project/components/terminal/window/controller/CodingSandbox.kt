@@ -126,7 +126,9 @@ fun CodingSandbox(navController: NavController) {
 
                         override fun modelBuilder(it: () -> Unit): ModelCreationalInterface {
                             it()
-                            return object : ModelCreationalInterface() {}
+                            return object : ModelCreationalInterface() {
+
+                            }
                         }
 
                     }

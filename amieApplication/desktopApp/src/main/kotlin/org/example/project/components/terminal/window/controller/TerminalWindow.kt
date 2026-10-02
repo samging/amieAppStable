@@ -267,6 +267,10 @@ fun TerminalWindow(
                                 val result = org.example.project.components.terminal.integrations.amiePilot.initAmie()
                                 logToConsole(ResponseDto(time = Instant.now(), message = result.joinToString("\n")))
                             }
+                            
+                            override fun modelBuilder() {
+                                org.example.project.components.terminal.integrations.amiePilot.createModel()
+                            }
                         }
                         
                         val scriptBindings = engine.createBindings().apply {
