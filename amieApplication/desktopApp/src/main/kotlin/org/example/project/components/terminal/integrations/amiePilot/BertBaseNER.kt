@@ -86,16 +86,17 @@ class BertOnnxModel(val modelPath: String) : ModelInterface {
         }
 
         session.outputNames.forEach { name ->
-            println("Output: $name") 
+            println("Output: $name")
         }
 
-        println(" last hidden state ${results.get("last_hidden_state")} ")
-        val tensorOutput = results.get("logits").orElse(null) as? OnnxTensor
+        val hiddenStateTensor = results.get("last_hidden_state").orElse(null) as? OnnxTensor
+        println("HIDDEN TENSOR: $hiddenStateTensor")
+        val tensorOutput = results.get("last_hidden_state").orElse(null) as? OnnxTensor
         if (tensorOutput != null) {
             addOutputTensor(tensorOutput)
         }
         println(results)
-        println("tensorOutput: ${results.get("logits")}")
+        println("tensorOutput: ${results.get("last_hidden_state")}")
 
         val logitBatch = results.get(0).value as Array<Array<FloatArray>>
 
@@ -150,7 +151,7 @@ fun initAmie(): List<String> {
 }
 
 fun initContext() {
-    val inst = BertOnnxModel("/Users/samuel/Documents/onnx/bert/contextualizedBert")
+    val inst = BertOnnxModel("/Users/samuel/Documents/onnx/bert/bge")
     try {
         inst.sayHello()
         val contextTensors = inst.getContextTensor()
