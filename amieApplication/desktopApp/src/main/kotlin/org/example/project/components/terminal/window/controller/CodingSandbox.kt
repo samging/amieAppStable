@@ -33,6 +33,9 @@ import org.example.project.components.terminal.window.controller.ResponseDto
 import org.example.project.components.terminal.window.controller.logToConsole
 import java.time.Instant
 import org.example.project.components.terminal.integrations.amiePilot.*
+import org.example.project.components.terminal.window.controller.envBuilder.BuildSettings
+import org.example.project.components.terminal.window.controller.envBuilder.SettingsEnv
+import org.example.project.components.terminal.window.controller.modelLoaders.ModelBuilder
 import org.slf4j.LoggerFactory
 import org.tensorflow.SavedModelBundle
 import org.tensorflow.TensorFlow
@@ -89,6 +92,7 @@ fun CodingSandbox(navController: NavController) {
                 showPlayCallback = {
                     val manager = ScriptEngineManager(Thread.currentThread().contextClassLoader)
                     val engine = manager.getEngineByExtension("kts") ?: error("Couldn't find engine")
+                    val gradleEngine = manager.getEngineByExtension("gradle") ?: error("Couldn't find engine")
 
                     val loggerObj = object : ScriptLogger {
 
@@ -97,7 +101,6 @@ fun CodingSandbox(navController: NavController) {
                         }
 
                         override fun initAmie() {
-                            //amie - source bert onnx
                             val result = org.example.project.components.terminal.integrations.amiePilot.initAmie()
                             logToConsole(ResponseDto(time = Instant.now(), message = result.joinToString("\n")))
                         }
@@ -111,17 +114,50 @@ fun CodingSandbox(navController: NavController) {
                             logToConsole(ResponseDto(time = Instant.now(), message = "importModelOnnx"))
                         }
 
-                        override fun importModelTensorflow(it: Path) {}
+                        override fun importModelTensorflow(it: Path) {
+                            val o = ModelBuilder(it).load()
+                        }
 
                         override fun forwardContext(tokens: (matrix: LongArray) -> Unit) {
                             tokens(LongArray(0))
                             return org.example.project.components.terminal.integrations.amiePilot.initContext()
                         }
 
-                        override fun validateMetrics(train: Path, test: Path) {}
-                        override fun implementation(it: Path, entry: Path) {}
-                        override fun import(it: String) {}
-                        override fun sourceFile(it: String) {}
+                        override fun validateMetrics(
+                            modelPath: Path,
+                            train: Path,
+                            test: Path) {
+                            logToConsole(ResponseDto(time = Instant.now(), message = "validateMetrics"))
+                        }
+
+                        override fun implementation(it: BuildSettings) {
+                            try {
+                                gradleEngine.eval(it.toString())
+                            } catch (e: Exception) {
+                                logToConsole(ResponseDto(time = Instant.now(), message = "Error: ${e.message}"))
+                            }
+                            logToConsole(ResponseDto(time = Instant.now(), message = "implementation $it "))
+                        }
+
+                        override fun import(it: SettingsEnv) {
+                            try {
+                                gradleEngine.eval(it.toString())
+                            } catch (e: Exception) {
+                                logToConsole(ResponseDto(time = Instant.now(), message = "Error: ${e.message}"))
+                            }
+                            logToConsole(ResponseDto(time = Instant.now(), message = "import $it"))
+                        }
+
+                        override fun sourceFile(it: String) {
+                                val toFile = File(it)
+                                if (toFile.exists()) {
+                                    when(toFile.extension) {
+                                        "csv" -> logToConsole(ResponseDto(time = Instant.now(), message = "csv"))
+                                        else -> logToConsole(ResponseDto(time = Instant.now(), message = "unsupported type"))
+                                    }
+                                }
+                        }
+
                         override fun importPlugin(plugin: String) {}
 
 
@@ -146,9 +182,7 @@ fun CodingSandbox(navController: NavController) {
                             } catch (e: Throwable) {
                                 e.printStackTrace()
                             }
-
                             return object : ModelCreationalInterface() {
-
                             }
                         }
 

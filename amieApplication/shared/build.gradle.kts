@@ -59,6 +59,7 @@ kotlin {
 
 compose.resources {
     publicResClass = true
+    packageOfResClass = "amiemultiplatform.shared.generated.resources"
 }
 
 extensions.configure(com.android.build.api.dsl.LibraryExtension::class.java) {
@@ -68,7 +69,7 @@ extensions.configure(com.android.build.api.dsl.LibraryExtension::class.java) {
         minSdk = 24
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 }

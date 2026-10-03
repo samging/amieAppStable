@@ -53,6 +53,7 @@ dependencies {
     implementation(libs.tensorflow.core)
     implementation(libs.tensorflow.platform)
     implementation(libs.tensorflow.core.platform)
+    implementation(gradleApi())
     runtimeOnly("org.bytedeco:tensorflow:1.15.5-1.5.7:macosx-arm64")
     runtimeOnly("org.bytedeco:javacpp:1.5.7:macosx-arm64")
     kotlin("plugin.serialization")

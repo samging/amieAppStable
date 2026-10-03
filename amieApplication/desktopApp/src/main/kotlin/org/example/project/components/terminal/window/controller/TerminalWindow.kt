@@ -258,6 +258,7 @@ fun TerminalWindow(
 
                     if(command.first() == "run"){
                         val manager = ScriptEngineManager(Thread.currentThread().contextClassLoader)
+
                         val engine = manager.getEngineByExtension("kts") ?: error("Couldn't find engine")
                         
                         val loggerObj = object : ScriptLogger {
