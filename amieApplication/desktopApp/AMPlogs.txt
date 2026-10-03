@@ -1,0 +1,86 @@
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> sales_report_2026.csv
+> importPlugin 
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> sales_report_2026.csv
+> importPlugin 
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi
+> hi

@@ -17,4 +17,5 @@ interface DeviceManager {
     fun writePackage(id: String, pkgUrl: MutableList<String>, action: JSONACTIONS)
     fun getPackages(id: String): List<String>
     fun setSession(username: String)
+    fun getPlugins()
 }

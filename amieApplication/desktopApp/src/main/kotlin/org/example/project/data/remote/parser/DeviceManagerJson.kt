@@ -466,7 +466,7 @@ class DeviceManagerJson(
         return configuredDevices
     }
 
-    fun getPlugins() {
+    override fun getPlugins() {
         if (configFile.endsWith("corePlugins.json")) {
             val serialize = Json.decodeFromString<CorePluginObject>(configFile.readText())
             logToConsole(ResponseDto(time = Instant.now(), message = serialize.name))

@@ -130,4 +130,5 @@ class DeviceManagerCsv(private var configFile: File = File("componentSettings.cs
             println("Failed to save CSV: ${e.message}")
         }
     }
+    override fun getPlugins() { TODO("Not yet implemented") }
 }

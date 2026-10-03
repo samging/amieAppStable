@@ -44,6 +44,7 @@ import org.tensorflow.SavedModelBundle
 import org.tensorflow.TensorFlow
 import org.example.project.components.terminal.window.controller.sourceFile.SourceCsv
 import org.example.project.data.remote.parser.DeviceManagerFactory
+import kotlin.math.log
 
 
 object ScriptEngineCache {
@@ -204,7 +205,7 @@ fun CodingSandbox(navController: NavController) {
                         override fun importPlugin(plugin: String) {
                             val file = File("/Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/corePlugins.json")
                             val reader = DeviceManagerFactory.create(file)
-
+                            reader.getPlugins()
                             logToConsole(ResponseDto(time = Instant.now(), message = "importPlugin $plugin"))
                         }
 
@@ -247,6 +248,7 @@ fun CodingSandbox(navController: NavController) {
 
                         val pluginPath = File(getDirectory().toString(), "pluginDir/main.kts")
                         val assemblyPath = File(getDirectory().toString(), "pluginDir/assembly.kts")
+                        logToConsole(ResponseDto(time = Instant.now(), message = "$pluginPath | $assemblyPath"))
 
                         try {
                             if (pluginPath.exists()) {
@@ -271,7 +273,9 @@ fun CodingSandbox(navController: NavController) {
                                 }
 
                                 else {
+                                    assemblyPath.writeText("")
                                     println("AS NOT: ${pluginPathText} | ${assemblyPath.readText().contains(regexImports)}")
+                                    println("[!!!] $highlights")
                                     assemblyPath.appendText("import org.example.project.components.terminal.window.controller.ScriptLogger\nval amie = bindings[\"logger\"] as ScriptLogger")
                                     assemblyPath.appendText("\n${pluginPathText}")
                                     engine.eval(assemblyPath.readText(), scriptBindings)

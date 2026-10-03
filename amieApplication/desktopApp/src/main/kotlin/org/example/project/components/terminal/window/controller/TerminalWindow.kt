@@ -108,10 +108,9 @@ object LogConsole {
     private val logScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val logChannel = Channel<ResponseDto>(Channel.UNLIMITED)
 
-    var logFilePath: String = "logs.txt"
+    var logFilePath: String = getDirectory().toString() + "logs.txt"
 
     init {
-        clearLogFile(logFilePath)
         logScope.launch {
             for (dto in logChannel) {
                 withContext(Dispatchers.Main) {
@@ -173,6 +172,7 @@ fun TerminalWindow(
     LaunchedEffect(logFilePath) {
         val file = File(logFilePath)
         if (file.exists()) {
+            file.writeText("")
             try {
                 val lines = file.readLines()
                 consoleData.clear()
