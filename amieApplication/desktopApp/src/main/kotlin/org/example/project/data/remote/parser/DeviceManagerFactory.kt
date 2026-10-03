@@ -8,7 +8,7 @@ class DeviceManagerFactory private constructor() {
         fun create(file: File): DeviceManager = when(file.extension){
             "csv" -> DeviceManagerCsv(file)
             "json" -> DeviceManagerJson(file)
-            else -> DeviceManagerJson(file) // Fallback to JSON
+            else -> DeviceManagerJson(file)
         }
     }
 }

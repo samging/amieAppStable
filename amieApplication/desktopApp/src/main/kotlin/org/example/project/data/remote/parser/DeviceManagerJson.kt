@@ -18,11 +18,14 @@ import kotlinx.serialization.json.Json.Default.decodeFromString
 import org.example.project.components.render.templates.Client
 import org.example.project.components.render.templates.RestType
 import org.example.project.components.render.templates.sendDeviceStatusDto
+import org.example.project.components.terminal.window.controller.ResponseDto
+import org.example.project.components.terminal.window.controller.logToConsole
 import org.example.project.data.remote.DeviceDto
 import org.example.project.data.remote.DeviceActions
 import org.example.project.data.remote.DeviceRemoteService
 import org.example.project.getDirectory
 import org.example.project.util.sharedHttpClient
+import java.time.Instant
 
 @Serializable
 data class PostResponse(val status: String)
@@ -461,5 +464,14 @@ class DeviceManagerJson(
         //println("DEBUG: ${configuredDevices}")
         println("[JSON-lib] DEBUG: ${configuredDevices}")
         return configuredDevices
+    }
+
+    fun getPlugins() {
+        if (configFile.endsWith("corePlugins.json")) {
+            val serialize = Json.decodeFromString<CorePluginObject>(configFile.readText())
+            logToConsole(ResponseDto(time = Instant.now(), message = serialize.name))
+        } else {
+            logToConsole(ResponseDto(time = Instant.now(), message = "corePlugins.json not found"))
+        }
     }
 }

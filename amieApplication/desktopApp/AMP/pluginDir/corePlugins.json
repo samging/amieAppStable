@@ -1,0 +1,12 @@
+{
+"name": "sales_report_2026.csv",
+"path": "/data/exports/reports/sales_report_2026.csv",
+"metadata": {
+"file_size_bytes": 1048576,
+"encoding": "UTF-8",
+"created_at": "2026-10-03T14:30:00Z",
+"last_modified_by": "alex_dev",
+"tags": ["finance", "quarterly", "sales"],
+"checksum": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}
+}

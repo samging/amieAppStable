@@ -42,8 +42,7 @@ import org.slf4j.LoggerFactory
 import org.tensorflow.SavedModelBundle
 import org.tensorflow.TensorFlow
 import org.example.project.components.terminal.window.controller.sourceFile.SourceCsv
-
-
+import org.example.project.data.remote.parser.DeviceManagerFactory
 
 
 @Composable
@@ -165,6 +164,9 @@ fun CodingSandbox(navController: NavController) {
                         }
 
                         override fun importPlugin(plugin: String) {
+                            val file = File("/Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/corePlugins.json")
+                            val reader = DeviceManagerFactory.create(file)
+
                             logToConsole(ResponseDto(time = Instant.now(), message = "importPlugin $plugin"))
                         }
 
