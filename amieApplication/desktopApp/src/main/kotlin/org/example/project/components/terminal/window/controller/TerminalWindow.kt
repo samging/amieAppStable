@@ -269,12 +269,25 @@ fun TerminalWindow(
                                 logToConsole(ResponseDto(time = Instant.now(), message = result.joinToString("\n")))
                             }
 
-
                             override fun forwardContext(tokens: (matrix: LongArray) -> Unit) {
                                 tokens(LongArray(0))
                                 return org.example.project.components.terminal.integrations.amiePilot.initContext()
                             }
 
+                            override fun modelBuilder(modelName: String, it: () -> Unit): ModelCreationalInterface {
+                                it()
+                                try {
+                                    val nodes = org.example.project.components.terminal.integrations.amiePilot.getShapeContext()
+                                    //org.example.project.components.terminal.integrations.amiePilot.createModel(nodes[0], nodes[1], nodes[2], modelName)
+                                } catch (e: java.lang.reflect.InvocationTargetException) {
+                                    println("--- ROOT CAUSE OF SCRIPT FAILURE ---")
+                                    e.cause?.printStackTrace() // <--- THIS WILL SHOW THE ACTUAL ERROR
+                                }
+
+                                return object : ModelCreationalInterface() {
+
+                                }
+                            }
                         }
                         
                         val scriptBindings = engine.createBindings().apply {

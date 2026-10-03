@@ -19,6 +19,11 @@ kotlin {
         jvmTarget.set(JvmTarget.JVM_21)
     }
 }
+
+configurations.all {
+    exclude(group = "org.bytedeco")
+}
+
 dependencies {
 
     implementation(project(":shared"))
@@ -28,6 +33,7 @@ dependencies {
     implementation(libs.kotlinx.coroutinesSwing)
 
     implementation(libs.compose.uiToolingPreview)
+
 
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.java)
@@ -43,8 +49,12 @@ dependencies {
     implementation(libs.kodeview)
     implementation("com.microsoft.onnxruntime:onnxruntime:1.19.2")
     implementation("ai.djl.huggingface:tokenizers:0.31.0")
-    implementation("org.tensorflow:tensorflow-core-platform:0.5.0")
-    implementation("org.tensorflow:tensorflow-framework:0.5.0")
+
+    implementation(libs.tensorflow.core)
+    implementation(libs.tensorflow.platform)
+    implementation(libs.tensorflow.core.platform)
+    runtimeOnly("org.bytedeco:tensorflow:1.15.5-1.5.7:macosx-arm64")
+    runtimeOnly("org.bytedeco:javacpp:1.5.7:macosx-arm64")
     kotlin("plugin.serialization")
 }
 

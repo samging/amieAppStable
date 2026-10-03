@@ -23,8 +23,15 @@ uiGraphicsAndroid = "1.12.0"
 okio = "3.9.0"
 jewel = "0.27.0"
 kodeview = "0.9.0"
+tensorflow = "1.15.0"
+tensorflow-platform = "1.15.5-1.5.8"
+tensorflow-core-platform = "1.2.0"
+
 
 [libraries]
+tensorflow-core = { module = "org.tensorflow:tensorflow", version.ref = "tensorflow" }
+tensorflow-platform = { module = "org.bytedeco:tensorflow-platform", version.ref = "tensorflow-platform" }
+tensorflow-core-platform = { module = "org.tensorflow:tensorflow-core-platform", version.ref = "tensorflow-core-platform" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 junit = { module = "junit:junit", version.ref = "junit" }

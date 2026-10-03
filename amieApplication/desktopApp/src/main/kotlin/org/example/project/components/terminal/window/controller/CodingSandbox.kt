@@ -34,8 +34,8 @@ import org.example.project.components.terminal.window.controller.logToConsole
 import java.time.Instant
 import org.example.project.components.terminal.integrations.amiePilot.*
 import org.slf4j.LoggerFactory
-
 import org.tensorflow.SavedModelBundle
+import org.tensorflow.TensorFlow
 import org.tensorflow.ndarray.NdArrays
 import org.tensorflow.types.TFloat32
 
@@ -126,9 +126,27 @@ fun CodingSandbox(navController: NavController) {
 
 
                         override fun modelBuilder(modelName: String, it: () -> Unit): ModelCreationalInterface {
+                            println("INSIDE MODEL BUILDER")
                             it()
-                            val nodes = org.example.project.components.terminal.integrations.amiePilot.getShapeContext()
-                            org.example.project.components.terminal.integrations.amiePilot.createModel(nodes[0], nodes[1], nodes[2], modelName)
+
+                            try {
+                                // Force JavaCPP to extract and load C++ native libraries into process memory
+                                //SavedModelBundle.Loader.load(org.tensorflow.internal.c_api.global.tensorflow::class.java)
+                                println("TensorFlow Native Version preloaded: ${TensorFlow.version()}")
+                            } catch (e: Throwable) {
+                                System.err.println("Preload failed: ${e.message}")
+                                e.printStackTrace()
+                            }
+                            try {
+                                val nodes = org.example.project.components.terminal.integrations.amiePilot.getShapeContext()
+                                //  org.example.project.components.terminal.integrations.amiePilot.createModel(nodes[0], nodes[1], nodes[2], modelName)
+                            } catch (e: java.lang.reflect.InvocationTargetException) {
+                                println("--- ROOT CAUSE OF SCRIPT FAILURE ---")
+                                e.cause?.printStackTrace() // <--- THIS WILL SHOW THE ACTUAL ERROR
+                            } catch (e: Throwable) {
+                                e.printStackTrace()
+                            }
+
                             return object : ModelCreationalInterface() {
 
                             }
