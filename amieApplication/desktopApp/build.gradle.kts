@@ -20,9 +20,7 @@ kotlin {
     }
 }
 
-configurations.all {
-    exclude(group = "org.bytedeco")
-}
+
 
 dependencies {
 
@@ -51,11 +49,13 @@ dependencies {
     implementation("ai.djl.huggingface:tokenizers:0.31.0")
 
     implementation(libs.tensorflow.core)
-    implementation(libs.tensorflow.platform)
-    implementation(libs.tensorflow.core.platform)
+    implementation(libs.tensorflow.platform) {
+        exclude(group = "org.bytedeco", module = "javacpp")
+    }
+    implementation("org.bytedeco:javacpp:1.5.8")
+    runtimeOnly("org.bytedeco:tensorflow:1.15.5-1.5.8:macosx-arm64")
+    runtimeOnly("org.bytedeco:tensorflow:1.15.5-1.5.8:macosx-x86_64")
     implementation(gradleApi())
-    runtimeOnly("org.bytedeco:tensorflow:1.15.5-1.5.7:macosx-arm64")
-    runtimeOnly("org.bytedeco:javacpp:1.5.7:macosx-arm64")
     kotlin("plugin.serialization")
 }
 

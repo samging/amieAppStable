@@ -26,6 +26,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.shape.CircleShape
+import javax.script.ScriptEngine
 import javax.script.ScriptEngineManager
 import org.example.project.components.terminal.window.controller.ScriptLogger
 import org.example.project.components.terminal.window.controller.TerminalWindow
@@ -91,8 +92,12 @@ fun CodingSandbox(navController: NavController) {
 
                 showPlayCallback = {
                     val manager = ScriptEngineManager(Thread.currentThread().contextClassLoader)
-                    val engine = manager.getEngineByExtension("kts") ?: error("Couldn't find engine")
-                    val gradleEngine = manager.getEngineByExtension("gradle") ?: error("Couldn't find engine")
+                    val engine = manager.getEngineByExtension("kts")
+                        ?: manager.getEngineByName("kotlin")
+                        ?: error("Couldn't find Kotlin script engine")
+                    val gradleEngine = manager.getEngineByExtension("kts")
+                        ?: manager.getEngineByName("kotlin")
+                        ?: engine
 
                     val loggerObj = object : ScriptLogger {
 
