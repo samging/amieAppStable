@@ -22,7 +22,7 @@ interface ScriptLogger {
     fun validateMetrics(modelPath: Path, train: Path, test: Path) {}
     fun implementation(it: BuildSettings) {}
     fun import(it: SettingsEnv) {}
-    fun sourceFile(it: String) {}
+    fun sourceFile(it: String, column: String) {}
     fun importPlugin(plugin: String) {}
     fun modelBuilder(modelName: String, it: () -> Unit): ModelCreationalInterface = object : ModelCreationalInterface() {}
 }

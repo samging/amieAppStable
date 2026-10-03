@@ -26,6 +26,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.shape.CircleShape
+import okio.Path.Companion.toPath
 import javax.script.ScriptEngine
 import javax.script.ScriptEngineManager
 import org.example.project.components.terminal.window.controller.ScriptLogger
@@ -40,8 +41,8 @@ import org.example.project.components.terminal.window.controller.modelLoaders.Mo
 import org.slf4j.LoggerFactory
 import org.tensorflow.SavedModelBundle
 import org.tensorflow.TensorFlow
-import org.tensorflow.ndarray.NdArrays
-import org.tensorflow.types.TFloat32
+import org.example.project.components.terminal.window.controller.sourceFile.SourceCsv
+
 
 
 
@@ -153,17 +154,19 @@ fun CodingSandbox(navController: NavController) {
                             logToConsole(ResponseDto(time = Instant.now(), message = "import $it"))
                         }
 
-                        override fun sourceFile(it: String) {
+                        override fun sourceFile(it: String, column: String) {
                                 val toFile = File(it)
                                 if (toFile.exists()) {
                                     when(toFile.extension) {
-                                        "csv" -> logToConsole(ResponseDto(time = Instant.now(), message = "csv"))
+                                        "csv" -> SourceCsv(it).get()
                                         else -> logToConsole(ResponseDto(time = Instant.now(), message = "unsupported type"))
                                     }
                                 }
                         }
 
-                        override fun importPlugin(plugin: String) {}
+                        override fun importPlugin(plugin: String) {
+                            logToConsole(ResponseDto(time = Instant.now(), message = "importPlugin $plugin"))
+                        }
 
 
                         override fun modelBuilder(modelName: String, it: () -> Unit): ModelCreationalInterface {
