@@ -1,132 +1,87 @@
 > pluginDir/main.kt
 > pluginDir/main.kt
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
+> O
+O
+O
+B-ORG
+O
+O
+O
+O
+O
+O
+O
+O
 > pluginDir/main.kt
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
+> O
+O
+O
+B-ORG
+O
+O
+O
+O
+O
+O
+O
+O
 > pluginDir/main.kt
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
+> O
+O
+O
+B-ORG
+O
+O
+O
+O
+O
+O
+O
+O
 > pluginDir/main.kt
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
+> O
+O
+O
+B-ORG
+O
+O
+O
+O
+O
+O
+O
+O
 > pluginDir/main.kt
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
+> O
+O
+O
+B-ORG
+O
+O
+O
+O
+O
+O
+O
+O
 > pluginDir/main.kt
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
+> O
+O
+O
+B-ORG
+O
+O
+O
+O
+O
+O
+O
+O
 > pluginDir/main.kt
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
+> hi
 > pluginDir/main.kt
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
+> hi
 > pluginDir/main.kt
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
+> hi
 > pluginDir/main.kt
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
-> instant
+> hi

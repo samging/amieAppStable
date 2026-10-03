@@ -1,5 +1,4 @@
 val constraints = mutableListOf<String>()
 val goals = mutableListOf<String>()
 
-amie.initAmie()
-
+amie.log("hi")

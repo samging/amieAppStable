@@ -259,6 +259,8 @@ fun CodingSandbox(navController: NavController) {
 
                                 if (assemblyPath.readText().contains(regexImports)) {
                                     scriptScope.launch {
+                                        assemblyPath.writeText("")
+
                                         for (assemblyLine in assemblyPath.readLines()) {
                                             println("[i]> $assemblyLine")
                                         }
@@ -275,6 +277,7 @@ fun CodingSandbox(navController: NavController) {
                                     engine.eval(assemblyPath.readText(), scriptBindings)
                                     assemblyPath.writeText("")
                                 }
+
                             } else {
                                 logToConsole(ResponseDto(time = Instant.now(), message = "Script not found: ${pluginPath.absolutePath}"))
                             }
