@@ -23,6 +23,9 @@ import org.jetbrains.compose.resources.painterResource
 import amiemultiplatform.shared.generated.resources.Res
 import amiemultiplatform.shared.generated.resources.libs_icon
 import amiemultiplatform.shared.generated.resources.console_icon
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @Composable
 fun NavigationSidebar(
@@ -32,6 +35,7 @@ fun NavigationSidebar(
     showPlayCallback: () -> Unit = {},
     showTools: Boolean = false,
 ) {
+    val coroutineScope = rememberCoroutineScope()
     Row(
         modifier = Modifier
             .fillMaxHeight()
@@ -125,8 +129,10 @@ fun NavigationSidebar(
                         onClick = {
                             onIndexSelected(2)
                             println("clicked 2 | index: 2")
-                            showPlayCallback()
-                        },
+                            coroutineScope.launch(Dispatchers.IO) {
+                                showPlayCallback()
+                            }
+                                  },
                         icon = {
                             Icon(
                                 imageVector = Icons.Default.PlayArrow,

@@ -26,6 +26,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.shape.CircleShape
+import kotlinx.coroutines.CoroutineScope
 import okio.Path.Companion.toPath
 import javax.script.ScriptEngine
 import javax.script.ScriptEngineManager
@@ -44,6 +45,32 @@ import org.tensorflow.TensorFlow
 import org.example.project.components.terminal.window.controller.sourceFile.SourceCsv
 import org.example.project.data.remote.parser.DeviceManagerFactory
 
+
+object ScriptEngineCache {
+    private val manager by lazy {
+        // ClassLoader lookup avoids ClassLoader contention with the UI thread
+        ScriptEngineManager(ScriptEngineCache::class.java.classLoader)
+    }
+
+    val engine: ScriptEngine by lazy {
+        manager.getEngineByExtension("kts")
+            ?: manager.getEngineByName("kotlin")
+            ?: error("Couldn't find Kotlin script engine")
+    }
+
+    // Shares the same cached manager instance
+    val gradleEngine: ScriptEngine by lazy {
+        manager.getEngineByExtension("kts")
+            ?: manager.getEngineByName("kotlin")
+            ?: engine
+    }
+}
+
+fun prewarmScriptEngine() {
+    CoroutineScope(Dispatchers.Default).launch {
+        ScriptEngineCache.engine // Triggers lazy load early so click is instantaneous
+    }
+}
 
 @Composable
 fun CodingSandbox(navController: NavController) {
@@ -91,13 +118,10 @@ fun CodingSandbox(navController: NavController) {
                 showPlay = true,
 
                 showPlayCallback = {
-                    val manager = ScriptEngineManager(Thread.currentThread().contextClassLoader)
-                    val engine = manager.getEngineByExtension("kts")
-                        ?: manager.getEngineByName("kotlin")
-                        ?: error("Couldn't find Kotlin script engine")
-                    val gradleEngine = manager.getEngineByExtension("kts")
-                        ?: manager.getEngineByName("kotlin")
-                        ?: engine
+                    val scriptScope = CoroutineScope(Dispatchers.IO)
+                    CoroutineScope(Dispatchers.IO).launch {
+                    val engine = ScriptEngineCache.engine
+                        val gradleEngine = ScriptEngineCache.gradleEngine
 
                     val loggerObj = object : ScriptLogger {
 
@@ -136,19 +160,33 @@ fun CodingSandbox(navController: NavController) {
                         }
 
                         override fun implementation(it: BuildSettings) {
-                            try {
-                                gradleEngine.eval(it.toString())
-                            } catch (e: Exception) {
-                                logToConsole(ResponseDto(time = Instant.now(), message = "Error: ${e.message}"))
+                            scriptScope.launch {
+                                try {
+                                    gradleEngine.eval(it.toString())
+                                } catch (e: Exception) {
+                                    logToConsole(
+                                        ResponseDto(
+                                            time = Instant.now(),
+                                            message = "Error: ${e.message}"
+                                        )
+                                    )
+                                }
                             }
                             logToConsole(ResponseDto(time = Instant.now(), message = "implementation $it "))
                         }
 
                         override fun import(it: SettingsEnv) {
-                            try {
-                                gradleEngine.eval(it.toString())
-                            } catch (e: Exception) {
-                                logToConsole(ResponseDto(time = Instant.now(), message = "Error: ${e.message}"))
+                            scriptScope.launch {
+                                try {
+                                    gradleEngine.eval(it.toString())
+                                } catch (e: Exception) {
+                                    logToConsole(
+                                        ResponseDto(
+                                            time = Instant.now(),
+                                            message = "Error: ${e.message}"
+                                        )
+                                    )
+                                }
                             }
                             logToConsole(ResponseDto(time = Instant.now(), message = "import $it"))
                         }
@@ -178,7 +216,9 @@ fun CodingSandbox(navController: NavController) {
                             try {
                                 // Force JavaCPP to extract and load C++ native libraries into process memory
                                 //SavedModelBundle.Loader.load(org.tensorflow.internal.c_api.global.tensorflow::class.java)
-                                println("TensorFlow Native Version preloaded: ${TensorFlow.version()}")
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    //println("TensorFlow Native Version preloaded: ${TensorFlow.version()}")
+                                }
                             } catch (e: Throwable) {
                                 System.err.println("Preload failed: ${e.message}")
                                 e.printStackTrace()
@@ -218,13 +258,14 @@ fun CodingSandbox(navController: NavController) {
                                 )
 
                                 if (assemblyPath.readText().contains(regexImports)) {
-                                    for (assemblyLine in assemblyPath.readLines())
-                                    {
-                                        println("[i]> $assemblyLine")
-                                    }
+                                    scriptScope.launch {
+                                        for (assemblyLine in assemblyPath.readLines()) {
+                                            println("[i]> $assemblyLine")
+                                        }
 
-                                    println("new one: ${assemblyPath.readText()}")
-                                    engine.eval(assemblyPath.readText(), scriptBindings)
+                                        println("new one: ${assemblyPath.readText()}")
+                                        engine.eval(assemblyPath.readText(), scriptBindings)
+                                    }
                                 }
 
                                 else {
@@ -242,8 +283,11 @@ fun CodingSandbox(navController: NavController) {
                             logToConsole(ResponseDto(time = Instant.now(), message = "Error: ${e.message}"))
                         }
                     }
-                    return@NavigationSidebar
+                    return@launch
                 }
+            }
+
+
             )
 
             Column(modifier = Modifier.fillMaxWidth(0.7f)) {

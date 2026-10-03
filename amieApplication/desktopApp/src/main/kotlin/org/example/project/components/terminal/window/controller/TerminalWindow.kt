@@ -42,7 +42,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.io.files.Path
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -98,9 +103,58 @@ data class GithubItemMetadata(
 val consoleData = mutableStateListOf<ResponseDto>()
 val logger = LoggerFactory.getLogger("TerminalWindow")
 
-fun logToConsole(dto: ResponseDto) {
-    consoleData.add(dto)
+
+object LogConsole {
+    private val logScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private val logChannel = Channel<ResponseDto>(Channel.UNLIMITED)
+
+    var logFilePath: String = "logs.txt"
+
+    init {
+        clearLogFile(logFilePath)
+        logScope.launch {
+            for (dto in logChannel) {
+                withContext(Dispatchers.Main) {
+                    consoleData.add(dto)
+                }
+
+                try {
+                    val file = File(logFilePath)
+                    val logText = if (dto.message != null) {
+                        "> ${dto.message}"
+                    } else {
+                        "> ${dto.time} ${dto.status}"
+                    }
+                    file.appendText("$logText\n")
+                } catch (e: Exception) {
+                    logger.error("Error writing to log file: ${e.message}")
+                }
+            }
+        }
+    }
+    fun clearLogFile(path: String = logFilePath) {
+        logScope.launch {
+            withContext(Dispatchers.Main) {
+                consoleData.clear()
+            }
+            try {
+                val file = File(path)
+                if (file.exists()) {
+                    file.writeText("") // Truncates the file to 0 bytes
+                } else {
+                    file.parentFile?.mkdirs()
+                    file.createNewFile()
+                }
+            } catch (e: Exception) {
+                logger.error("Error clearing log file: ${e.message}")
+            }
+        }
+    }
+    fun log(dto: ResponseDto) {
+        logChannel.trySend(dto)
+    }
 }
+fun logToConsole(dto: ResponseDto) = LogConsole.log(dto)
 
 @Composable
 fun TerminalWindow(
@@ -115,21 +169,6 @@ fun TerminalWindow(
     val client = remember { Client() }
     var messageOver by remember { mutableStateOf(TerminalTask()) }
     val loop = rememberCoroutineScope()
-
-    fun logToConsole(dto: ResponseDto) {
-        consoleData.add(dto)
-        try {
-            val file = File(logFilePath)
-            val logText = if (dto.message != null) {
-                "> ${dto.message}"
-            } else {
-                "> ${dto.time} ${dto.status}"
-            }
-            file.appendText("$logText\n")
-        } catch (e: Exception) {
-            logger.error("Error writing to log file: ${e.message}")
-        }
-    }
 
     LaunchedEffect(logFilePath) {
         val file = File(logFilePath)
@@ -293,24 +332,24 @@ fun TerminalWindow(
                             }
                         }
                         
-                        val scriptBindings = engine.createBindings().apply {
-                            put("logger", loggerObj)
-                        }
-
-                        loop.launch {
-                            logToConsole(ResponseDto(time = Instant.now(), message = "Running ${command[1]}"))
-                            val pluginPath = File(getDirectory().toString(), "pluginDir/${command[1]}.kts")
-                            try {
-                                if (pluginPath.exists()) {
-                                    engine.eval(pluginPath.readText(), scriptBindings)
-                                } else {
-                                    logToConsole(ResponseDto(time = Instant.now(), message = "Script not found: ${pluginPath.absolutePath}"))
-                                }
-                            } catch (e: Exception) {
-                                logger.error("Error running script: ${pluginPath}| ${e.message}")
-                                logToConsole(ResponseDto(time = Instant.now(), message = "Error: ${e.message}"))
-                            }
-                        }
+//                        val scriptBindings = engine.createBindings().apply {
+//                            put("logger", loggerObj)
+//                        }
+//
+//                        loop.launch {
+//                            logToConsole(ResponseDto(time = Instant.now(), message = "Running ${command[1]}"))
+//                            val pluginPath = File(getDirectory().toString(), "pluginDir/${command[1]}.kts")
+//                            try {
+//                                if (pluginPath.exists()) {
+//                                    engine.eval(pluginPath.readText(), scriptBindings)
+//                                } else {
+//                                    logToConsole(ResponseDto(time = Instant.now(), message = "Script not found: ${pluginPath.absolutePath}"))
+//                                }
+//                            } catch (e: Exception) {
+//                                logger.error("Error running script: ${pluginPath}| ${e.message}")
+//                                logToConsole(ResponseDto(time = Instant.now(), message = "Error: ${e.message}"))
+//                            }
+//                        }
                         textInput = ""
                         return
                     }

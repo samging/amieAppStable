@@ -474,4 +474,5 @@ class DeviceManagerJson(
             logToConsole(ResponseDto(time = Instant.now(), message = "corePlugins.json not found"))
         }
     }
+
 }
