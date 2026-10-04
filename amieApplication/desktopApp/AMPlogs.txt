@@ -84,3 +84,46 @@
 > hi
 > hi
 > hi
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> sales_report_2026.csv
+> importPlugin 
+> Error: java.lang.ClassNotFoundException: org.example.MainKt
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> sales_report_2026.csv
+> importPlugin 
+> Error: java.lang.ClassNotFoundException: org.example.MainKt
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> sales_report_2026.csv
+> importPlugin 
+> Error: java.lang.ClassNotFoundException: org.example.MainKt
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> hi
+> sales_report_2026.csv
+> importPlugin 
+> Error: java.lang.ClassNotFoundException: org.example.MainKt
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> ____________
+> sales_report_2026.csv
+> importPlugin 
+> Error: java.lang.ClassNotFoundException: org.example.MainKt
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> _____
+> sales_report_2026.csv
+> importPlugin 
+> RUNNING THE JAR -huge success!

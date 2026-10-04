@@ -39,6 +39,7 @@ import org.example.project.components.terminal.integrations.amiePilot.*
 import org.example.project.components.terminal.window.controller.envBuilder.BuildSettings
 import org.example.project.components.terminal.window.controller.envBuilder.SettingsEnv
 import org.example.project.components.terminal.window.controller.modelLoaders.ModelBuilder
+import org.example.project.components.terminal.window.controller.pluginEngine.JarInterpreter
 import org.slf4j.LoggerFactory
 import org.tensorflow.SavedModelBundle
 import org.tensorflow.TensorFlow
@@ -207,6 +208,8 @@ fun CodingSandbox(navController: NavController) {
                             val reader = DeviceManagerFactory.create(file)
                             reader.getPlugins()
                             logToConsole(ResponseDto(time = Instant.now(), message = "importPlugin $plugin"))
+                            val res = JarInterpreter().interpret()
+                            logToConsole(ResponseDto( time = Instant.now(), message = res.toString()))
                         }
 
 
