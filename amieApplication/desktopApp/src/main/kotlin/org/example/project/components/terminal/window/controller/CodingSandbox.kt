@@ -1,5 +1,6 @@
 package org.example.project.components.terminal.window.controller
 
+import ai.onnxruntime.OnnxTensor
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
@@ -16,7 +17,6 @@ import dev.snipme.highlights.model.SyntaxThemes
 import dev.snipme.kodeview.view.CodeEditText
 import org.jetbrains.jewel.foundation.theme.JewelTheme
 import org.jetbrains.jewel.intui.standalone.theme.IntUiTheme
-import org.jetbrains.jewel.ui.component.Text
 import org.example.project.components.ui.viewport.NavigationSidebar
 import java.io.File
 import java.nio.file.Path
@@ -24,28 +24,17 @@ import org.example.project.getDirectory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
-import androidx.compose.foundation.shape.CircleShape
 import kotlinx.coroutines.CoroutineScope
-import okio.Path.Companion.toPath
 import javax.script.ScriptEngine
 import javax.script.ScriptEngineManager
-import org.example.project.components.terminal.window.controller.ScriptLogger
-import org.example.project.components.terminal.window.controller.TerminalWindow
-import org.example.project.components.terminal.window.controller.ResponseDto
-import org.example.project.components.terminal.window.controller.logToConsole
 import java.time.Instant
-import org.example.project.components.terminal.integrations.amiePilot.*
 import org.example.project.components.terminal.window.controller.envBuilder.BuildSettings
 import org.example.project.components.terminal.window.controller.envBuilder.SettingsEnv
 import org.example.project.components.terminal.window.controller.modelLoaders.ModelBuilder
 import org.example.project.components.terminal.window.controller.pluginEngine.JarInterpreter
 import org.slf4j.LoggerFactory
-import org.tensorflow.SavedModelBundle
-import org.tensorflow.TensorFlow
 import org.example.project.components.terminal.window.controller.sourceFile.SourceCsv
 import org.example.project.data.remote.parser.DeviceManagerFactory
-import kotlin.math.log
 
 
 object ScriptEngineCache {
@@ -193,13 +182,20 @@ fun CodingSandbox(navController: NavController) {
                             logToConsole(ResponseDto(time = Instant.now(), message = "import $it"))
                         }
 
-                        override fun sourceFile(it: String, column: String) {
+                        override fun sourceFile(it: String, column: String): Pair<Int, List<String>> {
                                 val toFile = File(it)
+                                //return number of loops - how many lines has csv / format <<< must get soruceFile!
                                 if (toFile.exists()) {
-                                    when(toFile.extension) {
-                                        "csv" -> SourceCsv(it).get()
-                                        else -> logToConsole(ResponseDto(time = Instant.now(), message = "unsupported type"))
+                                    return when(toFile.extension) {
+                                        "csv" -> SourceCsv(it)[column]
+                                        else -> {
+                                            logToConsole(ResponseDto(time = Instant.now(), message = "unsupported type"))
+                                            Pair(0, emptyList())
+                                        }
                                     }
+                                } else {
+                                    logToConsole(ResponseDto(time = Instant.now(), message = "file not found"))
+                                    return Pair(0, emptyList())
                                 }
                         }
 
@@ -213,9 +209,18 @@ fun CodingSandbox(navController: NavController) {
                         }
 
 
-                        override fun modelBuilder(modelName: String, it: () -> Unit): ModelCreationalInterface {
+                        override fun modelBuilder(modelName: String, it: (Any) -> Any): ModelCreationalInterface {
                             println("INSIDE MODEL BUILDER")
-                            it()
+                            val resLambda = it( Pair(0, emptyList<String>()) )
+
+                            if(resLambda is Pair<*, *>) {
+                                // number of columns in dedicated file
+                                val (cols, b) = resLambda as Pair<Int, List<String>>
+                                println("LAMBDA EXPRESSION: $cols | $b")
+                            } else {
+                                logToConsole(ResponseDto(time = Instant.now(), message = "Expected Pair<Int, List<String>>"))
+                            }
+
 
                             try {
                                 // Force JavaCPP to extract and load C++ native libraries into process memory
@@ -227,15 +232,28 @@ fun CodingSandbox(navController: NavController) {
                                 System.err.println("Preload failed: ${e.message}")
                                 e.printStackTrace()
                             }
-                            try {
-                                val nodes = org.example.project.components.terminal.integrations.amiePilot.getShapeContext()
-                                //  org.example.project.components.terminal.integrations.amiePilot.createModel(nodes[0], nodes[1], nodes[2], modelName)
-                            } catch (e: java.lang.reflect.InvocationTargetException) {
-                                println("--- ROOT CAUSE OF SCRIPT FAILURE ---")
-                                e.cause?.printStackTrace() // <--- THIS WILL SHOW THE ACTUAL ERROR
-                            } catch (e: Throwable) {
-                                e.printStackTrace()
-                            }
+                                try {
+                                    val nodes = org.example.project.components.terminal.integrations.amiePilot.getShapeContext()
+                                    val tensor = org.example.project.components.terminal.integrations.amiePilot.getTensor()
+                                    //org.example.project.components.terminal.integrations.amiePilot.createModel
+
+                                    //inspect the feed, if it's a those are the dims...
+                                    logToConsole(ResponseDto(time = Instant.now(), message = ("0: " + nodes[0].toString() + "1: " + nodes[1].toString() + "2: " + nodes[2].toString())))
+                                    if (tensor != null) {
+                                        org.example.project.components.terminal.window.controller.jetbrainDLBuilder.build(
+                                            tensor,
+                                            nodes[0],
+                                            nodes[1],
+                                            nodes[2],
+                                            modelName
+                                        )
+                                    }
+                                } catch (e: java.lang.reflect.InvocationTargetException) {
+                                    println("--- FAILURE ---")
+                                    e.cause?.printStackTrace()
+                                } catch (e: Throwable) {
+                                    e.printStackTrace()
+                                }
                             return object : ModelCreationalInterface() {
                             }
                         }

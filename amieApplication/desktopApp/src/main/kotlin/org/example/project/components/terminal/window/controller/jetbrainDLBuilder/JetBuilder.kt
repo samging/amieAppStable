@@ -1,5 +1,6 @@
 package org.example.project.components.terminal.window.controller.jetbrainDLBuilder
 
+import ai.onnxruntime.OnnxTensor
 import org.jetbrains.kotlinx.dl.api.core.Sequential
 import org.jetbrains.kotlinx.dl.api.core.activation.Activations
 import org.jetbrains.kotlinx.dl.api.core.initializer.GlorotUniform
@@ -9,9 +10,33 @@ import org.jetbrains.kotlinx.dl.api.core.loss.Losses
 import org.jetbrains.kotlinx.dl.api.core.metric.Metrics
 import org.jetbrains.kotlinx.dl.api.core.optimizer.Adam
 import org.jetbrains.kotlinx.dl.dataset.OnHeapDataset
+import org.jetbrains.kotlinx.dl.impl.preprocessing.mean
 import java.util.Locale
 
-fun run() {
+
+//sentence -> mean pooling -> dense -> softmax
+//down casting the 12 vectors into a 768 vector
+
+fun meanPooling(tensor: Array<Array<FloatArray>>) : FloatArray {
+    val contextualSize = tensor.size //batches
+    val seqLength = tensor[0].size //sequences
+    val hiddenSize = tensor[0][0].size //size of last layer
+    val sentenceVector = FloatArray(hiddenSize)
+    for (sequenceIdx in 0 until seqLength) {
+        for (dim in 0 until hiddenSize) {
+            sentenceVector[dim] += tensor[0][sequenceIdx][dim]
+        }
+    }
+    for (dim in 0 until hiddenSize) {
+        sentenceVector[dim] = sentenceVector[dim] / seqLength
+    }
+
+    println("sentenceVector: ${sentenceVector.contentToString()}")
+    return sentenceVector
+}
+
+fun build(tensor: Array<Array<FloatArray>>, dim1: Long, dim2: Long, dim3: Long, modelName: String) {
+    val pooledSentence = meanPooling(tensor)
     val x = arrayOf(
         floatArrayOf(0f, 0f),
         floatArrayOf(0f, 1f),
@@ -22,7 +47,7 @@ fun run() {
     val dataset = OnHeapDataset.create(x, y)
 
     val model = Sequential.of(
-        Input(2),
+        Input(dim3),
         Dense(8, activation = Activations.Relu, kernelInitializer = GlorotUniform()),
         Dense(1, activation = Activations.Sigmoid, kernelInitializer = GlorotUniform())
     )
@@ -45,7 +70,7 @@ fun run() {
         println("\n--- Predictions ---")
 
         x.forEach { input ->
-            val prediction = it.predict(input) // Direct value!
+            val prediction = it.predict(input)
             println("Input: [${input[0]}, ${input[1]}] -> Output: ${String.format(Locale.US, "%.4f", prediction)}")
         }
     }

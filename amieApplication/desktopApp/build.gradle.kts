@@ -14,6 +14,14 @@ java {
     }
 }
 
+afterEvaluate {
+    tasks.withType<JavaExec>().configureEach {
+        val launcher = javaToolchains.launcherFor(java.toolchain)
+        javaLauncher.set(launcher)
+        setExecutable(launcher.get().executablePath.asFile.absolutePath)
+    }
+}
+
 kotlin {
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_21)

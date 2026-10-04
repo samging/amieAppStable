@@ -127,3 +127,107 @@
 > sales_report_2026.csv
 > importPlugin 
 > RUNNING THE JAR -huge success!
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> _____
+> sales_report_2026.csv
+> importPlugin 
+> RUNNING THE JAR -huge success!
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> _____
+> sales_report_2026.csv
+> importPlugin 
+> RUNNING THE JAR -huge success!
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> _____
+> sales_report_2026.csv
+> importPlugin 
+> RUNNING THE JAR -huge success!
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> 1112
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> 0: 11: 12: 12
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> 0: 11: 12: 12
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> 0: 11: 12: 12
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> 0: 11: 12: 12
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> 0: 11: 12: 12
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> 0: 11: 122: 768
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> 0: 11: 122: 768
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> 0: 11: 122: 768
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> 0: 11: 122: 768
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> 0: 11: 122: 768
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> 0: 11: 122: 768
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> 0: 11: 122: 768
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> 0: 11: 122: 768
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> 0: 11: 122: 768
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> 0: 11: 122: 768
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> 0: 11: 122: 768
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> 0: 11: 122: 768
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> 0: 11: 122: 768
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> Error: ERROR 'return' is not allowed here (ScriptingHost56fac7a_Line_0.kts:5:23)
+ERROR Type mismatch: inferred type is String but ScriptingHost56fac7a_Line_0 was expected (ScriptingHost56fac7a_Line_0.kts:5:30)
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> 0: 11: 122: 768
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> Expected Pair<Int, List<String>>
+> 0: 11: 122: 768

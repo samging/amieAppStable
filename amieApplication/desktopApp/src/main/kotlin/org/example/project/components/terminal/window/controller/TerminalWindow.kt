@@ -316,8 +316,8 @@ fun TerminalWindow(
                                 return org.example.project.components.terminal.integrations.amiePilot.initContext()
                             }
 
-                            override fun modelBuilder(modelName: String, it: () -> Unit): ModelCreationalInterface {
-                                it()
+                            override fun modelBuilder(modelName: String, it: (Any) -> Any): ModelCreationalInterface {
+                                it("")
                                 try {
                                     val nodes = org.example.project.components.terminal.integrations.amiePilot.getShapeContext()
                                     //org.example.project.components.terminal.integrations.amiePilot.createModel(nodes[0], nodes[1], nodes[2], modelName)

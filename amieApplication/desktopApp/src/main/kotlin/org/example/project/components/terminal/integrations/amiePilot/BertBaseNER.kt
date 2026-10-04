@@ -22,7 +22,7 @@ import org.example.project.components.terminal.window.controller.ResponseDto
 
 interface ModelInterface {
     fun sayHello(): List<String>
-    fun getContextTensor(): MutableList<Array<Array<FloatArray>>>
+    fun getContextTensor(): OnnxTensor?
     fun close()
 }
 
@@ -33,6 +33,7 @@ class BertOnnxModel(val modelPath: String) : ModelInterface {
     private val env = OrtEnvironment.getEnvironment()
     private val modelDir = modelPath
     private val _tensorList = mutableListOf<Array<Array<FloatArray>>>()
+    private var lastHiddenStateTensor: OnnxTensor? = null
 
     val outputTensor: List<Array<Array<FloatArray>>>
         get() = _tensorList
@@ -84,10 +85,19 @@ class BertOnnxModel(val modelPath: String) : ModelInterface {
                 }
             }
         }
+//        println("---- raw results----")
+//            val tensor = results.get("last_hidden_state").orElse(null) as OnnxTensor
+//            @Suppress("UNCHECKED_CAST")
+//            val floatData = tensor.value as Array<Array<FloatArray>>
+//            val cls = floatData[0][0]
+//            println("Maybe [CLS]: " + cls.contentToString())
+//        println("---- E raw results----")
 
         session.outputNames.forEach { name ->
             println("Output: $name")
         }
+
+        lastHiddenStateTensor = results.get("last_hidden_state").orElse(null) as? OnnxTensor
 
         val hiddenStateTensor = results.get("last_hidden_state").orElse(null) as? OnnxTensor
         println("HIDDEN TENSOR: $hiddenStateTensor")
@@ -96,8 +106,9 @@ class BertOnnxModel(val modelPath: String) : ModelInterface {
             addOutputTensor(tensorOutput)
         }
         println(results)
-        println("tensorOutput: ${results.get("last_hidden_state")}")
+        println("tensorOutput: ${results.get("last_hidden_state").orElse(null)}")
 
+        @Suppress("UNCHECKED_CAST")
         val logitBatch = results.get(0).value as Array<Array<FloatArray>>
 
         val labels = logitBatch[0].map { tokenLogits ->
@@ -126,14 +137,14 @@ class BertOnnxModel(val modelPath: String) : ModelInterface {
         return outputModel
     }
 
-    override fun getContextTensor() : MutableList<Array<Array<FloatArray>>> {
-        if (_tensorList.isNotEmpty()) {
-            return _tensorList
+    override fun getContextTensor() : OnnxTensor? {
+        if (lastHiddenStateTensor != null)  {
+            return lastHiddenStateTensor
         } else {
             logToConsole(ResponseDto(time = Instant.now(), message = "TensorList is empty | ${_tensorList.size}"))
-            return emptyList<Array<Array<FloatArray>>>().toMutableList()
+            return null
         }
-        return emptyList<Array<Array<FloatArray>>>().toMutableList()
+        return null
     }
 
     override fun close() {
@@ -155,18 +166,29 @@ fun initContext() {
     try {
         inst.sayHello()
         val contextTensors = inst.getContextTensor()
-        logToConsole(ResponseDto(time = Instant.now(), message = "${contextTensors.size}"))
+        logToConsole(ResponseDto(time = Instant.now(), message = "${contextTensors}"))
     } finally {
         inst.close() //[H]AutoCloseable, check it out!
     }
 }
 
-fun getShapeContext() : List<Long> {
+fun getTensor(): Array<Array<FloatArray>>? {
     val inst = BertOnnxModel("/Users/samuel/Documents/onnx/bert/bge")
     try {
         inst.sayHello()
         val contextTensors = inst.getContextTensor()
-        return listOf(contextTensors.size.toLong(), contextTensors[0].size.toLong(), contextTensors[0][0].size.toLong())
+        return contextTensors?.value as Array<Array<FloatArray>>
+    } catch (e: Exception) { logToConsole(ResponseDto(time = Instant.now(), message = e.message.toString())) }
+    return null
+}
+fun getShapeContext() : List<Long> {
+    val inst = BertOnnxModel("/Users/samuel/Documents/onnx/bert/bge")
+    try {
+        inst.sayHello()
+        println("--- context tensors debug: ---")
+        val contextTensors = inst.getContextTensor()
+        println("printing informations gotten: " + contextTensors?.info?.shape?.contentToString())
+        return listOf<Long>(contextTensors?.info?.shape?.get(0) ?: 0, contextTensors?.info?.shape?.get(1) ?: 0, contextTensors?.info?.shape?.get(2) ?: 0)
     } finally {
         inst.close() //[H]AutoCloseable, check it out!
     }
