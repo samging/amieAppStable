@@ -70,7 +70,6 @@ fun CodingSandbox(navController: NavController) {
     var constraintSpecified by remember { mutableStateOf(true) }
     var goalSpecified by remember { mutableStateOf(true) }
     val coroutineScope = rememberCoroutineScope()
-    val loop = rememberCoroutineScope()
     val logger = LoggerFactory.getLogger("CodingSandbox")
 
     var highlights by remember {
@@ -110,83 +109,80 @@ fun CodingSandbox(navController: NavController) {
 
                 showPlayCallback = {
                     val scriptScope = CoroutineScope(Dispatchers.IO)
-                    CoroutineScope(Dispatchers.IO).launch {
-                    val engine = ScriptEngineCache.engine
+                    scriptScope.launch {
+                        val engine = ScriptEngineCache.engine
                         val gradleEngine = ScriptEngineCache.gradleEngine
 
-                    val loggerObj = object : ScriptLogger {
+                        val loggerObj = object : ScriptLogger {
 
-                        override fun log(message: String) {
-                            logToConsole(ResponseDto(time = Instant.now(), message = message))
-                        }
-
-                        override fun initAmie() {
-                            val result = org.example.project.components.terminal.integrations.amiePilot.initAmie()
-                            logToConsole(ResponseDto(time = Instant.now(), message = result.joinToString("\n")))
-                        }
-
-                        override fun importModelOnnx(it: Path) {
-                            try {
-                                require(it.toFile().exists())
-                            } catch(e: Exception) {
-                                logToConsole(ResponseDto(time = Instant.now(), message = "Error: ${e.message}"))
+                            override fun log(message: String) {
+                                logToConsole(ResponseDto(time = Instant.now(), message = message))
                             }
-                            logToConsole(ResponseDto(time = Instant.now(), message = "importModelOnnx"))
-                        }
 
-                        override fun importModelTensorflow(it: Path) {
-                            val o = ModelBuilder(it).load()
-                        }
+                            override fun initAmie() {
+                                val result = org.example.project.components.terminal.integrations.amiePilot.initAmie()
+                                logToConsole(ResponseDto(time = Instant.now(), message = result.joinToString("\n")))
+                            }
 
-                        override fun forwardContext(tokens: (matrix: LongArray) -> Unit) {
-                            tokens(LongArray(0))
-                            return org.example.project.components.terminal.integrations.amiePilot.initContext()
-                        }
-
-                        override fun validateMetrics(
-                            modelPath: Path,
-                            train: Path,
-                            test: Path) {
-                            logToConsole(ResponseDto(time = Instant.now(), message = "validateMetrics"))
-                        }
-
-                        override fun implementation(it: BuildSettings) {
-                            scriptScope.launch {
+                            override fun importModelOnnx(it: Path) {
                                 try {
-                                    gradleEngine.eval(it.toString())
-                                } catch (e: Exception) {
-                                    logToConsole(
-                                        ResponseDto(
-                                            time = Instant.now(),
-                                            message = "Error: ${e.message}"
-                                        )
-                                    )
+                                    require(it.toFile().exists())
+                                } catch(e: Exception) {
+                                    logToConsole(ResponseDto(time = Instant.now(), message = "Error: ${e.message}"))
                                 }
+                                logToConsole(ResponseDto(time = Instant.now(), message = "importModelOnnx"))
                             }
-                            logToConsole(ResponseDto(time = Instant.now(), message = "implementation $it "))
-                        }
 
-                        override fun import(it: SettingsEnv) {
-                            scriptScope.launch {
-                                try {
-                                    gradleEngine.eval(it.toString())
-                                } catch (e: Exception) {
-                                    logToConsole(
-                                        ResponseDto(
-                                            time = Instant.now(),
-                                            message = "Error: ${e.message}"
+                            override fun importModelTensorflow(it: Path) {
+                                val o = ModelBuilder(it).load()
+                            }
+
+                            override fun forwardContext(tokens: (matrix: LongArray) -> Unit) {
+                                tokens(LongArray(0))
+                                return org.example.project.components.terminal.integrations.amiePilot.initContext()
+                            }
+
+                            override fun validateMetrics(
+                                modelPath: Path,
+                                train: Path,
+                                test: Path) {
+                                logToConsole(ResponseDto(time = Instant.now(), message = "validateMetrics"))
+                            }
+
+                            override fun implementation(it: BuildSettings) {
+                                scriptScope.launch {
+                                    try {
+                                        gradleEngine.eval(it.toString())
+                                    } catch (e: Exception) {
+                                        logToConsole(
+                                            ResponseDto(
+                                                time = Instant.now(),
+                                                message = "Error: ${e.message}"
+                                            )
                                         )
-                                    )
+                                    }
                                 }
+                                logToConsole(ResponseDto(time = Instant.now(), message = "implementation $it "))
                             }
-                            logToConsole(ResponseDto(time = Instant.now(), message = "import $it"))
-                        }
 
-                        override fun sourceFile(it: String, column: String): Pair<Int, Map<Int, List<String>>> {
-                            // file size: Pair first
-                            // file content: Pair second (by col)
+                            override fun import(it: SettingsEnv) {
+                                scriptScope.launch {
+                                    try {
+                                        gradleEngine.eval(it.toString())
+                                    } catch (e: Exception) {
+                                        logToConsole(
+                                            ResponseDto(
+                                                time = Instant.now(),
+                                                message = "Error: ${e.message}"
+                                            )
+                                        )
+                                    }
+                                }
+                                logToConsole(ResponseDto(time = Instant.now(), message = "import $it"))
+                            }
+
+                            override fun sourceFile(it: String, column: String): Pair<Int, Map<Int, List<String>>> {
                                 val toFile = File(it)
-                                //return number of loops - how many lines has csv / format <<< must get soruceFile!
                                 if (toFile.exists()) {
                                     return when(toFile.extension) {
                                         "csv" -> SourceCsv(it)[column]
@@ -199,79 +195,78 @@ fun CodingSandbox(navController: NavController) {
                                     logToConsole(ResponseDto(time = Instant.now(), message = "file not found"))
                                     return Pair(0, emptyMap())
                                 }
-                        }
+                            }
 
-                        override fun importPlugin(plugin: String) {
-                            val file = File("/Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/corePlugins.json")
-                            val reader = DeviceManagerFactory.create(file)
-                            reader.getPlugins()
-                            logToConsole(ResponseDto(time = Instant.now(), message = "importPlugin $plugin"))
-                            val res = JarInterpreter().interpret()
-                            logToConsole(ResponseDto( time = Instant.now(), message = res.toString()))
-                        }
-
-
-                        override fun modelBuilder(modelName: String, it: (Any) -> Any): ModelCreationalInterface {
-                            println("INSIDE MODEL BUILDER")
-                            val resLambda = it( Pair(0, emptyList<String>()) )
-                            val tensorBuffer: MutableMap<Int, MutableList<Array<Array<FloatArray>>>> = mutableMapOf()
-
-                            if(resLambda is Pair<*, *>) {
-                                //@Suppress("UNCHECKED_CAST")
-                                val (cols, b) = resLambda as Pair<Int, Map<Int, List<String>>>
-                                for (i in 0 until cols) {
-                                    val res = org.example.project.components.terminal.integrations.amiePilot.getTensor(b[i].toString())
-                                    tensorBuffer[i] = if (res != null) mutableListOf(res) else mutableListOf()
-                                }
-                                println("LAMBDA EXPRESSION: $cols | $b")
-                            } else {
-                                logToConsole(ResponseDto(time = Instant.now(), message = "Expected Pair<Int, List<String>>"))
+                            override fun importPlugin(plugin: String) {
+                                val file = File("/Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/corePlugins.json")
+                                val reader = DeviceManagerFactory.create(file)
+                                reader.getPlugins()
+                                logToConsole(ResponseDto(time = Instant.now(), message = "importPlugin $plugin"))
+                                val res = JarInterpreter().interpret()
+                                logToConsole(ResponseDto( time = Instant.now(), message = res.toString()))
                             }
 
 
-                            try {
-                                // Force JavaCPP to extract and load C++ native libraries into process memory
-                                //SavedModelBundle.Loader.load(org.tensorflow.internal.c_api.global.tensorflow::class.java)
-                                CoroutineScope(Dispatchers.IO).launch {
-                                    //println("TensorFlow Native Version preloaded: ${TensorFlow.version()}")
-                                }
-                            } catch (e: Throwable) {
-                                System.err.println("Preload failed: ${e.message}")
-                                e.printStackTrace()
-                            }
-                                try {
-                                    val nodes = org.example.project.components.terminal.integrations.amiePilot.getShapeContext()
-                                    val tensor = org.example.project.components.terminal.integrations.amiePilot.getTensor()
-                                    //org.example.project.components.terminal.integrations.amiePilot.createModel
+                            override fun modelBuilder(modelName: String, it: (Any) -> Any): ModelCreationalInterface {
+                                println("INSIDE MODEL BUILDER")
+                                val resLambda = it( Pair(0, emptyList<String>()) )
+                                val tensorBuffer: MutableMap<Int, MutableList<Array<Array<FloatArray>>>> = mutableMapOf()
 
-                                    //inspect the feed, if it's a those are the dims...
-                                    logToConsole(ResponseDto(time = Instant.now(), message = ("0: " + nodes[0].toString() + "1: " + nodes[1].toString() + "2: " + nodes[2].toString())))
-                                    if (tensor != null) {
-                                        org.example.project.components.terminal.window.controller.jetbrainDLBuilder.build(
-                                            tensor,
-                                            nodes[0],
-                                            nodes[1],
-                                            nodes[2],
-                                            modelName
-                                        )
+                                if(resLambda is Pair<*, *>) {
+                                    //@Suppress("UNCHECKED_CAST")
+                                    val (cols, b) = resLambda as Pair<Int, List<String>>
+                                    for (i in 0 until cols) {
+                                        val res = org.example.project.components.terminal.integrations.amiePilot.getTensor(b[i].toString())
+                                        tensorBuffer[i] = if (res != null) mutableListOf(res) else mutableListOf()
                                     }
-                                } catch (e: java.lang.reflect.InvocationTargetException) {
-                                    println("--- FAILURE ---")
-                                    e.cause?.printStackTrace()
+                                    println("LAMBDA EXPRESSION: $cols | $b")
+                                } else {
+                                    logToConsole(ResponseDto(time = Instant.now(), message = "Expected Pair<Int, List<String>>"))
+                                }
+
+
+                                try {
+                                    // Force JavaCPP to extract and load C++ native libraries into process memory
+                                    //SavedModelBundle.Loader.load(org.tensorflow.internal.c_api.global.tensorflow::class.java)
+                                    CoroutineScope(Dispatchers.IO).launch {
+                                        //println("TensorFlow Native Version preloaded: ${TensorFlow.version()}")
+                                    }
                                 } catch (e: Throwable) {
+                                    System.err.println("Preload failed: ${e.message}")
                                     e.printStackTrace()
                                 }
-                            return object : ModelCreationalInterface() {
+                                    try {
+                                        val nodes = org.example.project.components.terminal.integrations.amiePilot.getShapeContext()
+                                        val tensor = org.example.project.components.terminal.integrations.amiePilot.getTensor()
+                                        //org.example.project.components.terminal.integrations.amiePilot.createModel
+
+                                        //inspect the feed, if it's a those are the dims...
+                                        logToConsole(ResponseDto(time = Instant.now(), message = ("0: " + nodes[0].toString() + "1: " + nodes[1].toString() + "2: " + nodes[2].toString())))
+                                        if (tensor != null) {
+                                            org.example.project.components.terminal.window.controller.jetbrainDLBuilder.build(
+                                                tensor,
+                                                nodes[0],
+                                                nodes[1],
+                                                nodes[2],
+                                                modelName
+                                            )
+                                        }
+                                    } catch (e: java.lang.reflect.InvocationTargetException) {
+                                        println("--- FAILURE ---")
+                                        e.cause?.printStackTrace()
+                                    } catch (e: Throwable) {
+                                        e.printStackTrace()
+                                    }
+                                return object : ModelCreationalInterface() {
+                                }
                             }
+
                         }
 
-                    }
+                        val scriptBindings = engine.createBindings().apply {
+                            put("logger", loggerObj)
+                        }
 
-                    val scriptBindings = engine.createBindings().apply {
-                        put("logger", loggerObj)
-                    }
-
-                    loop.launch {
                         logToConsole(ResponseDto(time = Instant.now(), message = "pluginDir/main.kt"))
 
                         val pluginPath = File(getDirectory().toString(), "pluginDir/main.kts")
@@ -318,9 +313,7 @@ fun CodingSandbox(navController: NavController) {
                             logToConsole(ResponseDto(time = Instant.now(), message = "Error: ${e.message}"))
                         }
                     }
-                    return@launch
                 }
-            }
 
 
             )

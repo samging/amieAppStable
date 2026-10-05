@@ -36,14 +36,13 @@ fun meanPooling(tensor: Array<Array<FloatArray>>) : FloatArray {
 }
 
 fun build(tensor: Array<Array<FloatArray>>, dim1: Long, dim2: Long, dim3: Long, modelName: String) {
-    val pooledSentence = meanPooling(tensor)
-    val x = arrayOf(
-        floatArrayOf(0f, 0f),
-        floatArrayOf(0f, 1f),
-        floatArrayOf(1f, 0f),
-        floatArrayOf(1f, 1f)
-    )
-    val y = floatArrayOf(0f, 1f, 1f, 0f)
+    val pooledSentence = meanPooling(tensor) //loops over sequences and generates pooled data
+    intentBuilder(pooledSentence, dim1, dim2, dim3)
+}
+
+fun intentBuilder(pooledSentence: FloatArray, dim1: Long, dim2: Long, dim3: Long) {
+    val x = arrayOf(pooledSentence)
+    val y = floatArrayOf(1f)
     val dataset = OnHeapDataset.create(x, y)
 
     val model = Sequential.of(
@@ -64,14 +63,14 @@ fun build(tensor: Array<Array<FloatArray>>, dim1: Long, dim2: Long, dim3: Long, 
         it.fit(
             dataset = dataset,
             epochs = 150,
-            batchSize = 4
+            batchSize = minOf(4, x.size)
         )
 
         println("\n--- Predictions ---")
 
         x.forEach { input ->
             val prediction = it.predict(input)
-            println("Input: [${input[0]}, ${input[1]}] -> Output: ${String.format(Locale.US, "%.4f", prediction)}")
+            println("Input shape: [${input.size}] -> Output: ${String.format(Locale.US, "%.4f", prediction)}")
         }
     }
 }

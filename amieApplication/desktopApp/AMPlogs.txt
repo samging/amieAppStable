@@ -231,3 +231,26 @@ ERROR Type mismatch: inferred type is String but ScriptingHost56fac7a_Line_0 was
 > /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
 > Expected Pair<Int, List<String>>
 > 0: 11: 122: 768
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> Expected Pair<Int, List<String>>
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> Text is empty
+> TensorList is empty | 0
+> null cannot be cast to non-null type kotlin.Array<kotlin.Array<kotlin.FloatArray>>
+> 0: 11: 42: 768
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> hi
+> hi
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> hi
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts
+> hi
