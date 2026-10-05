@@ -182,7 +182,9 @@ fun CodingSandbox(navController: NavController) {
                             logToConsole(ResponseDto(time = Instant.now(), message = "import $it"))
                         }
 
-                        override fun sourceFile(it: String, column: String): Pair<Int, List<String>> {
+                        override fun sourceFile(it: String, column: String): Pair<Int, Map<Int, List<String>>> {
+                            // file size: Pair first
+                            // file content: Pair second (by col)
                                 val toFile = File(it)
                                 //return number of loops - how many lines has csv / format <<< must get soruceFile!
                                 if (toFile.exists()) {
@@ -190,12 +192,12 @@ fun CodingSandbox(navController: NavController) {
                                         "csv" -> SourceCsv(it)[column]
                                         else -> {
                                             logToConsole(ResponseDto(time = Instant.now(), message = "unsupported type"))
-                                            Pair(0, emptyList())
+                                            Pair(0, emptyMap())
                                         }
                                     }
                                 } else {
                                     logToConsole(ResponseDto(time = Instant.now(), message = "file not found"))
-                                    return Pair(0, emptyList())
+                                    return Pair(0, emptyMap())
                                 }
                         }
 
@@ -212,10 +214,15 @@ fun CodingSandbox(navController: NavController) {
                         override fun modelBuilder(modelName: String, it: (Any) -> Any): ModelCreationalInterface {
                             println("INSIDE MODEL BUILDER")
                             val resLambda = it( Pair(0, emptyList<String>()) )
+                            val tensorBuffer: MutableMap<Int, MutableList<Array<Array<FloatArray>>>> = mutableMapOf()
 
                             if(resLambda is Pair<*, *>) {
-                                // number of columns in dedicated file
-                                val (cols, b) = resLambda as Pair<Int, List<String>>
+                                //@Suppress("UNCHECKED_CAST")
+                                val (cols, b) = resLambda as Pair<Int, Map<Int, List<String>>>
+                                for (i in 0 until cols) {
+                                    val res = org.example.project.components.terminal.integrations.amiePilot.getTensor(b[i].toString())
+                                    tensorBuffer[i] = if (res != null) mutableListOf(res) else mutableListOf()
+                                }
                                 println("LAMBDA EXPRESSION: $cols | $b")
                             } else {
                                 logToConsole(ResponseDto(time = Instant.now(), message = "Expected Pair<Int, List<String>>"))

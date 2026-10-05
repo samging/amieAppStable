@@ -21,7 +21,7 @@ import org.example.project.components.terminal.window.controller.ResponseDto
 //                 ) {}
 
 interface ModelInterface {
-    fun sayHello(): List<String>
+    fun sayHello(text: String): List<String>
     fun getContextTensor(): OnnxTensor?
     fun close()
 }
@@ -118,23 +118,30 @@ class BertOnnxModel(val modelPath: String) : ModelInterface {
         return labels
     }
 
-    override fun sayHello(): List<String>{
-        val encoded = tokenizer.encode("This is Daniel, how's your day?")
+    override fun sayHello(text: String): List<String>{
+        if (text.isNotEmpty()) {
+            val encoded = tokenizer.encode(text)
 
-        for((index, i) in encoded.tokens.indices.withIndex() ) {
-            val token = encoded.tokens[i]
-            val id = encoded.ids[i]
-            println("TOKEN: [$index] $token - $id")
+            for ((index, i) in encoded.tokens.indices.withIndex()) {
+                val token = encoded.tokens[i]
+                val id = encoded.ids[i]
+                println("TOKEN: [$index] $token - $id")
+            }
+
+            val tokenTypeIds = encoded.typeIds ?: LongArray(encoded.ids.size) { 0L }
+            val outputModel =
+                runModel(encoded.ids, encoded.attentionMask, tokenTypeIds, session, env)
+
+            outputModel.forEachIndexed { index, label ->
+                println("OUTPUT: $index - $label")
+            }
+
+            return outputModel
         }
-
-        val tokenTypeIds = encoded.typeIds ?: LongArray(encoded.ids.size) { 0L }
-        val outputModel = runModel(encoded.ids, encoded.attentionMask, tokenTypeIds, session, env)
-
-        outputModel.forEachIndexed { index, label ->
-            println("OUTPUT: $index - $label")
+        else {
+            logToConsole(ResponseDto(time = Instant.now(), message = "Text is empty"))
+            return emptyList()
         }
-
-        return outputModel
     }
 
     override fun getContextTensor() : OnnxTensor? {
@@ -155,7 +162,7 @@ class BertOnnxModel(val modelPath: String) : ModelInterface {
 fun initAmie(): List<String> {
     val inst = BertOnnxModel("/Users/samuel/Documents/onnx/bert")
     try {
-        return inst.sayHello()
+        return inst.sayHello("hello world")
     } finally {
         inst.close() //[H]AutoCloseable, check it out!
     }
@@ -164,7 +171,7 @@ fun initAmie(): List<String> {
 fun initContext() {
     val inst = BertOnnxModel("/Users/samuel/Documents/onnx/bert/bge")
     try {
-        inst.sayHello()
+        inst.sayHello("hello world")
         val contextTensors = inst.getContextTensor()
         logToConsole(ResponseDto(time = Instant.now(), message = "${contextTensors}"))
     } finally {
@@ -172,10 +179,10 @@ fun initContext() {
     }
 }
 
-fun getTensor(): Array<Array<FloatArray>>? {
+fun getTensor(text: String = ""): Array<Array<FloatArray>>? {
     val inst = BertOnnxModel("/Users/samuel/Documents/onnx/bert/bge")
     try {
-        inst.sayHello()
+        inst.sayHello(text)
         val contextTensors = inst.getContextTensor()
         return contextTensors?.value as Array<Array<FloatArray>>
     } catch (e: Exception) { logToConsole(ResponseDto(time = Instant.now(), message = e.message.toString())) }
@@ -184,7 +191,7 @@ fun getTensor(): Array<Array<FloatArray>>? {
 fun getShapeContext() : List<Long> {
     val inst = BertOnnxModel("/Users/samuel/Documents/onnx/bert/bge")
     try {
-        inst.sayHello()
+        inst.sayHello("hello world")
         println("--- context tensors debug: ---")
         val contextTensors = inst.getContextTensor()
         println("printing informations gotten: " + contextTensors?.info?.shape?.contentToString())

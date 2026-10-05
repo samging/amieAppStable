@@ -22,7 +22,7 @@ interface ScriptLogger {
     fun validateMetrics(modelPath: Path, train: Path, test: Path) {}
     fun implementation(it: BuildSettings) {}
     fun import(it: SettingsEnv) {}
-    fun sourceFile(it: String, column: String): Pair<Int,List<String>> {
+    fun sourceFile(it: String, column: String): Pair<Int, Map<Int, List<String>>> {
         return TODO("Provide the return value")
     }
     fun importPlugin(plugin: String) {}
