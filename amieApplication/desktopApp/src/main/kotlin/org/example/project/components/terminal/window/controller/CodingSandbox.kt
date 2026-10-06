@@ -25,6 +25,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.CoroutineScope
+import org.example.project.components.terminal.integrations.amiePilot.InteractionModel
 import javax.script.ScriptEngine
 import javax.script.ScriptEngineManager
 import java.time.Instant
@@ -119,11 +120,13 @@ fun CodingSandbox(navController: NavController) {
                                 logToConsole(ResponseDto(time = Instant.now(), message = message))
                             }
 
-                            override fun initAmie() {
-                                val result = org.example.project.components.terminal.integrations.amiePilot.initAmie()
+                            override fun initAmie(text: String) {
+                                val result = org.example.project.components.terminal.integrations.amiePilot.initAmie(text)
                                 logToConsole(ResponseDto(time = Instant.now(), message = result.joinToString("\n")))
                             }
-
+                            override  fun initMod() : InteractionModel {
+                                return org.example.project.components.terminal.integrations.amiePilot.InitMod().create()
+                            }
                             override fun importModelOnnx(it: Path) {
                                 try {
                                     require(it.toFile().exists())

@@ -9,6 +9,7 @@ import java.nio.file.Paths
 import java.time.Instant
 import org.example.project.components.terminal.window.controller.logToConsole
 import org.example.project.components.terminal.window.controller.ResponseDto
+import org.jetbrains.kotlin.fir.scopes.impl.overrides
 
 //open fun requirements(req: listOf<String>?) {
 //    if(req.isEmptyOrNull()) { return IllegalArgumentException("Can't be null or empty - program crash") }
@@ -158,14 +159,43 @@ class BertOnnxModel(val modelPath: String) : ModelInterface {
         session.close()
         env.close()
     }
+
+    fun metadata() : Any {
+        return session.metadata
+    }
 }
-fun initAmie(): List<String> {
+fun initAmie(text: String): List<String> {
     val inst = BertOnnxModel("/Users/samuel/Documents/onnx/bert")
     try {
-        return inst.sayHello("hello world")
+        return inst.sayHello(text)
     } finally {
         inst.close() //[H]AutoCloseable, check it out!
     }
+}
+
+class InitMod {
+    private val inst = BertOnnxModel("/Users/samuel/Documents/onnx/bert")
+
+    fun create() : InteractionModel {
+        return object : InteractionModel {
+
+            override fun getStatus(): Any {
+                return inst.metadata()
+            }
+
+            override fun inference(text: String): List<String> {
+                val res = inst.sayHello(text)
+                logToConsole(ResponseDto(time = Instant.now(), message = res.joinToString ("\n")))
+                return res
+            }
+
+            override fun close() {
+                inst.close()
+            }
+
+        }
+    }
+
 }
 
 fun initContext() {
@@ -184,6 +214,7 @@ fun getTensor(text: String = ""): Array<Array<FloatArray>>? {
     try {
         inst.sayHello(text)
         val contextTensors = inst.getContextTensor()
+        @Suppress("UNCHECKED_CAST")
         return contextTensors?.value as Array<Array<FloatArray>>
     } catch (e: Exception) { logToConsole(ResponseDto(time = Instant.now(), message = e.message.toString())) }
     return null

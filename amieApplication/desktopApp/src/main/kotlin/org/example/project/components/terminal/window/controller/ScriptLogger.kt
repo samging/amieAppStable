@@ -1,5 +1,6 @@
 package org.example.project.components.terminal.window.controller
 
+import org.example.project.components.terminal.integrations.amiePilot.InteractionModel
 import java.nio.file.Path
 import org.example.project.components.terminal.window.controller.logToConsole
 import org.example.project.components.terminal.window.controller.ResponseDto
@@ -13,7 +14,8 @@ import java.time.Instant
  */
 interface ScriptLogger {
     fun log(message: String)
-    fun initAmie()
+    fun initAmie(text: String)
+    fun initMod() : InteractionModel
     
     // Default no-op implementations for optional script actions
     fun importModelOnnx(it: Path) {}

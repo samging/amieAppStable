@@ -65,6 +65,7 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import org.example.project.components.terminal.integrations.amiePilot.InteractionModel
 import org.example.project.ui.theme.UnifiedBodyBackground
 import javax.script.ScriptEngineManager
 
@@ -306,8 +307,11 @@ fun TerminalWindow(
                             override fun log(message: String) {
                                 logToConsole(ResponseDto(time = Instant.now(), message = message))
                             }
-                            override fun initAmie() {
-                                val result = org.example.project.components.terminal.integrations.amiePilot.initAmie()
+                            override fun initMod() : InteractionModel {
+                                return org.example.project.components.terminal.integrations.amiePilot.InitMod().create()
+                            }
+                            override fun initAmie(text: String) {
+                                val result = org.example.project.components.terminal.integrations.amiePilot.initAmie(text)
                                 logToConsole(ResponseDto(time = Instant.now(), message = result.joinToString("\n")))
                             }
 
