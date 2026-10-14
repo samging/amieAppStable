@@ -38,16 +38,17 @@ val GutterBackground = Color(0xFF0D0D0D)
 val LineNumberColor = Color(0xFF5A5A5A)
 
 // Console log levels: one hue per level so the chips and badges are told apart at a glance
-val LogInfoColor = Color(0xFF79B8FF)      // blue
-val LogErrorColor = Color(0xFFFF7B72)     // red
-val LogDataColor = Color(0xFF7EE787)      // green
-val LogInternalColor = Color(0xFFD2A8FF)  // violet
+// Calmed down: the levels are told apart by their badge text and three grays; only an error carries a hue
+val LogInfoColor = Color(0xFFB4BCC8)      // light gray
+val LogErrorColor = Color(0xFFD9726B)     // muted red
+val LogDataColor = Color(0xFF9AA8B8)      // gray-blue
+val LogInternalColor = Color(0xFF7D7D7D)  // mid gray
 val LogTimestampColor = Color(0xFF6E7681)
-// Message text: neutral for ordinary lines, a light tint of the level for errors and data
+// Message text: one neutral for every ordinary line, a light tint only for errors
 val LogMessageColor = Color(0xFFD8DEE6)
-val LogErrorTextColor = Color(0xFFFFB4AE)
-val LogDataTextColor = Color(0xFFC6F0CF)
-val LogInternalTextColor = Color(0xFFE2D6F5)
+val LogErrorTextColor = Color(0xFFF0B8B3)
+val LogDataTextColor = LogMessageColor
+val LogInternalTextColor = Color(0xFFC4C8CE)
 // Alternate rows get a faint stripe so wrapped lines stay grouped
 val LogRowStripe = Color(0x0AFFFFFF)
 
@@ -78,11 +79,24 @@ val CodeBackground = Color(0xFF0B0B0B)
 val ChipBackground = Color(0xFF1F1F1F)
 val ChipHoverBackground = Color(0xFF2C2C2C)
 val ChipBorderColor = Color(0xFF343434)
+// The actions that end something (Terminate, Stop, Destroy): a dark red that brightens on hover
+val DangerButton = Color(0xFF5E2222)
+val DangerButtonHover = Color(0xFF7A2D2D)
+val DangerButtonBorder = Color(0xFF7F3434)
 // The one accent on the page: the actions that create, build, validate or search (the header's + blue), and
 // the charts. ChartSecond is the second series next to it, checked for colour-blind separation on the panel.
 val PageAccent = Color(0xFF2B5797)
 val PageAccentHover = Color(0xFF356AB5)
 val AccentButtonHover = PageAccentHover
-val ChartAccent = Color(0xFF3568C4)
-val ChartSecond = Color(0xFFC9742A)
+// Charts: one muted slate hue in three steps (dark, mid, light) and a gray; nothing vivid, nothing warm
+val ChartAccent = Color(0xFF7D93AD)
+val ChartSecond = Color(0xFFA9ADB3)
+val ChartMarkDark = Color(0xFF4E6480)
+val ChartMarkMid = Color(0xFF7D93AD)
+val ChartMarkLight = Color(0xFFC3CEDB)
 val ChartGrid = Color(0xFF242424)
+// Heatmap cells: one hue, dark to light, so a bright cell reads as a large value on the dark panel. Text on a
+// cell switches to the dark ink once the cell is lighter than the midpoint.
+val ChartHeatLow = Color(0xFF1B1F25)
+val ChartHeatHigh = Color(0xFFBCC8D6)
+val ChartInkDark = Color(0xFF0B0B0B)

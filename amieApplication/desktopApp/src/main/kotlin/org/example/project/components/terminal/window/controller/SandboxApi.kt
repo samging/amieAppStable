@@ -88,7 +88,7 @@ object SandboxApi {
         fn("data", "Prints a data line in the console", Param("message", STRING)),
         fn("initAmie", "Runs text through the Amie pilot and prints its answer", Param("text", STRING)),
         fn("initMod", "Opens the default interaction model", returns = INTERACTION_MODEL),
-        fn("initMod", "Opens a session: the module modelBuilder exported to AMP/modules/<modelName>, or a new instance of a package jar when the name ends in .jar (local or fetched from the Amie server)", Param("modelName", STRING), returns = INTERACTION_MODEL),
+        fn("initMod", "The session of the module modelBuilder exported to AMP/modules/<modelName>: the one already open on it, else a new one. A new instance of a package jar when the name ends in .jar (local or fetched from the Amie server)", Param("modelName", STRING), returns = INTERACTION_MODEL),
         prop("packages", JAR_PACKAGES, "Package jar sessions: packages.available(), packages.fetch(\"x.jar\"), packages.print(), packages.closeAll()"),
         fn("importModelOnnx", "A fixed ONNX model with initMod's interface; its session is managed by sessions", Param("it", PATH), returns = "$INTERACTION_MODEL?"),
         fn("importModelOnnx", "A fixed ONNX model with initMod's interface, by file path", Param("path", STRING), returns = "$INTERACTION_MODEL?"),

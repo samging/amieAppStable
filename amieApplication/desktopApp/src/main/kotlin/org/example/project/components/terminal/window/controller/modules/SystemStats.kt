@@ -21,7 +21,16 @@ data class SystemStats(
     val ortRuns: Int,
     val ortRunTimeMs: Long,
     val listening: Int,
+    // What the whole process holds (resident set, heap and native together), 0 when the platform can't say
+    val residentBytes: Long = 0,
+    // The machine's RAM and what is still free of it, 0 when the platform can't say
+    val physicalBytes: Long = 0,
+    val physicalFreeBytes: Long = 0,
 ) {
+    /** The share of the machine's RAM this process holds, 0..1, or -1 when unknown */
+    val residentShare: Double get() = if (physicalBytes <= 0 || residentBytes <= 0) -1.0 else residentBytes.toDouble() / physicalBytes
+    val heapShare: Double get() = if (heapMaxBytes <= 0) 0.0 else heapUsedBytes.toDouble() / heapMaxBytes
+
     companion object {
         private val runtimeBean = ManagementFactory.getRuntimeMXBean()
         private val memoryBean = ManagementFactory.getMemoryMXBean()
@@ -46,8 +55,19 @@ data class SystemStats(
                 ortRuns = sessions.sumOf { it.runs },
                 ortRunTimeMs = sessions.sumOf { it.runTimeMs },
                 listening = ModelServer.listening.size,
+                residentBytes = residentBytes(),
+                physicalBytes = os?.totalMemorySize ?: 0,
+                physicalFreeBytes = os?.freeMemorySize ?: 0,
             )
         }
+
+        // ps reports the resident set in KB on macOS and Linux; the JVM has no API for it
+        private fun residentBytes(): Long = runCatching {
+            val process = ProcessBuilder("ps", "-o", "rss=", "-p", ProcessHandle.current().pid().toString()).redirectErrorStream(true).start()
+            val out = process.inputStream.bufferedReader().readText().trim()
+            process.waitFor()
+            out.toLongOrNull()?.times(1024) ?: 0L
+        }.getOrDefault(0L)
     }
 }
 

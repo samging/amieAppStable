@@ -550,6 +550,282 @@
                 ]
             ],
             "validation": "sample-intents.csv"
+        },
+        {
+            "createdAt": "2026-10-14T18:31:21.763272Z",
+            "samples": 45,
+            "trainSize": 0,
+            "validationSize": 45,
+            "accuracy": 1.0,
+            "macroF1": 1.0,
+            "labels": {
+                "greeting": {
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0,
+                    "support": 15
+                },
+                "lights": {
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0,
+                    "support": 15
+                },
+                "weather": {
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0,
+                    "support": 15
+                }
+            },
+            "confusion": [
+                [
+                    15,
+                    0,
+                    0
+                ],
+                [
+                    0,
+                    15,
+                    0
+                ],
+                [
+                    0,
+                    0,
+                    15
+                ]
+            ],
+            "validation": "sample-intents.csv"
+        },
+        {
+            "createdAt": "2026-10-14T18:31:24.952267Z",
+            "samples": 45,
+            "trainSize": 0,
+            "validationSize": 45,
+            "accuracy": 1.0,
+            "macroF1": 1.0,
+            "labels": {
+                "greeting": {
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0,
+                    "support": 15
+                },
+                "lights": {
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0,
+                    "support": 15
+                },
+                "weather": {
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0,
+                    "support": 15
+                }
+            },
+            "confusion": [
+                [
+                    15,
+                    0,
+                    0
+                ],
+                [
+                    0,
+                    15,
+                    0
+                ],
+                [
+                    0,
+                    0,
+                    15
+                ]
+            ],
+            "validation": "sample-intents.csv"
+        },
+        {
+            "createdAt": "2026-10-14T18:31:26.331669Z",
+            "samples": 45,
+            "trainSize": 0,
+            "validationSize": 45,
+            "accuracy": 1.0,
+            "macroF1": 1.0,
+            "labels": {
+                "greeting": {
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0,
+                    "support": 15
+                },
+                "lights": {
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0,
+                    "support": 15
+                },
+                "weather": {
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0,
+                    "support": 15
+                }
+            },
+            "confusion": [
+                [
+                    15,
+                    0,
+                    0
+                ],
+                [
+                    0,
+                    15,
+                    0
+                ],
+                [
+                    0,
+                    0,
+                    15
+                ]
+            ],
+            "validation": "sample-intents.csv"
+        },
+        {
+            "createdAt": "2026-10-14T18:31:27.808897Z",
+            "samples": 45,
+            "trainSize": 0,
+            "validationSize": 45,
+            "accuracy": 1.0,
+            "macroF1": 1.0,
+            "labels": {
+                "greeting": {
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0,
+                    "support": 15
+                },
+                "lights": {
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0,
+                    "support": 15
+                },
+                "weather": {
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0,
+                    "support": 15
+                }
+            },
+            "confusion": [
+                [
+                    15,
+                    0,
+                    0
+                ],
+                [
+                    0,
+                    15,
+                    0
+                ],
+                [
+                    0,
+                    0,
+                    15
+                ]
+            ],
+            "validation": "sample-intents.csv"
+        },
+        {
+            "createdAt": "2026-10-14T18:31:29.211853Z",
+            "samples": 45,
+            "trainSize": 0,
+            "validationSize": 45,
+            "accuracy": 1.0,
+            "macroF1": 1.0,
+            "labels": {
+                "greeting": {
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0,
+                    "support": 15
+                },
+                "lights": {
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0,
+                    "support": 15
+                },
+                "weather": {
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0,
+                    "support": 15
+                }
+            },
+            "confusion": [
+                [
+                    15,
+                    0,
+                    0
+                ],
+                [
+                    0,
+                    15,
+                    0
+                ],
+                [
+                    0,
+                    0,
+                    15
+                ]
+            ],
+            "validation": "sample-intents.csv"
+        },
+        {
+            "createdAt": "2026-10-14T18:31:30.534930Z",
+            "samples": 45,
+            "trainSize": 0,
+            "validationSize": 45,
+            "accuracy": 1.0,
+            "macroF1": 1.0,
+            "labels": {
+                "greeting": {
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0,
+                    "support": 15
+                },
+                "lights": {
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0,
+                    "support": 15
+                },
+                "weather": {
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0,
+                    "support": 15
+                }
+            },
+            "confusion": [
+                [
+                    15,
+                    0,
+                    0
+                ],
+                [
+                    0,
+                    15,
+                    0
+                ],
+                [
+                    0,
+                    0,
+                    15
+                ]
+            ],
+            "validation": "sample-intents.csv"
         }
     ]
 }

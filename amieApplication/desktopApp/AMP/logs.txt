@@ -2027,3 +2027,461 @@ Waiting for logs...
 > [INTERNAL] [internal] 2026-10-14T18:11:10.693952Z validate: 'yourmamma' on sample-intents.csv: 45 rows, accuracy 1.000, macro F1 1.000
 > [INTERNAL] [internal] 2026-10-14T18:11:37.362545Z collections: 'jvm21' holds 1 jars
 > [INTERNAL] [internal] 2026-10-14T18:11:39.242247Z collections: 'amie-demo-1.0.0.jar' detached from 'jvm21'
+> [INTERNAL] [internal] 2026-10-14T18:24:09.748570Z collections: 'jvm21' deleted
+> [INFO] [sandbox] 2026-10-14T18:24:42.723183Z Running pluginDir/main.kts
+> [INTERNAL] [internal] 2026-10-14T18:24:42.735489Z env 'default': sourcing no new imports
+> [INTERNAL] [internal] 2026-10-14T18:24:42.735978Z env 'default': sourced 1 packages, 1 in environment
+> [INTERNAL] [internal] 2026-10-14T18:24:44.688320Z ort: session #7 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:24:45.157353Z ort: session #8 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:24:45.198680Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T18:24:45.215204Z initMod: 'dummy' -> lights:0.6714898, weather:0.49647042, greeting:0.3300981
+> [INFO] [sandbox] 2026-10-14T18:24:45.217866Z Finished in 2s
+> [INFO] [sandbox] 2026-10-14T18:24:46.600413Z Running pluginDir/main.kts
+> [INTERNAL] [internal] 2026-10-14T18:24:46.600673Z env 'default': sourcing no new imports
+> [INTERNAL] [internal] 2026-10-14T18:24:46.600988Z env 'default': sourced 1 packages, 1 in environment
+> [INTERNAL] [internal] 2026-10-14T18:24:46.898659Z ort: session #9 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:24:47.299357Z ort: session #10 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:24:47.320664Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T18:24:47.567230Z initMod: 'dummy' -> lights:0.6714898, weather:0.49647042, greeting:0.3300981
+> [INFO] [sandbox] 2026-10-14T18:24:47.568274Z Finished in 0s
+> [INFO] [sandbox] 2026-10-14T18:25:06.015589Z Running pluginDir/main.kts
+> [INTERNAL] [internal] 2026-10-14T18:25:06.017339Z env 'default': sourcing no new imports
+> [INTERNAL] [internal] 2026-10-14T18:25:06.019015Z env 'default': sourced 1 packages, 1 in environment
+> [INTERNAL] [internal] 2026-10-14T18:25:06.434579Z ort: session #11 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:25:07.052363Z ort: session #12 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:25:07.094187Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T18:25:07.122564Z initMod: 'dummy' -> lights:0.6714898, weather:0.49647042, greeting:0.3300981
+> [INFO] [sandbox] 2026-10-14T18:25:07.124225Z Finished in 1s
+> [INFO] [sandbox] 2026-10-14T18:25:07.771610Z Running pluginDir/main.kts
+> [INTERNAL] [internal] 2026-10-14T18:25:07.772478Z env 'default': sourcing no new imports
+> [INTERNAL] [internal] 2026-10-14T18:25:07.773240Z env 'default': sourced 1 packages, 1 in environment
+> [INTERNAL] [internal] 2026-10-14T18:25:08.045194Z ort: session #13 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:25:08.451240Z ort: session #14 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:25:08.467704Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T18:25:08.697183Z initMod: 'dummy' -> lights:0.6714898, weather:0.49647042, greeting:0.3300981
+> [INFO] [sandbox] 2026-10-14T18:25:08.699634Z Finished in 0s
+> [INTERNAL] [internal] 2026-10-14T18:31:16.511147Z source: sample-intents.csv [text=text, label=label, 45 rows]
+> [INTERNAL] [internal] 2026-10-14T18:31:16.522735Z ort: session #1 'module:yourmamma' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/yourmamma/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:31:16.891160Z ort: session #2 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:31:21.148152Z encoder: loaded bge (415.6 MB on disk)
+> [INTERNAL] [internal] 2026-10-14T18:31:21.152732Z initMod: 'yourmamma' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T18:31:21.267766Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:21.279372Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:21.289207Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:21.298525Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:21.306593Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:21.326082Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:21.339933Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:21.348929Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:21.362060Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:21.370284Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:21.377114Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:21.388745Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:21.399050Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:21.407105Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:21.418257Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:21.432365Z initMod: 'yourmamma' -> lights:0.99992967, greeting:7.038E-5, weather:8.40863E-9
+> [INTERNAL] [internal] 2026-10-14T18:31:21.453663Z initMod: 'yourmamma' -> lights:0.99999, greeting:9.972494E-6, weather:3.1762686E-9
+> [INTERNAL] [internal] 2026-10-14T18:31:21.474164Z initMod: 'yourmamma' -> lights:0.9999541, greeting:4.592396E-5, weather:1.7472518E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:21.483162Z initMod: 'yourmamma' -> lights:0.9999106, greeting:8.9336805E-5, weather:1.396221E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:21.502049Z initMod: 'yourmamma' -> lights:0.9999845, greeting:1.554593E-5, weather:9.462277E-10
+> [INTERNAL] [internal] 2026-10-14T18:31:21.510944Z initMod: 'yourmamma' -> lights:0.99979347, greeting:2.065538E-4, weather:1.1571642E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:21.525213Z initMod: 'yourmamma' -> lights:0.9998871, greeting:1.1275596E-4, weather:1.1221534E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:21.538453Z initMod: 'yourmamma' -> lights:0.9999472, greeting:5.2734176E-5, weather:8.7882746E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:21.551601Z initMod: 'yourmamma' -> lights:0.999972, greeting:2.7998045E-5, weather:1.9948687E-9
+> [INTERNAL] [internal] 2026-10-14T18:31:21.565631Z initMod: 'yourmamma' -> lights:0.9999856, greeting:1.4253345E-5, weather:1.0648165E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:21.572312Z initMod: 'yourmamma' -> lights:0.9999349, greeting:6.5057444E-5, weather:2.6930861E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:21.579983Z initMod: 'yourmamma' -> lights:0.99999416, greeting:5.8476703E-6, weather:1.6762045E-9
+> [INTERNAL] [internal] 2026-10-14T18:31:21.589275Z initMod: 'yourmamma' -> lights:0.9997279, greeting:2.721318E-4, weather:4.587332E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:21.605151Z initMod: 'yourmamma' -> lights:0.9998909, greeting:1.08347864E-4, weather:6.97317E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:21.616300Z initMod: 'yourmamma' -> lights:0.9999509, greeting:4.91372E-5, weather:9.9504955E-9
+> [INTERNAL] [internal] 2026-10-14T18:31:21.629419Z initMod: 'yourmamma' -> weather:0.9999958, greeting:3.6338724E-6, lights:5.0697133E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:21.639149Z initMod: 'yourmamma' -> weather:0.9999995, greeting:3.746941E-7, lights:7.553421E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:21.647074Z initMod: 'yourmamma' -> weather:0.9999751, greeting:2.2274868E-5, lights:2.6974126E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:21.656740Z initMod: 'yourmamma' -> weather:0.9998274, greeting:1.5849639E-4, lights:1.411984E-5
+> [INTERNAL] [internal] 2026-10-14T18:31:21.672282Z initMod: 'yourmamma' -> weather:0.9999697, greeting:2.5337162E-5, lights:4.927762E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:21.683342Z initMod: 'yourmamma' -> weather:0.99999523, greeting:4.010706E-6, lights:7.963453E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:21.692932Z initMod: 'yourmamma' -> weather:0.99999034, greeting:8.524366E-6, lights:1.1318293E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:21.702893Z initMod: 'yourmamma' -> weather:0.9999305, greeting:6.321174E-5, lights:6.2478844E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:21.709491Z initMod: 'yourmamma' -> weather:0.9999975, greeting:2.1797398E-6, lights:3.4026343E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:21.717162Z initMod: 'yourmamma' -> weather:0.99999917, greeting:7.2777425E-7, lights:1.3198935E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:21.723923Z initMod: 'yourmamma' -> weather:0.9996432, greeting:3.2337048E-4, lights:3.3464217E-5
+> [INTERNAL] [internal] 2026-10-14T18:31:21.732180Z initMod: 'yourmamma' -> weather:0.9999211, greeting:6.757021E-5, lights:1.1366082E-5
+> [INTERNAL] [internal] 2026-10-14T18:31:21.741550Z initMod: 'yourmamma' -> weather:0.99997365, greeting:2.3602515E-5, lights:2.8009852E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:21.748779Z initMod: 'yourmamma' -> weather:0.99998987, greeting:8.739897E-6, lights:1.4344532E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:21.755559Z initMod: 'yourmamma' -> weather:0.9997229, greeting:2.3564765E-4, lights:4.144698E-5
+> [INTERNAL] [internal] 2026-10-14T18:31:21.756217Z ort: session #1 'module:yourmamma' cancelled
+> [INTERNAL] [internal] 2026-10-14T18:31:21.760060Z ort: session #2 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T18:31:21.762085Z encoder: bge released and closed
+> [INTERNAL] [internal] 2026-10-14T18:31:21.763135Z model yourmamma (#1): closed after 45 runs
+> [INTERNAL] [internal] 2026-10-14T18:31:21.765534Z validate: 'yourmamma' on sample-intents.csv: 45 rows, accuracy 1.000, macro F1 1.000
+> [INTERNAL] [internal] 2026-10-14T18:31:24.200698Z source: sample-intents.csv [text=text, label=label, 45 rows]
+> [INTERNAL] [internal] 2026-10-14T18:31:24.203423Z ort: session #3 'module:yourmamma' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/yourmamma/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:31:24.525711Z ort: session #4 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:31:24.541181Z encoder: loaded bge (415.6 MB on disk)
+> [INTERNAL] [internal] 2026-10-14T18:31:24.541272Z initMod: 'yourmamma' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T18:31:24.550795Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:24.560938Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:24.566363Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:24.576031Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:24.583429Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:24.596693Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:24.604493Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:24.611705Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:24.619482Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:24.627597Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:24.636694Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:24.645092Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:24.650853Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:24.656419Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:24.669482Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:24.682481Z initMod: 'yourmamma' -> lights:0.99992967, greeting:7.038E-5, weather:8.40863E-9
+> [INTERNAL] [internal] 2026-10-14T18:31:24.691063Z initMod: 'yourmamma' -> lights:0.99999, greeting:9.972494E-6, weather:3.1762686E-9
+> [INTERNAL] [internal] 2026-10-14T18:31:24.704309Z initMod: 'yourmamma' -> lights:0.9999541, greeting:4.592396E-5, weather:1.7472518E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:24.712621Z initMod: 'yourmamma' -> lights:0.9999106, greeting:8.9336805E-5, weather:1.396221E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:24.722837Z initMod: 'yourmamma' -> lights:0.9999845, greeting:1.554593E-5, weather:9.462277E-10
+> [INTERNAL] [internal] 2026-10-14T18:31:24.732585Z initMod: 'yourmamma' -> lights:0.99979347, greeting:2.065538E-4, weather:1.1571642E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:24.740688Z initMod: 'yourmamma' -> lights:0.9998871, greeting:1.1275596E-4, weather:1.1221534E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:24.749504Z initMod: 'yourmamma' -> lights:0.9999472, greeting:5.2734176E-5, weather:8.7882746E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:24.761756Z initMod: 'yourmamma' -> lights:0.999972, greeting:2.7998045E-5, weather:1.9948687E-9
+> [INTERNAL] [internal] 2026-10-14T18:31:24.771243Z initMod: 'yourmamma' -> lights:0.9999856, greeting:1.4253345E-5, weather:1.0648165E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:24.776040Z initMod: 'yourmamma' -> lights:0.9999349, greeting:6.5057444E-5, weather:2.6930861E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:24.783504Z initMod: 'yourmamma' -> lights:0.99999416, greeting:5.8476703E-6, weather:1.6762045E-9
+> [INTERNAL] [internal] 2026-10-14T18:31:24.794526Z initMod: 'yourmamma' -> lights:0.9997279, greeting:2.721318E-4, weather:4.587332E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:24.804163Z initMod: 'yourmamma' -> lights:0.9998909, greeting:1.08347864E-4, weather:6.97317E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:24.812541Z initMod: 'yourmamma' -> lights:0.9999509, greeting:4.91372E-5, weather:9.9504955E-9
+> [INTERNAL] [internal] 2026-10-14T18:31:24.822971Z initMod: 'yourmamma' -> weather:0.9999958, greeting:3.6338724E-6, lights:5.0697133E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:24.830915Z initMod: 'yourmamma' -> weather:0.9999995, greeting:3.746941E-7, lights:7.553421E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:24.838862Z initMod: 'yourmamma' -> weather:0.9999751, greeting:2.2274868E-5, lights:2.6974126E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:24.846421Z initMod: 'yourmamma' -> weather:0.9998274, greeting:1.5849639E-4, lights:1.411984E-5
+> [INTERNAL] [internal] 2026-10-14T18:31:24.854320Z initMod: 'yourmamma' -> weather:0.9999697, greeting:2.5337162E-5, lights:4.927762E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:24.863698Z initMod: 'yourmamma' -> weather:0.99999523, greeting:4.010706E-6, lights:7.963453E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:24.876484Z initMod: 'yourmamma' -> weather:0.99999034, greeting:8.524366E-6, lights:1.1318293E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:24.884743Z initMod: 'yourmamma' -> weather:0.9999305, greeting:6.321174E-5, lights:6.2478844E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:24.892627Z initMod: 'yourmamma' -> weather:0.9999975, greeting:2.1797398E-6, lights:3.4026343E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:24.905173Z initMod: 'yourmamma' -> weather:0.99999917, greeting:7.2777425E-7, lights:1.3198935E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:24.913988Z initMod: 'yourmamma' -> weather:0.9996432, greeting:3.2337048E-4, lights:3.3464217E-5
+> [INTERNAL] [internal] 2026-10-14T18:31:24.922540Z initMod: 'yourmamma' -> weather:0.9999211, greeting:6.757021E-5, lights:1.1366082E-5
+> [INTERNAL] [internal] 2026-10-14T18:31:24.931218Z initMod: 'yourmamma' -> weather:0.99997365, greeting:2.3602515E-5, lights:2.8009852E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:24.940342Z initMod: 'yourmamma' -> weather:0.99998987, greeting:8.739897E-6, lights:1.4344532E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:24.947395Z initMod: 'yourmamma' -> weather:0.9997229, greeting:2.3564765E-4, lights:4.144698E-5
+> [INTERNAL] [internal] 2026-10-14T18:31:24.947858Z ort: session #3 'module:yourmamma' cancelled
+> [INTERNAL] [internal] 2026-10-14T18:31:24.950475Z ort: session #4 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T18:31:24.952045Z encoder: bge released and closed
+> [INTERNAL] [internal] 2026-10-14T18:31:24.952214Z model yourmamma (#2): closed after 45 runs
+> [INTERNAL] [internal] 2026-10-14T18:31:24.953359Z validate: 'yourmamma' on sample-intents.csv: 45 rows, accuracy 1.000, macro F1 1.000
+> [INTERNAL] [internal] 2026-10-14T18:31:25.778792Z source: sample-intents.csv [text=text, label=label, 45 rows]
+> [INTERNAL] [internal] 2026-10-14T18:31:25.779502Z ort: session #5 'module:yourmamma' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/yourmamma/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:31:25.958917Z ort: session #6 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:31:25.969151Z encoder: loaded bge (415.6 MB on disk)
+> [INTERNAL] [internal] 2026-10-14T18:31:25.969206Z initMod: 'yourmamma' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T18:31:25.978508Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:25.987967Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:25.993068Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:26.001454Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:26.009077Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:26.018185Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:26.026141Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:26.033462Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:26.041119Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:26.047406Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:26.052679Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:26.060555Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:26.066863Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:26.072120Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:26.078594Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:26.086428Z initMod: 'yourmamma' -> lights:0.99992967, greeting:7.038E-5, weather:8.40863E-9
+> [INTERNAL] [internal] 2026-10-14T18:31:26.095326Z initMod: 'yourmamma' -> lights:0.99999, greeting:9.972494E-6, weather:3.1762686E-9
+> [INTERNAL] [internal] 2026-10-14T18:31:26.104926Z initMod: 'yourmamma' -> lights:0.9999541, greeting:4.592396E-5, weather:1.7472518E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:26.112372Z initMod: 'yourmamma' -> lights:0.9999106, greeting:8.9336805E-5, weather:1.396221E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:26.118822Z initMod: 'yourmamma' -> lights:0.9999845, greeting:1.554593E-5, weather:9.462277E-10
+> [INTERNAL] [internal] 2026-10-14T18:31:26.124873Z initMod: 'yourmamma' -> lights:0.99979347, greeting:2.065538E-4, weather:1.1571642E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:26.132488Z initMod: 'yourmamma' -> lights:0.9998871, greeting:1.1275596E-4, weather:1.1221534E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:26.140518Z initMod: 'yourmamma' -> lights:0.9999472, greeting:5.2734176E-5, weather:8.7882746E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:26.151020Z initMod: 'yourmamma' -> lights:0.999972, greeting:2.7998045E-5, weather:1.9948687E-9
+> [INTERNAL] [internal] 2026-10-14T18:31:26.159463Z initMod: 'yourmamma' -> lights:0.9999856, greeting:1.4253345E-5, weather:1.0648165E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:26.166813Z initMod: 'yourmamma' -> lights:0.9999349, greeting:6.5057444E-5, weather:2.6930861E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:26.174359Z initMod: 'yourmamma' -> lights:0.99999416, greeting:5.8476703E-6, weather:1.6762045E-9
+> [INTERNAL] [internal] 2026-10-14T18:31:26.182957Z initMod: 'yourmamma' -> lights:0.9997279, greeting:2.721318E-4, weather:4.587332E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:26.191060Z initMod: 'yourmamma' -> lights:0.9998909, greeting:1.08347864E-4, weather:6.97317E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:26.199968Z initMod: 'yourmamma' -> lights:0.9999509, greeting:4.91372E-5, weather:9.9504955E-9
+> [INTERNAL] [internal] 2026-10-14T18:31:26.210044Z initMod: 'yourmamma' -> weather:0.9999958, greeting:3.6338724E-6, lights:5.0697133E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:26.217553Z initMod: 'yourmamma' -> weather:0.9999995, greeting:3.746941E-7, lights:7.553421E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:26.224190Z initMod: 'yourmamma' -> weather:0.9999751, greeting:2.2274868E-5, lights:2.6974126E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:26.233980Z initMod: 'yourmamma' -> weather:0.9998274, greeting:1.5849639E-4, lights:1.411984E-5
+> [INTERNAL] [internal] 2026-10-14T18:31:26.246264Z initMod: 'yourmamma' -> weather:0.9999697, greeting:2.5337162E-5, lights:4.927762E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:26.257081Z initMod: 'yourmamma' -> weather:0.99999523, greeting:4.010706E-6, lights:7.963453E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:26.265966Z initMod: 'yourmamma' -> weather:0.99999034, greeting:8.524366E-6, lights:1.1318293E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:26.275336Z initMod: 'yourmamma' -> weather:0.9999305, greeting:6.321174E-5, lights:6.2478844E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:26.283078Z initMod: 'yourmamma' -> weather:0.9999975, greeting:2.1797398E-6, lights:3.4026343E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:26.290707Z initMod: 'yourmamma' -> weather:0.99999917, greeting:7.2777425E-7, lights:1.3198935E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:26.297842Z initMod: 'yourmamma' -> weather:0.9996432, greeting:3.2337048E-4, lights:3.3464217E-5
+> [INTERNAL] [internal] 2026-10-14T18:31:26.306499Z initMod: 'yourmamma' -> weather:0.9999211, greeting:6.757021E-5, lights:1.1366082E-5
+> [INTERNAL] [internal] 2026-10-14T18:31:26.313731Z initMod: 'yourmamma' -> weather:0.99997365, greeting:2.3602515E-5, lights:2.8009852E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:26.320646Z initMod: 'yourmamma' -> weather:0.99998987, greeting:8.739897E-6, lights:1.4344532E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:26.327615Z initMod: 'yourmamma' -> weather:0.9997229, greeting:2.3564765E-4, lights:4.144698E-5
+> [INTERNAL] [internal] 2026-10-14T18:31:26.328111Z ort: session #5 'module:yourmamma' cancelled
+> [INTERNAL] [internal] 2026-10-14T18:31:26.330696Z ort: session #6 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T18:31:26.331513Z encoder: bge released and closed
+> [INTERNAL] [internal] 2026-10-14T18:31:26.331625Z model yourmamma (#3): closed after 45 runs
+> [INTERNAL] [internal] 2026-10-14T18:31:26.332519Z validate: 'yourmamma' on sample-intents.csv: 45 rows, accuracy 1.000, macro F1 1.000
+> [INTERNAL] [internal] 2026-10-14T18:31:26.835137Z source: sample-intents.csv [text=text, label=label, 45 rows]
+> [INTERNAL] [internal] 2026-10-14T18:31:26.837094Z ort: session #7 'module:yourmamma' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/yourmamma/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:31:27.104565Z ort: session #8 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:31:27.133585Z encoder: loaded bge (415.6 MB on disk)
+> [INTERNAL] [internal] 2026-10-14T18:31:27.133669Z initMod: 'yourmamma' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T18:31:27.145826Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:27.167770Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:27.186837Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:27.220651Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:27.250634Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:27.277490Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:27.288497Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:27.301818Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:27.318029Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:27.332147Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:27.344522Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:27.357434Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:27.375597Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:27.384587Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:27.405554Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:27.422065Z initMod: 'yourmamma' -> lights:0.99992967, greeting:7.038E-5, weather:8.40863E-9
+> [INTERNAL] [internal] 2026-10-14T18:31:27.437170Z initMod: 'yourmamma' -> lights:0.99999, greeting:9.972494E-6, weather:3.1762686E-9
+> [INTERNAL] [internal] 2026-10-14T18:31:27.449134Z initMod: 'yourmamma' -> lights:0.9999541, greeting:4.592396E-5, weather:1.7472518E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:27.459908Z initMod: 'yourmamma' -> lights:0.9999106, greeting:8.9336805E-5, weather:1.396221E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:27.470916Z initMod: 'yourmamma' -> lights:0.9999845, greeting:1.554593E-5, weather:9.462277E-10
+> [INTERNAL] [internal] 2026-10-14T18:31:27.479881Z initMod: 'yourmamma' -> lights:0.99979347, greeting:2.065538E-4, weather:1.1571642E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:27.489248Z initMod: 'yourmamma' -> lights:0.9998871, greeting:1.1275596E-4, weather:1.1221534E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:27.501708Z initMod: 'yourmamma' -> lights:0.9999472, greeting:5.2734176E-5, weather:8.7882746E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:27.516052Z initMod: 'yourmamma' -> lights:0.999972, greeting:2.7998045E-5, weather:1.9948687E-9
+> [INTERNAL] [internal] 2026-10-14T18:31:27.526038Z initMod: 'yourmamma' -> lights:0.9999856, greeting:1.4253345E-5, weather:1.0648165E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:27.538016Z initMod: 'yourmamma' -> lights:0.9999349, greeting:6.5057444E-5, weather:2.6930861E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:27.550577Z initMod: 'yourmamma' -> lights:0.99999416, greeting:5.8476703E-6, weather:1.6762045E-9
+> [INTERNAL] [internal] 2026-10-14T18:31:27.566870Z initMod: 'yourmamma' -> lights:0.9997279, greeting:2.721318E-4, weather:4.587332E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:27.584333Z initMod: 'yourmamma' -> lights:0.9998909, greeting:1.08347864E-4, weather:6.97317E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:27.595509Z initMod: 'yourmamma' -> lights:0.9999509, greeting:4.91372E-5, weather:9.9504955E-9
+> [INTERNAL] [internal] 2026-10-14T18:31:27.608411Z initMod: 'yourmamma' -> weather:0.9999958, greeting:3.6338724E-6, lights:5.0697133E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:27.620053Z initMod: 'yourmamma' -> weather:0.9999995, greeting:3.746941E-7, lights:7.553421E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:27.627964Z initMod: 'yourmamma' -> weather:0.9999751, greeting:2.2274868E-5, lights:2.6974126E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:27.644125Z initMod: 'yourmamma' -> weather:0.9998274, greeting:1.5849639E-4, lights:1.411984E-5
+> [INTERNAL] [internal] 2026-10-14T18:31:27.657219Z initMod: 'yourmamma' -> weather:0.9999697, greeting:2.5337162E-5, lights:4.927762E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:27.683303Z initMod: 'yourmamma' -> weather:0.99999523, greeting:4.010706E-6, lights:7.963453E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:27.713310Z initMod: 'yourmamma' -> weather:0.99999034, greeting:8.524366E-6, lights:1.1318293E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:27.725320Z initMod: 'yourmamma' -> weather:0.9999305, greeting:6.321174E-5, lights:6.2478844E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:27.736843Z initMod: 'yourmamma' -> weather:0.9999975, greeting:2.1797398E-6, lights:3.4026343E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:27.753456Z initMod: 'yourmamma' -> weather:0.99999917, greeting:7.2777425E-7, lights:1.3198935E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:27.762238Z initMod: 'yourmamma' -> weather:0.9996432, greeting:3.2337048E-4, lights:3.3464217E-5
+> [INTERNAL] [internal] 2026-10-14T18:31:27.769531Z initMod: 'yourmamma' -> weather:0.9999211, greeting:6.757021E-5, lights:1.1366082E-5
+> [INTERNAL] [internal] 2026-10-14T18:31:27.781833Z initMod: 'yourmamma' -> weather:0.99997365, greeting:2.3602515E-5, lights:2.8009852E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:27.790555Z initMod: 'yourmamma' -> weather:0.99998987, greeting:8.739897E-6, lights:1.4344532E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:27.799722Z initMod: 'yourmamma' -> weather:0.9997229, greeting:2.3564765E-4, lights:4.144698E-5
+> [INTERNAL] [internal] 2026-10-14T18:31:27.801551Z ort: session #7 'module:yourmamma' cancelled
+> [INTERNAL] [internal] 2026-10-14T18:31:27.806898Z ort: session #8 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T18:31:27.808507Z encoder: bge released and closed
+> [INTERNAL] [internal] 2026-10-14T18:31:27.808788Z model yourmamma (#4): closed after 45 runs
+> [INTERNAL] [internal] 2026-10-14T18:31:27.810136Z validate: 'yourmamma' on sample-intents.csv: 45 rows, accuracy 1.000, macro F1 1.000
+> [INTERNAL] [internal] 2026-10-14T18:31:28.240434Z source: sample-intents.csv [text=text, label=label, 45 rows]
+> [INTERNAL] [internal] 2026-10-14T18:31:28.243911Z ort: session #9 'module:yourmamma' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/yourmamma/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:31:28.551734Z ort: session #10 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:31:28.580013Z encoder: loaded bge (415.6 MB on disk)
+> [INTERNAL] [internal] 2026-10-14T18:31:28.580252Z initMod: 'yourmamma' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T18:31:28.596176Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:28.611415Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:28.617658Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:28.625592Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:28.639952Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:28.651888Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:28.661357Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:28.676780Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:28.690076Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:28.710764Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:28.725120Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:28.744968Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:28.753803Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:28.761841Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:28.774620Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:28.784093Z initMod: 'yourmamma' -> lights:0.99992967, greeting:7.038E-5, weather:8.40863E-9
+> [INTERNAL] [internal] 2026-10-14T18:31:28.795037Z initMod: 'yourmamma' -> lights:0.99999, greeting:9.972494E-6, weather:3.1762686E-9
+> [INTERNAL] [internal] 2026-10-14T18:31:28.811466Z initMod: 'yourmamma' -> lights:0.9999541, greeting:4.592396E-5, weather:1.7472518E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:28.824014Z initMod: 'yourmamma' -> lights:0.9999106, greeting:8.9336805E-5, weather:1.396221E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:28.839137Z initMod: 'yourmamma' -> lights:0.9999845, greeting:1.554593E-5, weather:9.462277E-10
+> [INTERNAL] [internal] 2026-10-14T18:31:28.852886Z initMod: 'yourmamma' -> lights:0.99979347, greeting:2.065538E-4, weather:1.1571642E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:28.864845Z initMod: 'yourmamma' -> lights:0.9998871, greeting:1.1275596E-4, weather:1.1221534E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:28.885294Z initMod: 'yourmamma' -> lights:0.9999472, greeting:5.2734176E-5, weather:8.7882746E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:28.901466Z initMod: 'yourmamma' -> lights:0.999972, greeting:2.7998045E-5, weather:1.9948687E-9
+> [INTERNAL] [internal] 2026-10-14T18:31:28.915574Z initMod: 'yourmamma' -> lights:0.9999856, greeting:1.4253345E-5, weather:1.0648165E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:28.926378Z initMod: 'yourmamma' -> lights:0.9999349, greeting:6.5057444E-5, weather:2.6930861E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:28.943667Z initMod: 'yourmamma' -> lights:0.99999416, greeting:5.8476703E-6, weather:1.6762045E-9
+> [INTERNAL] [internal] 2026-10-14T18:31:28.961492Z initMod: 'yourmamma' -> lights:0.9997279, greeting:2.721318E-4, weather:4.587332E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:28.984325Z initMod: 'yourmamma' -> lights:0.9998909, greeting:1.08347864E-4, weather:6.97317E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:28.998565Z initMod: 'yourmamma' -> lights:0.9999509, greeting:4.91372E-5, weather:9.9504955E-9
+> [INTERNAL] [internal] 2026-10-14T18:31:29.016336Z initMod: 'yourmamma' -> weather:0.9999958, greeting:3.6338724E-6, lights:5.0697133E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:29.029451Z initMod: 'yourmamma' -> weather:0.9999995, greeting:3.746941E-7, lights:7.553421E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:29.040160Z initMod: 'yourmamma' -> weather:0.9999751, greeting:2.2274868E-5, lights:2.6974126E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:29.060735Z initMod: 'yourmamma' -> weather:0.9998274, greeting:1.5849639E-4, lights:1.411984E-5
+> [INTERNAL] [internal] 2026-10-14T18:31:29.080208Z initMod: 'yourmamma' -> weather:0.9999697, greeting:2.5337162E-5, lights:4.927762E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:29.097176Z initMod: 'yourmamma' -> weather:0.99999523, greeting:4.010706E-6, lights:7.963453E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:29.114605Z initMod: 'yourmamma' -> weather:0.99999034, greeting:8.524366E-6, lights:1.1318293E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:29.132326Z initMod: 'yourmamma' -> weather:0.9999305, greeting:6.321174E-5, lights:6.2478844E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:29.143897Z initMod: 'yourmamma' -> weather:0.9999975, greeting:2.1797398E-6, lights:3.4026343E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:29.153551Z initMod: 'yourmamma' -> weather:0.99999917, greeting:7.2777425E-7, lights:1.3198935E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:29.161148Z initMod: 'yourmamma' -> weather:0.9996432, greeting:3.2337048E-4, lights:3.3464217E-5
+> [INTERNAL] [internal] 2026-10-14T18:31:29.169698Z initMod: 'yourmamma' -> weather:0.9999211, greeting:6.757021E-5, lights:1.1366082E-5
+> [INTERNAL] [internal] 2026-10-14T18:31:29.182099Z initMod: 'yourmamma' -> weather:0.99997365, greeting:2.3602515E-5, lights:2.8009852E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:29.191655Z initMod: 'yourmamma' -> weather:0.99998987, greeting:8.739897E-6, lights:1.4344532E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:29.202595Z initMod: 'yourmamma' -> weather:0.9997229, greeting:2.3564765E-4, lights:4.144698E-5
+> [INTERNAL] [internal] 2026-10-14T18:31:29.204459Z ort: session #9 'module:yourmamma' cancelled
+> [INTERNAL] [internal] 2026-10-14T18:31:29.210061Z ort: session #10 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T18:31:29.211630Z encoder: bge released and closed
+> [INTERNAL] [internal] 2026-10-14T18:31:29.211772Z model yourmamma (#5): closed after 45 runs
+> [INTERNAL] [internal] 2026-10-14T18:31:29.213260Z validate: 'yourmamma' on sample-intents.csv: 45 rows, accuracy 1.000, macro F1 1.000
+> [INTERNAL] [internal] 2026-10-14T18:31:29.775347Z source: sample-intents.csv [text=text, label=label, 45 rows]
+> [INTERNAL] [internal] 2026-10-14T18:31:29.780431Z ort: session #11 'module:yourmamma' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/yourmamma/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:31:30.137756Z ort: session #12 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:31:30.156193Z encoder: loaded bge (415.6 MB on disk)
+> [INTERNAL] [internal] 2026-10-14T18:31:30.156359Z initMod: 'yourmamma' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T18:31:30.168703Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:30.180549Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:30.185715Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:30.192953Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:30.201113Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:30.212362Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:30.222026Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:30.227691Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:30.234667Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:30.244550Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:30.251201Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:30.257646Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:30.262499Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:30.267356Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:30.274856Z initMod: 'yourmamma' -> greeting:0.94718856, weather:0.026838401, lights:0.02597302
+> [INTERNAL] [internal] 2026-10-14T18:31:30.281197Z initMod: 'yourmamma' -> lights:0.99992967, greeting:7.038E-5, weather:8.40863E-9
+> [INTERNAL] [internal] 2026-10-14T18:31:30.288962Z initMod: 'yourmamma' -> lights:0.99999, greeting:9.972494E-6, weather:3.1762686E-9
+> [INTERNAL] [internal] 2026-10-14T18:31:30.296670Z initMod: 'yourmamma' -> lights:0.9999541, greeting:4.592396E-5, weather:1.7472518E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:30.304372Z initMod: 'yourmamma' -> lights:0.9999106, greeting:8.9336805E-5, weather:1.396221E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:30.311596Z initMod: 'yourmamma' -> lights:0.9999845, greeting:1.554593E-5, weather:9.462277E-10
+> [INTERNAL] [internal] 2026-10-14T18:31:30.317450Z initMod: 'yourmamma' -> lights:0.99979347, greeting:2.065538E-4, weather:1.1571642E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:30.324325Z initMod: 'yourmamma' -> lights:0.9998871, greeting:1.1275596E-4, weather:1.1221534E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:30.331688Z initMod: 'yourmamma' -> lights:0.9999472, greeting:5.2734176E-5, weather:8.7882746E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:30.344728Z initMod: 'yourmamma' -> lights:0.999972, greeting:2.7998045E-5, weather:1.9948687E-9
+> [INTERNAL] [internal] 2026-10-14T18:31:30.352523Z initMod: 'yourmamma' -> lights:0.9999856, greeting:1.4253345E-5, weather:1.0648165E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:30.357020Z initMod: 'yourmamma' -> lights:0.9999349, greeting:6.5057444E-5, weather:2.6930861E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:30.364149Z initMod: 'yourmamma' -> lights:0.99999416, greeting:5.8476703E-6, weather:1.6762045E-9
+> [INTERNAL] [internal] 2026-10-14T18:31:30.374988Z initMod: 'yourmamma' -> lights:0.9997279, greeting:2.721318E-4, weather:4.587332E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:30.386959Z initMod: 'yourmamma' -> lights:0.9998909, greeting:1.08347864E-4, weather:6.97317E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:30.395373Z initMod: 'yourmamma' -> lights:0.9999509, greeting:4.91372E-5, weather:9.9504955E-9
+> [INTERNAL] [internal] 2026-10-14T18:31:30.404815Z initMod: 'yourmamma' -> weather:0.9999958, greeting:3.6338724E-6, lights:5.0697133E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:30.416748Z initMod: 'yourmamma' -> weather:0.9999995, greeting:3.746941E-7, lights:7.553421E-8
+> [INTERNAL] [internal] 2026-10-14T18:31:30.422803Z initMod: 'yourmamma' -> weather:0.9999751, greeting:2.2274868E-5, lights:2.6974126E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:30.431332Z initMod: 'yourmamma' -> weather:0.9998274, greeting:1.5849639E-4, lights:1.411984E-5
+> [INTERNAL] [internal] 2026-10-14T18:31:30.444441Z initMod: 'yourmamma' -> weather:0.9999697, greeting:2.5337162E-5, lights:4.927762E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:30.455643Z initMod: 'yourmamma' -> weather:0.99999523, greeting:4.010706E-6, lights:7.963453E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:30.464437Z initMod: 'yourmamma' -> weather:0.99999034, greeting:8.524366E-6, lights:1.1318293E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:30.473132Z initMod: 'yourmamma' -> weather:0.9999305, greeting:6.321174E-5, lights:6.2478844E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:30.482067Z initMod: 'yourmamma' -> weather:0.9999975, greeting:2.1797398E-6, lights:3.4026343E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:30.489156Z initMod: 'yourmamma' -> weather:0.99999917, greeting:7.2777425E-7, lights:1.3198935E-7
+> [INTERNAL] [internal] 2026-10-14T18:31:30.497100Z initMod: 'yourmamma' -> weather:0.9996432, greeting:3.2337048E-4, lights:3.3464217E-5
+> [INTERNAL] [internal] 2026-10-14T18:31:30.503669Z initMod: 'yourmamma' -> weather:0.9999211, greeting:6.757021E-5, lights:1.1366082E-5
+> [INTERNAL] [internal] 2026-10-14T18:31:30.512338Z initMod: 'yourmamma' -> weather:0.99997365, greeting:2.3602515E-5, lights:2.8009852E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:30.523955Z initMod: 'yourmamma' -> weather:0.99998987, greeting:8.739897E-6, lights:1.4344532E-6
+> [INTERNAL] [internal] 2026-10-14T18:31:30.530871Z initMod: 'yourmamma' -> weather:0.9997229, greeting:2.3564765E-4, lights:4.144698E-5
+> [INTERNAL] [internal] 2026-10-14T18:31:30.531394Z ort: session #11 'module:yourmamma' cancelled
+> [INTERNAL] [internal] 2026-10-14T18:31:30.533912Z ort: session #12 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T18:31:30.534706Z encoder: bge released and closed
+> [INTERNAL] [internal] 2026-10-14T18:31:30.534854Z model yourmamma (#6): closed after 45 runs
+> [INTERNAL] [internal] 2026-10-14T18:31:30.535766Z validate: 'yourmamma' on sample-intents.csv: 45 rows, accuracy 1.000, macro F1 1.000
+> [INFO] [sandbox] 2026-10-14T18:31:46.063293Z Running pluginDir/main.kts
+> [INTERNAL] [internal] 2026-10-14T18:31:46.070126Z env 'default': sourcing no new imports
+> [INTERNAL] [internal] 2026-10-14T18:31:46.070715Z env 'default': sourced 1 packages, 1 in environment
+> [INTERNAL] [internal] 2026-10-14T18:31:49.146917Z ort: session #13 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:31:49.604128Z ort: session #14 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:31:49.625460Z encoder: loaded bge (415.6 MB on disk)
+> [INTERNAL] [internal] 2026-10-14T18:31:49.625723Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T18:31:49.642255Z initMod: 'dummy' -> lights:0.6714898, weather:0.49647042, greeting:0.3300981
+> [INFO] [sandbox] 2026-10-14T18:31:49.648315Z Finished in 3s
+> [INFO] [sandbox] 2026-10-14T18:31:54.143807Z Running pluginDir/main.kts
+> [INTERNAL] [internal] 2026-10-14T18:31:54.144748Z env 'default': sourcing no new imports
+> [INTERNAL] [internal] 2026-10-14T18:31:54.145673Z env 'default': sourced 1 packages, 1 in environment
+> [INTERNAL] [internal] 2026-10-14T18:31:54.562642Z initMod: 'dummy' is already open as session #7; the new one shares its encoder, close() the ones you don't use
+> [INTERNAL] [internal] 2026-10-14T18:31:54.563736Z ort: session #15 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:31:54.563864Z encoder: bge shared by 2 holders, not loaded again
+> [INTERNAL] [internal] 2026-10-14T18:31:54.563893Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T18:31:54.661654Z initMod: 'dummy' -> lights:0.6714898, weather:0.49647042, greeting:0.3300981
+> [INFO] [sandbox] 2026-10-14T18:31:54.662321Z Finished in 0s
+> [INFO] [sandbox] 2026-10-14T18:32:27.588324Z Running pluginDir/main.kts
+> [INTERNAL] [internal] 2026-10-14T18:32:27.588548Z env 'default': sourcing no new imports
+> [INTERNAL] [internal] 2026-10-14T18:32:27.588801Z env 'default': sourced 1 packages, 1 in environment
+> [INTERNAL] [internal] 2026-10-14T18:32:27.919418Z initMod: 'dummy' is already open as session #7, #8; the new one shares its encoder, close() the ones you don't use
+> [INTERNAL] [internal] 2026-10-14T18:32:27.920386Z ort: session #16 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:32:27.920503Z encoder: bge shared by 3 holders, not loaded again
+> [INTERNAL] [internal] 2026-10-14T18:32:27.920542Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T18:32:27.997016Z initMod: 'dummy' -> lights:0.6714898, weather:0.49647042, greeting:0.3300981
+> [INFO] [sandbox] 2026-10-14T18:32:27.997522Z Finished in 0s
+> [INTERNAL] [internal] 2026-10-14T18:34:45.212487Z ort: session #17 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:34:45.212925Z encoder: bge shared by 4 holders, not loaded again
+> [INTERNAL] [internal] 2026-10-14T18:34:45.212985Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T18:34:45.246502Z serve 'dummy': listening on POST/GET http://127.0.0.1:8765/models/dummy/predict
+> [INTERNAL] [internal] 2026-10-14T18:34:46.469836Z ort: session #17 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T18:34:46.470251Z serve 'dummy': stopped
+> [INTERNAL] [internal] 2026-10-14T18:34:46.926350Z ort: session #18 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:34:46.926487Z encoder: bge shared by 4 holders, not loaded again
+> [INTERNAL] [internal] 2026-10-14T18:34:46.926511Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T18:34:46.929085Z serve 'dummy': listening on POST/GET http://127.0.0.1:8765/models/dummy/predict
+> [INTERNAL] [internal] 2026-10-14T18:34:47.494638Z ort: session #18 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T18:34:47.494986Z serve 'dummy': stopped
+> [INTERNAL] [internal] 2026-10-14T18:34:47.914854Z ort: session #19 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:34:47.914971Z encoder: bge shared by 4 holders, not loaded again
+> [INTERNAL] [internal] 2026-10-14T18:34:47.915010Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T18:34:47.917003Z serve 'dummy': listening on POST/GET http://127.0.0.1:8765/models/dummy/predict
+> [INTERNAL] [internal] 2026-10-14T18:34:48.322247Z ort: session #19 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T18:34:48.322638Z serve 'dummy': stopped
+> [INTERNAL] [internal] 2026-10-14T18:35:01.985441Z ort: session #20 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:35:01.985591Z encoder: bge shared by 4 holders, not loaded again
+> [INTERNAL] [internal] 2026-10-14T18:35:01.985620Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T18:35:01.986299Z serve 'dummy': listening on POST/GET http://127.0.0.1:8765/models/dummy/predict
+> [INTERNAL] [internal] 2026-10-14T18:35:02.320495Z ort: session #20 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T18:35:02.320983Z serve 'dummy': stopped
+> [INTERNAL] [internal] 2026-10-14T18:35:02.738930Z ort: session #21 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:35:02.739051Z encoder: bge shared by 4 holders, not loaded again
+> [INTERNAL] [internal] 2026-10-14T18:35:02.739076Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T18:35:02.744557Z serve 'dummy': listening on POST/GET http://127.0.0.1:8765/models/dummy/predict
+> [INTERNAL] [internal] 2026-10-14T18:35:03.450580Z ort: session #21 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T18:35:03.451643Z serve 'dummy': stopped
+> [INTERNAL] [internal] 2026-10-14T18:35:04.695767Z ort: session #22 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:35:04.696615Z encoder: bge shared by 4 holders, not loaded again
+> [INTERNAL] [internal] 2026-10-14T18:35:04.696791Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T18:35:04.700797Z serve 'dummy': listening on POST/GET http://127.0.0.1:8765/models/dummy/predict
+> [INTERNAL] [internal] 2026-10-14T18:35:05.053030Z ort: session #22 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T18:35:05.053394Z serve 'dummy': stopped
+> [INTERNAL] [internal] 2026-10-14T18:35:05.420224Z ort: session #23 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:35:05.420350Z encoder: bge shared by 4 holders, not loaded again
+> [INTERNAL] [internal] 2026-10-14T18:35:05.420386Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T18:35:05.424093Z serve 'dummy': listening on POST/GET http://127.0.0.1:8765/models/dummy/predict
+> [INTERNAL] [internal] 2026-10-14T18:37:18.004116Z ort: session #1 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:37:18.592873Z ort: session #2 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:37:18.815856Z encoder: loaded bge (415.6 MB on disk)
+> [INTERNAL] [internal] 2026-10-14T18:37:18.818451Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T18:37:18.831684Z serve 'dummy': listening on POST/GET http://127.0.0.1:8765/models/dummy/predict
+> [INTERNAL] [internal] 2026-10-14T18:49:52.208386Z ort: session #1 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T18:49:52.220047Z ort: session #2 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T18:49:52.228254Z encoder: bge released and closed
+> [INTERNAL] [internal] 2026-10-14T18:49:52.228734Z serve 'dummy': stopped
+> [INTERNAL] [internal] 2026-10-14T18:49:55.456779Z ort: session #3 'module:yourmamma' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/yourmamma/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:49:55.710413Z ort: session #4 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:49:55.726767Z encoder: loaded bge (415.6 MB on disk)
+> [INTERNAL] [internal] 2026-10-14T18:49:55.726845Z initMod: 'yourmamma' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T18:50:02.409328Z ort: session #5 'module:yourmamma' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/yourmamma/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:50:02.409606Z encoder: bge shared by 2 holders, not loaded again
+> [INTERNAL] [internal] 2026-10-14T18:50:02.409652Z initMod: 'yourmamma' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T18:50:03.326207Z ort: session #6 'module:yourmamma' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/yourmamma/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:50:03.326352Z encoder: bge shared by 3 holders, not loaded again
+> [INTERNAL] [internal] 2026-10-14T18:50:03.326387Z initMod: 'yourmamma' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T18:50:04.562443Z ort: session #7 'module:yourmamma' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/yourmamma/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:50:04.562593Z encoder: bge shared by 4 holders, not loaded again
+> [INTERNAL] [internal] 2026-10-14T18:50:04.562636Z initMod: 'yourmamma' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T18:55:28.814701Z ort: session #1 'module:yourmamma' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/yourmamma/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:55:29.095873Z ort: session #2 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:55:33.349574Z encoder: loaded bge (415.6 MB on disk)
+> [INTERNAL] [internal] 2026-10-14T18:55:33.351031Z initMod: 'yourmamma' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T18:55:33.353094Z initMod: 'yourmamma' is already open as session #1, that one is used
+> [INTERNAL] [internal] 2026-10-14T18:55:33.353596Z initMod: 'yourmamma' is already open as session #1, that one is used

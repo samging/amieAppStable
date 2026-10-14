@@ -30,7 +30,8 @@ object ModelValidation {
         if (known.size < samples.size) warnings += "${samples.size - known.size} rows of ${data.name} have labels $name doesn't know (${(samples.map { it.label }.toSet() - labels.toSet()).joinToString()})"
         if (known.isEmpty()) throw IllegalArgumentException("${data.name} has no rows with the labels of $name (${labels.joinToString()})")
 
-        val session = ModelSessions.open(name)
+        // The model's one session; closed when the rows are through only if this validation opened it
+        val (session, opened) = ModelSessions.acquire(name)
         val truth = IntArray(known.size)
         val prediction = IntArray(known.size)
         try {
@@ -41,7 +42,7 @@ object ModelValidation {
                 prediction[i] = labels.indexOf(top).coerceAtLeast(0)
             }
         } finally {
-            session.close()
+            if (opened) session.close()
             _current.value = null
         }
         val run = computeMetrics(labels, truth, prediction, trainSize = 0, warnings = warnings).copy(validation = data.name)

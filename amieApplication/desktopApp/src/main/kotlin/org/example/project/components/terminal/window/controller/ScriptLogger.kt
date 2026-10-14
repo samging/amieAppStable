@@ -28,8 +28,9 @@ interface ScriptLogger {
     fun data(message: String) = log(message, LogLevel.DATA)
     fun initAmie(text: String)
     fun initMod() : InteractionModel
-    // Opens a session: the ONNX module modelBuilder exported to AMP/modules/<modelName>, or, for a name ending
-    // in .jar, a new instance of that package jar (env, AMP/pluginDir, a path, or fetched from the Amie server)
+    // The session of the ONNX module modelBuilder exported to AMP/modules/<modelName>: the one already open on it
+    // when there is one, else a new one. For a name ending in .jar, a new instance of that package jar every
+    // call (env, AMP/pluginDir, a path, or fetched from the Amie server)
     // Both kinds are listed on the Models page, where any session can be terminated
     fun initMod(modelName: String): InteractionModel =
         if (modelName.trim().endsWith(".jar", ignoreCase = true)) JarPackages.open(modelName.trim())

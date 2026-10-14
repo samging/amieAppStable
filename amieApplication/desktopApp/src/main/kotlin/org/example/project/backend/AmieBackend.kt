@@ -4,6 +4,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.java.Java
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.delete
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.get
@@ -128,6 +129,24 @@ object AmieBackend {
         val files = listOf(File(dir, "module.json"), File(dir, "model.onnx")).filter { it.isFile }
         if (files.isEmpty()) throw BackendException("Module '$name' has no module.json or model.onnx in ${dir.path}")
         return files.map { upload(it, "onnx", username) }
+    }
+
+    /** Removes a published module's files from the website again (`DELETE /upload`); returns how many were there */
+    suspend fun unpublishModule(name: String, username: String): Int {
+        var removed = 0
+        listOf("module.json", "model.onnx").forEach { fileName ->
+            val response = http.delete(config.url("upload")) {
+                bearerAuth(token())
+                parameter("filename", fileName)
+                parameter("progLanguage", "onnx")
+                parameter("username", username)
+            }
+            val body = response.bodyAsText()
+            if (!response.status.isSuccess()) throw BackendException(describe(response.status, body), response.status.value)
+            if (body.trim() == "removed") removed++
+        }
+        logInternal("backend: '$name' removed from the website for $username ($removed files)")
+        return removed
     }
 
     /** One round trip that tells the Models page whether the backend is up and knows this user */

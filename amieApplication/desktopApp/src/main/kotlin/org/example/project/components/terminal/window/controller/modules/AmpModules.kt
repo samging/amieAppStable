@@ -35,6 +35,19 @@ data class ModuleManifest(
     val createdAt: String = Instant.now().toString(),
     // The data file the head was trained on, when known (a csv name); models trained on the same data group together
     val data: String? = null,
+    // What the model is for, written by whoever built it and editable on the Models page
+    val description: String? = null,
+    // How it was trained: the head's shape and the fit; null in modules built before these were kept
+    val architecture: String? = null,
+    val epochs: Int? = null,
+    val batchSize: Int? = null,
+    val learningRate: Double? = null,
+    val hiddenDim: Int? = null,
+    val trainRows: Int? = null,
+    val validationRows: Int? = null,
+    val validation: String? = null,
+    val finalLoss: Double? = null,
+    val trainAccuracy: Double? = null,
 )
 
 @Serializable
@@ -56,6 +69,28 @@ fun writeModule(manifest: ModuleManifest, onnxBytes: ByteArray): File {
     registryFile.writeText(moduleJson.encodeToString(registry.copy(modules = registry.modules + (manifest.name to dir.name))))
     logInternal("module '${manifest.name}' exported to ${modelFile.absolutePath}")
     return modelFile
+}
+
+/** Rewrites module.json with [change] applied, e.g. a new description; false when the module isn't there */
+fun updateModule(name: String, change: (ModuleManifest) -> ModuleManifest): Boolean {
+    val (dir, manifest) = readModule(name) ?: return false
+    File(dir, "module.json").writeText(moduleJson.encodeToString(change(manifest)))
+    return true
+}
+
+/**
+ * Removes a module for good: its sessions are closed and its listener stopped first, then AMP/modules/<name>/
+ * is deleted and the registry forgets it. The dummy comes back on the next start of the page.
+ */
+fun deleteModule(name: String): Boolean {
+    val (dir, _) = readModule(name) ?: return false
+    ModelServer.stop(name)
+    ModelSessions.all.filter { it.name == name }.forEach { it.close() }
+    val gone = dir.deleteRecursively()
+    val registry = readRegistry()
+    registryFile.writeText(moduleJson.encodeToString(registry.copy(modules = registry.modules - name)))
+    logInternal(if (gone) "module '$name' destroyed: ${dir.absolutePath} removed" else "module '$name' forgotten, but ${dir.absolutePath} could not be removed entirely", if (gone) LogLevel.INTERNAL else LogLevel.ERROR)
+    return gone
 }
 
 /** Whether a module of that name is exported, without logging when it isn't */
@@ -120,7 +155,11 @@ fun ensureSampleData(): File {
  */
 fun ensureDummyModule(encoder: String = DEFAULT_ENCODER): File? {
     val dir = moduleDir(DUMMY_MODEL)
-    if (File(dir, "module.json").isFile) return dir
+    if (File(dir, "module.json").isFile) {
+        // A dummy written before the description was kept gets it now
+        runCatching { updateModule(DUMMY_MODEL) { m -> if (m.description != null) m else m.copy(description = dummyDescription(m.encoder), architecture = m.architecture ?: "dense[${m.inputDim} -> ${m.labels.size}] sigmoid over mean-pooled ${File(m.encoder).name}") } }
+        return dir
+    }
     return runCatching {
         val dim = hiddenSize(encoder) ?: 768
         val labels = listOf("greeting", "lights", "weather")
@@ -130,11 +169,20 @@ fun ensureDummyModule(encoder: String = DEFAULT_ENCODER): File? {
             (kotlin.math.sin((row + 1) * 0.37 + col * 2.1) * 0.05).toFloat()
         }
         val layer = DenseExport(kernel, FloatArray(labels.size), dim.toLong(), labels.size.toLong(), "Sigmoid")
-        val manifest = ModuleManifest(name = DUMMY_MODEL, encoder = encoder, inputDim = dim.toLong(), outputDim = labels.size.toLong(), labels = labels)
+        val manifest = ModuleManifest(
+            name = DUMMY_MODEL, encoder = encoder, inputDim = dim.toLong(), outputDim = labels.size.toLong(), labels = labels,
+            description = dummyDescription(encoder),
+            architecture = "dense[$dim -> ${labels.size}] sigmoid over mean-pooled ${File(encoder).name}",
+        )
         writeModule(manifest, denseStackToOnnx(listOf(layer), manifest.input, manifest.output, DUMMY_MODEL))
         dir
     }.onFailure { logInternal("dummy model: could not be written: ${it.message}", LogLevel.ERROR) }.getOrNull()
 }
+
+private fun dummyDescription(encoder: String) =
+    "A fixed three-label head with made-up weights over the ${File(encoder).name} encoder, so the page has a model to configure, " +
+        "serve and validate and a script can try initMod(\"dummy\") before training anything. Its scores are not meaningful; " +
+        "build a model from sample-intents.csv to see real ones."
 
 // The encoder's hidden size from its config.json, which is the width of the embedding a head is trained on
 private fun hiddenSize(encoder: String): Int? = runCatching {

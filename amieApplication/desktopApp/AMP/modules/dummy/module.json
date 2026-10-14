@@ -8,5 +8,7 @@
         "lights",
         "weather"
     ],
-    "createdAt": "2026-10-14T15:15:36.984418Z"
+    "createdAt": "2026-10-14T15:15:36.984418Z",
+    "description": "A fixed three-label head with made-up weights over the bge encoder, so the page has a model to configure, serve and validate and a script can try initMod(\"dummy\") before training anything. Its scores are not meaningful; build a model from sample-intents.csv to see real ones.",
+    "architecture": "dense[768 -> 3] sigmoid over mean-pooled bge"
 }

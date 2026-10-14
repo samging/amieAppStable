@@ -1,15 +1,25 @@
 package org.example.project.components.terminal.window.controller
 
+import androidx.compose.foundation.ContextMenuArea
+import androidx.compose.foundation.ContextMenuItem
+import androidx.compose.foundation.DarkDefaultContextMenuRepresentation
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.LocalContextMenuRepresentation
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,6 +27,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -35,6 +46,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -49,6 +61,9 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.res.loadImageBitmap
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
@@ -64,6 +79,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.example.project.auth.AuthState
 import org.example.project.backend.AmieBackend
+import org.example.project.components.terminal.integrations.amiePilot.LoadedEncoder
+import org.example.project.components.terminal.integrations.amiePilot.SharedEncoders
 import org.example.project.components.terminal.window.controller.envBuilder.DEFAULT_ENV
 import org.example.project.components.terminal.window.controller.envBuilder.ScriptEnvironments
 import org.example.project.components.terminal.window.controller.jetbrainDLBuilder.ModelBuild
@@ -73,6 +90,12 @@ import org.example.project.components.terminal.window.controller.modelLoaders.Or
 import org.example.project.components.terminal.window.controller.modules.MetricsImages
 import org.example.project.components.terminal.window.controller.modules.MetricsPlot
 import org.example.project.components.terminal.window.controller.modules.MetricsRun
+import org.example.project.components.terminal.window.controller.modules.LoggedRun
+import org.example.project.components.terminal.window.controller.modules.ModelRequirements
+import org.example.project.components.terminal.window.controller.modules.Requirement
+import org.example.project.components.terminal.window.controller.modules.SessionRuns
+import org.example.project.components.terminal.window.controller.modules.SystemStats
+import org.example.project.components.terminal.window.controller.modules.bytes
 import org.example.project.components.terminal.window.controller.modules.ModelServer
 import org.example.project.components.terminal.window.controller.modules.ModelSessions
 import org.example.project.components.terminal.window.controller.modules.ModelValidation
@@ -82,6 +105,7 @@ import org.example.project.components.terminal.window.controller.modules.Package
 import org.example.project.components.terminal.window.controller.modules.ServingSettings
 import org.example.project.components.terminal.window.controller.modules.SessionLogEntry
 import org.example.project.components.terminal.window.controller.modules.ValidationProgress
+import org.example.project.components.terminal.window.controller.modules.deleteModule
 import org.example.project.components.terminal.window.controller.modules.ensureDummyModule
 import org.example.project.components.terminal.window.controller.modules.ensureSampleData
 import org.example.project.components.terminal.window.controller.modules.modulesDir
@@ -89,6 +113,7 @@ import org.example.project.components.terminal.window.controller.modules.readMet
 import org.example.project.components.terminal.window.controller.modules.readModule
 import org.example.project.components.terminal.window.controller.modules.readRegistry
 import org.example.project.components.terminal.window.controller.modules.readServing
+import org.example.project.components.terminal.window.controller.modules.updateModule
 import org.example.project.components.terminal.window.controller.modules.uptime
 import org.example.project.components.terminal.window.controller.modules.writeServing
 import org.example.project.components.terminal.window.controller.pluginEngine.JarContents
@@ -97,11 +122,17 @@ import org.example.project.components.terminal.window.controller.pluginEngine.Ja
 import org.example.project.components.terminal.window.controller.pluginEngine.JarPackages
 import org.example.project.components.terminal.window.controller.pluginEngine.ServerJar
 import org.example.project.components.terminal.window.controller.sourceFile.DataSource
+import org.example.project.components.terminal.window.controller.sourceFile.inferStructure
 import org.example.project.components.terminal.window.controller.sourceFile.parseCsv
 import org.example.project.components.ui.viewport.NavigationSidebar
 import org.example.project.getDirectory
 import org.example.project.ui.theme.AccentButtonHover
 import org.example.project.ui.theme.ActiveColor
+import org.example.project.ui.theme.ChartAccent
+import org.example.project.ui.theme.DangerButton
+import org.example.project.ui.theme.DangerButtonBorder
+import org.example.project.ui.theme.DangerButtonHover
+import org.example.project.ui.theme.DangerColor
 import org.example.project.ui.theme.ChipBackground
 import org.example.project.ui.theme.ChipBorderColor
 import org.example.project.ui.theme.ChipHoverBackground
@@ -118,6 +149,7 @@ import org.example.project.ui.theme.MutedFontColor
 import org.example.project.ui.theme.PageAccent
 import org.example.project.ui.theme.PanelBorder
 import org.example.project.ui.theme.PanelBorderSelected
+import org.example.project.ui.theme.PanelDividerColor
 import org.example.project.ui.theme.PanelSurface
 import org.example.project.ui.theme.PanelSurfaceSelected
 import org.example.project.ui.theme.SuccessColor
@@ -136,7 +168,7 @@ import java.util.Locale
 
 /* ---------- what the page shows, read off the UI thread ---------- */
 
-private enum class PageTab(val title: String) { MODELS("Models"), PACKAGES("Packages"), SESSIONS("Sessions") }
+private enum class PageTab(val title: String) { MODELS("Models"), PACKAGES("Packages"), SESSIONS("Sessions"), GUIDE("Guide") }
 
 /** Any open session on this page, named after its owner: an intent model, a package jar or a bare ONNX file */
 private data class SessionInfo(
@@ -156,6 +188,8 @@ private data class SessionInfo(
 /** An intent model as a component: its manifest, metrics, data, how it is served, whether it listens and its sessions */
 private data class ModelInfo(
     val name: String,
+    /** AMP/modules/<name>/: the manifest, head, metrics, serving settings and logs */
+    val dir: File,
     val manifest: ModuleManifest,
     val serving: ServingSettings,
     val stats: ModelServer.ServingStats?,
@@ -244,6 +278,10 @@ private data class ModelsSnapshot(
  */
 private object ModelsCache {
     @Volatile var snapshot = ModelsSnapshot()
+    /** The width of the list column, dragged at the rule between it and the detail panel */
+    @Volatile var listWidth = 260f
+    /** The height of the console box in the model's Console tab, dragged at its lower edge */
+    @Volatile var consoleHeight = 260f
     @Volatile var remoteJars: List<ServerJar> = emptyList()
     @Volatile var remoteLoaded = false
 }
@@ -271,7 +309,7 @@ private fun readSnapshot(remote: Boolean): ModelsSnapshot {
         val (dir, manifest) = readModule(name) ?: return@mapNotNull null
         val runs = readMetricsHistory(dir).runs
         ModelInfo(
-            name, manifest, readServing(name), ModelServer.stats(name), runs, MetricsImages.ensure(dir, runs),
+            name, dir, manifest, readServing(name), ModelServer.stats(name), runs, MetricsImages.ensure(dir, runs),
             manifest.data?.let { DataSource.locate(it) },
             runs.lastOrNull()?.validation?.takeIf { it.endsWith(".csv", ignoreCase = true) }?.let { DataSource.locate(it) },
             sessions.filter { it.kind == KIND_MODEL && it.owner == name },
@@ -304,10 +342,10 @@ private fun readSnapshot(remote: Boolean): ModelsSnapshot {
 /* ---------- page ---------- */
 
 /**
- * The models route: three tabs in a strip like the sandbox's, and an output strip at the bottom that shows what
- * the models, packages and sessions log. MODELS: every intent model grouped by the data it was trained on, the
- * running ones first, with its metrics as images, its data file, and the actions to configure, listen, open and
- * publish it; a new one is built from a csv with the form. PACKAGES: the package jars a script can open, in
+ * The models route: three tabs in a strip like the sandbox's. MODELS: every intent model grouped by the data it
+ * was trained on, the running ones first, and the selected one in a panel with its own tabs: metrics as charts,
+ * the data it was trained, validated and run on, what it needs to run, the console lines about it, and its
+ * sessions; a new one is built from a csv with the form. PACKAGES: the package jars a script can open, in
  * collections (folders) and by where they live, each with what it contains and the Java it needs. SESSIONS: every
  * open session with its own log, each of which can be terminated here.
  */
@@ -315,6 +353,7 @@ private fun readSnapshot(remote: Boolean): ModelsSnapshot {
 fun ModelsPage(navController: NavController) {
     val session by AuthState.session.collectAsState()
 
+    CompositionLocalProvider(LocalContextMenuRepresentation provides DarkDefaultContextMenuRepresentation) {
     Row(modifier = Modifier.fillMaxSize().background(EditorBackground)) {
         NavigationSidebar(
             selectedIndex = -1,
@@ -325,6 +364,7 @@ fun ModelsPage(navController: NavController) {
         )
         ModelsContent(user = session?.username, onLogin = { navController.navigate("login") { launchSingleTop = true } })
     }
+    }
 }
 
 @Composable
@@ -332,6 +372,7 @@ private fun ModelsContent(user: String?, onLogin: () -> Unit) {
     var snapshot by remember { mutableStateOf(ModelsCache.snapshot) }
     var refresh by remember { mutableStateOf(0) }
     var notice by remember { mutableStateOf<String?>(null) }
+    var destroying by remember { mutableStateOf<String?>(null) }
     var tab by remember { mutableStateOf(PageTab.MODELS) }
     var selectedModel by remember { mutableStateOf<String?>(null) }
     var selectedJar by remember { mutableStateOf<String?>(null) }
@@ -375,7 +416,6 @@ private fun ModelsContent(user: String?, onLogin: () -> Unit) {
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp, vertical = 10.dp)
         ) {
             notice?.let {
@@ -383,6 +423,19 @@ private fun ModelsContent(user: String?, onLogin: () -> Unit) {
                     Meta(it)
                     Spacer(Modifier.width(8.dp))
                     SmallButton("Dismiss") { notice = null }
+                }
+            }
+            destroying?.let { name ->
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
+                    Meta("destroy $name? its folder AMP/modules/$name, every run and its logs go; a session or listener on it is closed first")
+                    Spacer(Modifier.width(8.dp))
+                    DangerButton("Destroy $name") {
+                        destroying = null
+                        if (selectedModel == name) selectedModel = null
+                        background { if (!deleteModule(name)) error("$name could not be removed entirely; see the console") }
+                    }
+                    Spacer(Modifier.width(6.dp))
+                    SmallButton("Keep") { destroying = null }
                 }
             }
 
@@ -396,12 +449,12 @@ private fun ModelsContent(user: String?, onLogin: () -> Unit) {
                     creating = creating || (snapshot.models.isEmpty() && build == null),
                     onCreating = { creating = it },
                     onSelect = { selectedModel = it },
-                    onBuild = { name, data, test ->
+                    onBuild = { name, data, test, description ->
                         if (build != null) notice = "a build is already running: ${build?.modelName}"
                         else background {
                             val source = DataSource.read(data.absolutePath) ?: error("${data.name} has no text and label columns the builder can use")
                             test?.let { source.relate(it.absolutePath) }
-                            buildClassifier(source.samples(), name, validation = source.related?.samples(), validationName = source.related?.name, dataName = data.name)
+                            buildClassifier(source.samples(), name, validation = source.related?.samples(), validationName = source.related?.name, dataName = data.name, description = description)
                                 ?: error("model '$name' was not built; the output below says why")
                             selectedModel = name
                             creating = false
@@ -412,9 +465,20 @@ private fun ModelsContent(user: String?, onLogin: () -> Unit) {
                         else background { ModelValidation.validate(model.name, data) }
                     },
                     onSave = { model, settings -> background { writeServing(model.name, settings.copy(enabled = model.listening)) } },
+                    onDescribe = { model, text -> background { updateModule(model.name) { it.copy(description = text.trim().ifEmpty { null }) } } },
                     onListen = { model, on, settings -> background { if (on) ModelServer.start(model.name, settings) else ModelServer.stop(model.name) } },
                     onOpen = { model -> background { ModelSessions.open(model.name) } },
                     onTerminate = { session -> background { session.terminate() } },
+                    onTerminateModel = { model -> background { ModelServer.stop(model.name); model.sessions.forEach { it.terminate() } } },
+                    onDestroy = { model -> destroying = model.name },
+                    onUnpublish = { model ->
+                        val signedIn = user
+                        if (signedIn == null) onLogin()
+                        else background {
+                            val removed = AmieBackend.unpublishModule(model.name, signedIn)
+                            notice = if (removed > 0) "${model.name} removed from ${AmieBackend.config.base}" else "${model.name} was not on ${AmieBackend.config.base}"
+                        }
+                    },
                     onPublish = { model ->
                         val signedIn = user
                         if (signedIn == null) onLogin()
@@ -442,20 +506,69 @@ private fun ModelsContent(user: String?, onLogin: () -> Unit) {
                     onTerminate = { session -> background { session.terminate() } },
                     onTerminateAll = { background { ModelSessions.closeAll(); JarPackages.closeAll(); OrtSessions.cancelAll() } },
                 )
+                PageTab.GUIDE -> GuideTab()
             }
-            Spacer(Modifier.height(16.dp))
         }
 
-        OutputStrip(build, validating)
+        MemoryFooter(openSessions = snapshot.sessions.count { it.kind == KIND_MODEL })
+    }
+}
+
+/**
+ * The strip at the foot of the page: what the process holds of the machine's RAM as a bar, the heap against its
+ * limit, and the encoders in memory, the heavy part that lives outside the heap and is shared by the sessions on
+ * it. Read every two seconds; the bar turns red near the limit, where the next session or build runs out.
+ */
+@Composable
+private fun MemoryFooter(openSessions: Int) {
+    var stats by remember { mutableStateOf<SystemStats?>(null) }
+    var encoders by remember { mutableStateOf<List<LoadedEncoder>>(emptyList()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            stats = withContext(Dispatchers.IO) { runCatching { SystemStats.read() }.getOrNull() }
+            encoders = SharedEncoders.loaded
+            delay(2000)
+        }
+    }
+    val encoderBytes = encoders.sumOf { it.sizeBytes }
+    val s = stats
+    val share = s?.residentShare ?: -1.0
+    val tight = share > 0.85 || (s?.heapShare ?: 0.0) > 0.9
+    Column(modifier = Modifier.fillMaxWidth().background(ConsoleBackground)) {
+        Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(ConsoleBorderColor))
+        Row(modifier = Modifier.fillMaxWidth().height(30.dp).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("RAM", color = if (tight) DangerColor else MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.SansSerif, letterSpacing = 1.sp)
+            Spacer(Modifier.width(12.dp))
+            Box(modifier = Modifier.width(140.dp).height(6.dp).clip(RoundedCornerShape(3.dp)).background(PanelBorder)) {
+                if (share >= 0) Box(modifier = Modifier.fillMaxHeight().fillMaxWidth(share.toFloat().coerceIn(0f, 1f)).clip(RoundedCornerShape(3.dp)).background(if (tight) DangerColor else ChartAccent))
+            }
+            Spacer(Modifier.width(12.dp))
+            if (s == null) Meta("reading…")
+            else {
+                Text(
+                    listOfNotNull(
+                        if (s.residentBytes > 0 && s.physicalBytes > 0) "process ${bytes(s.residentBytes)} of ${bytes(s.physicalBytes)}" else null,
+                        "heap ${bytes(s.heapUsedBytes)} of ${bytes(s.heapMaxBytes)} limit",
+                        "native ${bytes(s.nonHeapUsedBytes)}",
+                        if (encoders.isNotEmpty()) "${encoders.size} encoder${if (encoders.size == 1) "" else "s"} ≈ ${bytes(encoderBytes)} shared by ${encoders.sumOf { it.holders }} holder${if (encoders.sumOf { it.holders } == 1) "" else "s"}" else "no encoder loaded",
+                    ).joinToString(" · "),
+                    color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                Spacer(Modifier.width(16.dp))
+                if (tight) Meta("close sessions and stop listeners you don't need; the heap limit is the JVM's -Xmx")
+                else if (openSessions > 0) Meta("sessions on the same encoder share it; close() the ones a script no longer needs")
+            }
+        }
     }
 }
 
 /** The strip under the window header: one tab per section with its count, and the website when signed in */
 @Composable
-private fun PageTabs(tab: PageTab, counts: Map<PageTab, Int>, signedIn: Boolean, onTab: (PageTab) -> Unit, onWebsite: () -> Unit) {
+private fun PageTabs(tab: PageTab, counts: Map<PageTab, Int?>, signedIn: Boolean, onTab: (PageTab) -> Unit, onWebsite: () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth().background(TabBarBackground)) {
         Row(modifier = Modifier.fillMaxWidth().height(32.dp), verticalAlignment = Alignment.CenterVertically) {
-            PageTab.entries.forEach { t -> TabCell(t.title, counts[t] ?: 0, selected = t == tab) { onTab(t) } }
+            PageTab.entries.forEach { t -> TabCell(t.title, counts[t], selected = t == tab) { onTab(t) } }
             Spacer(Modifier.weight(1f))
             if (signedIn) {
                 SmallButton("Open website", onClick = onWebsite)
@@ -467,7 +580,7 @@ private fun PageTabs(tab: PageTab, counts: Map<PageTab, Int>, signedIn: Boolean,
 }
 
 @Composable
-private fun TabCell(title: String, count: Int, selected: Boolean, onClick: () -> Unit) {
+private fun TabCell(title: String, count: Int?, selected: Boolean, onClick: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val hovered by interactionSource.collectIsHoveredAsState()
     Column(
@@ -481,43 +594,9 @@ private fun TabCell(title: String, count: Int, selected: Boolean, onClick: () ->
         Box(modifier = Modifier.fillMaxWidth().height(2.dp).background(if (selected) TabActiveIndicator else Color.Transparent))
         Row(modifier = Modifier.weight(1f).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(title, color = if (selected || hovered) FontColor else MutedFontColor, fontSize = 12.sp, fontFamily = FontFamily.SansSerif)
-            Spacer(Modifier.width(8.dp))
-            Text(count.toString(), color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.SansSerif)
-        }
-    }
-}
-
-/**
- * The output at the bottom of the page: what the models, packages, sessions, builds and validations log, newest
- * last, with the build or validation in progress on its header. The console in the sandbox has the same lines.
- */
-@Composable
-private fun OutputStrip(build: ModelBuild?, validating: ValidationProgress?) {
-    val pattern = remember { Regex("(?i)model|validat|package|session|collection|metrics|module|env '|jar|sample|build|initMod|ort:|auth:|publish") }
-    val lines = consoleData.filter { it.source == INTERNAL_SOURCE && (it.message ?: "").let(pattern::containsMatchIn) }.takeLast(200)
-    val scroll = rememberScrollState()
-    LaunchedEffect(lines.size) { scroll.scrollTo(scroll.maxValue) }
-    val time = remember { DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault()) }
-    Column(modifier = Modifier.fillMaxWidth().height(132.dp).background(ConsoleBackground)) {
-        Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(ConsoleBorderColor))
-        Row(modifier = Modifier.fillMaxWidth().padding(start = 14.dp, end = 10.dp, top = 5.dp, bottom = 3.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("OUTPUT", color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.SansSerif, letterSpacing = 1.sp)
-            Spacer(Modifier.width(12.dp))
-            when {
-                build != null -> { StatusDot(true); Spacer(Modifier.width(6.dp)); Meta("building ${build.modelName} · ${(build.fraction * 100).toInt()}% · ${build.describe()}") }
-                validating != null -> { StatusDot(true); Spacer(Modifier.width(6.dp)); Meta("validating ${validating.model} · ${validating.done}/${validating.total}") }
-            }
-        }
-        SelectionContainer {
-            Column(modifier = Modifier.fillMaxWidth().verticalScroll(scroll).padding(horizontal = 14.dp, vertical = 2.dp)) {
-                if (lines.isEmpty()) Meta("nothing yet")
-                lines.forEach { e ->
-                    Row {
-                        Text(e.time?.let { time.format(it) } ?: "", color = LogTimestampColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp)
-                        Spacer(Modifier.width(8.dp))
-                        Text(e.message ?: "", color = if (e.level == LogLevel.ERROR) LogErrorTextColor else LogMessageColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    }
-                }
+            if (count != null) {
+                Spacer(Modifier.width(8.dp))
+                Text(count.toString(), color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.SansSerif)
             }
         }
     }
@@ -526,7 +605,7 @@ private fun OutputStrip(build: ModelBuild?, validating: ValidationProgress?) {
 /* ---------- MODELS ---------- */
 
 @Composable
-private fun ModelsTab(
+private fun ColumnScope.ModelsTab(
     snapshot: ModelsSnapshot,
     build: ModelBuild?,
     validating: ValidationProgress?,
@@ -535,14 +614,19 @@ private fun ModelsTab(
     creating: Boolean,
     onCreating: (Boolean) -> Unit,
     onSelect: (String) -> Unit,
-    onBuild: (String, File, File?) -> Unit,
+    onBuild: (String, File, File?, String) -> Unit,
     onValidate: (ModelInfo, File) -> Unit,
     onSave: (ModelInfo, ServingSettings) -> Unit,
+    onDescribe: (ModelInfo, String) -> Unit,
     onListen: (ModelInfo, Boolean, ServingSettings) -> Unit,
     onOpen: (ModelInfo) -> Unit,
     onTerminate: (SessionInfo) -> Unit,
+    onTerminateModel: (ModelInfo) -> Unit,
+    onDestroy: (ModelInfo) -> Unit,
+    onUnpublish: (ModelInfo) -> Unit,
     onPublish: (ModelInfo) -> Unit,
 ) {
+    val clipboard = LocalClipboardManager.current
     SectionTitle("INTENT MODELS", snapshot.models.size) {
         if (build == null) AccentButton(if (creating) "Close" else "+ New model") { onCreating(!creating) }
     }
@@ -558,8 +642,9 @@ private fun ModelsTab(
     val shown = snapshot.models.filter { it.matches(query) }
     val ordered = shown.sortedWith(compareByDescending<ModelInfo> { it.running }.thenByDescending { it.accuracy }.thenBy { it.name })
     val selected = snapshot.models.firstOrNull { it.name == selectedName } ?: ordered.firstOrNull()
-    if (snapshot.models.isNotEmpty()) Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Column(modifier = Modifier.width(260.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    if (snapshot.models.isNotEmpty()) Row(modifier = Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        var listWidth by remember { mutableStateOf(ModelsCache.listWidth) }
+        Column(modifier = Modifier.width(listWidth.dp).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             SearchField(query) { query = it }
             if (shown.isEmpty()) Hint("no matches")
             val groups = ordered.groupBy { it.dataName }
@@ -580,19 +665,33 @@ private fun ModelsTab(
                                 ).joinToString(" · "),
                                 status = model.status,
                                 underline = model.running,
+                                menu = listOfNotNull(
+                                    if (model.sessions.isEmpty()) ContextMenuItem("Open session") { onOpen(model) } else null,
+                                    ContextMenuItem(if (model.listening) "Stop listening" else "Listen on :${model.serving.port}") { onListen(model, !model.listening, model.serving) },
+                                    ContextMenuItem("Validate on sample data") { onValidate(model, ensureSampleData()) },
+                                    ContextMenuItem("Validate on file…") { chooseFile("Validation data", listOf("csv"))?.let { onValidate(model, it) } },
+                                    ContextMenuItem(if (signedIn) "Publish" else "Publish (sign in)") { onPublish(model) },
+                                    ContextMenuItem(if (signedIn) "Remove from the website" else "Remove from the website (sign in)") { onUnpublish(model) },
+                                    ContextMenuItem("Reveal folder") { openInBrowser(model.dir.toURI().toString()) },
+                                    ContextMenuItem("Copy initMod(\"${model.name}\")") { clipboard.setText(AnnotatedString("initMod(\"${model.name}\")")) },
+                                    if (model.running) ContextMenuItem("Terminate model") { onTerminateModel(model) } else null,
+                                    ContextMenuItem("Destroy model…") { onDestroy(model) },
+                                ),
                             ) { onSelect(model.name) }
                         }
                     }
                 }
             }
         }
+        VerticalSeparator { listWidth = it; ModelsCache.listWidth = it }
         if (selected != null) ModelDetail(
             model = selected,
             signedIn = signedIn,
             validating = validating?.takeIf { it.model == selected.name },
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).fillMaxHeight(),
             onValidate = { data -> onValidate(selected, data) },
             onSave = { onSave(selected, it) },
+            onDescribe = { onDescribe(selected, it) },
             onListen = { on, settings -> onListen(selected, on, settings) },
             onOpen = { onOpen(selected) },
             onTerminate = onTerminate,
@@ -607,8 +706,9 @@ private fun ModelsTab(
  * `buildClassifier` the sandbox's modelBuilder runs, and the BUILDING card and the output strip follow it.
  */
 @Composable
-private fun NewModelForm(onBuild: (String, File, File?) -> Unit) {
+private fun NewModelForm(onBuild: (String, File, File?, String) -> Unit) {
     var name by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
     var data by remember { mutableStateOf<File?>(null) }
     var test by remember { mutableStateOf<File?>(null) }
     var preview by remember { mutableStateOf<String?>(null) }
@@ -628,6 +728,7 @@ private fun NewModelForm(onBuild: (String, File, File?) -> Unit) {
         SubTitle("NEW MODEL")
         Spacer(Modifier.height(6.dp))
         SettingField("Name", name) { name = it.filter { c -> c.isLetterOrDigit() || c in "._-" } }
+        SettingField("About", description) { description = it }
         fun pick(f: File) {
             data = f
             if (name.isBlank()) name = f.nameWithoutExtension.filter { c -> c.isLetterOrDigit() || c in "._-" }
@@ -642,15 +743,19 @@ private fun NewModelForm(onBuild: (String, File, File?) -> Unit) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Meta(preview ?: "")
             Spacer(Modifier.weight(1f))
-            AccentButton("Build", enabled = ready) { onBuild(name.trim(), data!!, test) }
+            AccentButton("Build", enabled = ready) { onBuild(name.trim(), data!!, test, description) }
         }
     }
 }
 
+private enum class DetailTab(val title: String) { ABOUT("About"), METRICS("Metrics"), DATA("Data"), REQUIREMENTS("Requirements"), CONSOLE("Console"), SESSIONS("Sessions") }
+
 /**
- * The selected model: name, status and actions in the header; then what matters first, the metrics as images
- * and the data it was trained and validated on (open in a viewer, or preview here); the serving settings when
- * Configure is on; labels, encoder and serving folded under DETAILS; and the sessions it owns with their logs.
+ * The selected model: name, status and actions in the header; the serving settings when Configure is on; then
+ * one tab at a time. METRICS: the charts of the last validation and of the session log, and the Validate actions.
+ * DATA: the csv files it was trained and validated on, with their label balance and text lengths, and what it has
+ * run on since. REQUIREMENTS: what it needs to run, checked on this machine. CONSOLE: the lines about it in the
+ * console. SESSIONS: the sessions it owns with their logs.
  */
 @Composable
 private fun ModelDetail(
@@ -660,11 +765,13 @@ private fun ModelDetail(
     modifier: Modifier = Modifier,
     onValidate: (File) -> Unit,
     onSave: (ServingSettings) -> Unit,
+    onDescribe: (String) -> Unit,
     onListen: (Boolean, ServingSettings) -> Unit,
     onOpen: () -> Unit,
     onTerminate: (SessionInfo) -> Unit,
     onPublish: () -> Unit,
 ) {
+    var tab by remember(model.name) { mutableStateOf(DetailTab.ABOUT) }
     var configuring by remember(model.name) { mutableStateOf(false) }
     var host by remember(model.name) { mutableStateOf(model.serving.host) }
     var port by remember(model.name) { mutableStateOf(model.serving.port.toString()) }
@@ -678,6 +785,7 @@ private fun ModelDetail(
         path = path.trim(),
         methods = listOfNotNull("POST".takeIf { allowPost }, "GET".takeIf { allowGet }).ifEmpty { listOf("POST") },
     )
+    val consoleLines = consoleLinesAbout(model.name)
 
     DetailPanel(modifier) {
         DetailHeader(
@@ -691,56 +799,159 @@ private fun ModelDetail(
         ) {
             SmallButton("Configure") { configuring = !configuring }
             SmallButton(if (model.listening) "Stop" else "Listen") { onListen(!model.listening, settings) }
-            AccentButton("Open session", onClick = onOpen)
+            if (model.sessions.isEmpty()) AccentButton("Open session", onClick = onOpen)
+            else DangerButton("Terminate session") { model.sessions.forEach(onTerminate) }
             SmallButton(if (signedIn) "Publish" else "Publish (sign in)", onClick = onPublish)
         }
 
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp).padding(bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            if (configuring) {
-                SettingField("Host", host) { host = it }
-                SettingField("Port", port) { port = it.filter(Char::isDigit).take(5) }
-                SettingField("Path", path) { path = it }
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
-                    Text("Methods", color = MutedFontColor, fontSize = 11.sp, modifier = Modifier.width(56.dp))
-                    Toggle("POST", allowPost) { allowPost = it }
-                    Spacer(Modifier.width(6.dp))
-                    Toggle("GET", allowGet) { allowGet = it }
-                    Spacer(Modifier.weight(1f))
-                    SmallButton("Save") { onSave(settings) }
+        if (configuring) Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp).padding(bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            SettingField("Host", host) { host = it }
+            SettingField("Port", port) { port = it.filter(Char::isDigit).take(5) }
+            SettingField("Path", path) { path = it }
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
+                Text("Methods", color = MutedFontColor, fontSize = 11.sp, modifier = Modifier.width(56.dp))
+                Toggle("POST", allowPost) { allowPost = it }
+                Spacer(Modifier.width(6.dp))
+                Toggle("GET", allowGet) { allowGet = it }
+                Spacer(Modifier.weight(1f))
+                SmallButton("Save") { onSave(settings) }
+            }
+            val url = settings.url(model.name)
+            if (allowPost) CopyLine("POST", url, curl = "curl -s -X POST '$url' -H 'Content-Type: application/json' -d '{\"text\": \"turn the lights on\"}'")
+            if (allowGet) CopyLine("GET", "$url?text=…", copy = "$url?text=", curl = "curl -s '$url?text=turn%20the%20lights%20on'")
+            if (model.listening) Hint("applies after Stop and Listen")
+        }
+
+        DetailTabs(
+            tabs = DetailTab.entries.map { t ->
+                t to when (t) {
+                    DetailTab.METRICS -> model.metrics.size.takeIf { it > 0 }
+                    DetailTab.CONSOLE -> consoleLines.size.takeIf { it > 0 }
+                    DetailTab.SESSIONS -> model.sessions.size.takeIf { it > 0 }
+                    else -> null
                 }
-                KeyValues(
-                    *listOfNotNull(
-                        if (allowPost) "POST" to settings.url(model.name) else null,
-                        if (allowGet) "GET" to "${settings.url(model.name)}?text=…" else null,
-                    ).toTypedArray()
-                )
-                if (model.listening) Hint("applies after Stop and Listen")
+            },
+            selected = tab,
+            onSelect = { tab = it },
+        )
+
+        Column(modifier = Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 12.dp).padding(top = 8.dp, bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            when (tab) {
+                DetailTab.ABOUT -> AboutBlock(model, onDescribe)
+                DetailTab.METRICS -> MetricsBlock(model, validating, onValidate)
+                DetailTab.DATA -> DataBlock(model)
+                DetailTab.REQUIREMENTS -> RequirementsBlock(model)
+                DetailTab.CONSOLE -> ConsoleBlock(model.name, consoleLines)
+                DetailTab.SESSIONS -> SessionsOf(model.sessions, onTerminate)
             }
-
-            MetricsBlock(model.metrics, model.plots, validating, onValidate)
-
-            DataBlock(model)
-
-            Fold("DETAILS", null, open = false, key = "${model.name}:details") {
-                KeyValues(
-                    "labels" to model.manifest.labels.joinToString().ifEmpty { "—" },
-                    "encoder" to File(model.manifest.encoder).name,
-                    "files" to "AMP/modules/${model.name}/",
-                    *listOfNotNull(model.stats?.let { s -> "serving" to "${s.methods.joinToString("/")} ${s.url} · ${s.requests} requests, ${s.errors} errors" }).toTypedArray(),
-                )
-            }
-
-            SessionsOf(model.sessions, onTerminate)
         }
     }
 }
 
+/** The tab strip of a detail panel: a title with its count per tab, the chosen one underlined, a rule under them all */
+@Composable
+private fun DetailTabs(tabs: List<Pair<DetailTab, Int?>>, selected: DetailTab, onSelect: (DetailTab) -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(modifier = Modifier.fillMaxWidth().height(30.dp).padding(horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            tabs.forEach { (t, count) ->
+                val interactionSource = remember { MutableInteractionSource() }
+                val hovered by interactionSource.collectIsHoveredAsState()
+                val on = t == selected
+                Column(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .hoverable(interactionSource)
+                        .clickable(interactionSource = interactionSource, indication = null) { onSelect(t) }
+                ) {
+                    Row(modifier = Modifier.weight(1f).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(t.title, color = if (on || hovered) FontColor else MutedFontColor, fontSize = 12.sp, fontFamily = FontFamily.SansSerif, fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal)
+                        if (count != null) {
+                            Spacer(Modifier.width(6.dp))
+                            Text(count.toString(), color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+                        }
+                    }
+                    Box(modifier = Modifier.fillMaxWidth().height(2.dp).background(if (on) TabActiveIndicator else Color.Transparent))
+                }
+            }
+        }
+        Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(PanelBorder))
+    }
+}
+
 /**
- * The metrics as images drawn by MetricsImages when the metrics change: the summary (gauges and what the run
- * says), F1 per label, the confusion matrix and, with more than one run, the trend. Validate adds a run.
+ * What the model is, from its manifest: the description (editable here, kept in module.json), where it lives,
+ * what it was trained on and how. Models built before the training details were kept say so.
  */
 @Composable
-private fun MetricsBlock(runs: List<MetricsRun>, plots: List<MetricsPlot>, validating: ValidationProgress?, onValidate: (File) -> Unit) {
+private fun AboutBlock(model: ModelInfo, onDescribe: (String) -> Unit) {
+    val m = model.manifest
+    var text by remember(model.name, m.description) { mutableStateOf(m.description ?: "") }
+    val dirty = text.trim() != (m.description ?: "")
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        SubTitle("ABOUT")
+        Spacer(Modifier.weight(1f))
+        if (dirty) AccentButton("Save description") { onDescribe(text) }
+    }
+    BasicTextField(
+        value = text,
+        onValueChange = { text = it },
+        textStyle = TextStyle(color = FontColor, fontSize = 12.sp, fontFamily = FontFamily.SansSerif, lineHeight = 18.sp),
+        cursorBrush = SolidColor(FontColor),
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 44.dp)
+            .background(CodeBackground, RoundedCornerShape(6.dp))
+            .border(1.dp, ConsoleBorderColor, RoundedCornerShape(6.dp))
+            .padding(horizontal = 10.dp, vertical = 7.dp),
+        decorationBox = { inner ->
+            if (text.isEmpty()) Text("no description yet: write what this model is for and what it was trained on", color = MutedFontColor, fontSize = 12.sp, fontFamily = FontFamily.SansSerif)
+            inner()
+        },
+    )
+
+    SubTitle("WHERE")
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        SelectionContainer(modifier = Modifier.weight(1f)) {
+            Text(model.dir.absolutePath, color = LogMessageColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        Spacer(Modifier.width(8.dp))
+        SmallButton("Reveal folder") { openInBrowser(model.dir.toURI().toString()) }
+    }
+    KeyValues(
+        "created" to m.createdAt.take(19).replace('T', ' '),
+        "encoder" to "${File(m.encoder).name}  ·  ${m.encoder}",
+        "head" to "${m.model}  ·  ${m.format}  ·  ${m.input} [${m.inputDim}] → ${m.output} [${m.outputDim}]",
+        "labels" to m.labels.joinToString().ifEmpty { "—" },
+    )
+
+    SubTitle("TRAINING")
+    if (m.epochs == null && m.architecture == null) Hint("not recorded: this model was built before the training details were kept; build it again to have them")
+    KeyValues(
+        *listOfNotNull(
+            m.architecture?.let { "architecture" to it },
+            "data" to (m.data ?: if (model.name == "dummy") "none, the weights are written, not trained" else "unknown"),
+            m.trainRows?.let { "train rows" to it.toString() },
+            m.validationRows?.let { "validation" to "$it rows of ${m.validation ?: "a split"}" },
+            m.epochs?.let { "epochs" to it.toString() },
+            m.batchSize?.let { "batch size" to it.toString() },
+            m.learningRate?.let { "learning rate" to it.toString() },
+            m.hiddenDim?.let { "hidden units" to it.toString() },
+            m.finalLoss?.let { "final loss" to fmt(it) },
+            m.trainAccuracy?.let { "train accuracy" to pct(it) },
+        ).toTypedArray()
+    )
+}
+
+/**
+ * The charts of one validation run at a time, chosen on the run strip (the latest first), each a figure with a
+ * title, the run and its data in the subtitle and a caption that says how to read it: the scores per label and
+ * the confusion matrix. Under them, with more than one run, how the scores changed over the runs; and from the
+ * sessions log how sure the model is and how long it takes. Validate adds a run.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun MetricsBlock(model: ModelInfo, validating: ValidationProgress?, onValidate: (File) -> Unit) {
+    val runs = model.metrics
     Row(verticalAlignment = Alignment.CenterVertically) {
         SubTitle("METRICS")
         Spacer(Modifier.weight(1f))
@@ -751,41 +962,231 @@ private fun MetricsBlock(runs: List<MetricsRun>, plots: List<MetricsPlot>, valid
             AccentButton("Validate on file") { chooseFile("Validation data", listOf("csv"))?.let(onValidate) }
         }
     }
-    val run = runs.lastOrNull()
-    if (run == null) {
-        Hint("no validation yet")
-        return
+    fun plot(name: String) = model.plots.firstOrNull { it.file.name == name }
+
+    if (runs.isEmpty()) Hint("no validation yet: validate on the sample data or on a csv of your own")
+    else {
+        var index by remember(model.name) { mutableStateOf(runs.lastIndex) }
+        if (index > runs.lastIndex) index = runs.lastIndex
+        val run = runs[index]
+        // The runs as a strip, the latest first; every one says what it was validated on when hovered
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("run", color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.width(40.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                runs.indices.reversed().forEach { i -> Toggle("${i + 1}", i == index) { index = i } }
+            }
+        }
+        KeyValues(
+            "when" to run.createdAt.take(19).replace('T', ' '),
+            "on" to "${run.validationSize} rows of ${run.validation}${if (run.trainSize > 0) " · trained on ${run.trainSize}" else ""}",
+            "scores" to "accuracy ${pct(run.accuracy)}  ·  macro F1 ${fmt(run.macroF1)}  ·  ${run.labels.size} labels: ${run.labels.keys.joinToString()}",
+        )
+        run.warnings.forEach { Hint("warning: $it") }
+        val metricsStamp = File(model.dir, "metrics.json").lastModified()
+        var runPlots by remember(model.name) { mutableStateOf<List<MetricsPlot>>(emptyList()) }
+        LaunchedEffect(model.name, index, metricsStamp) {
+            runPlots = withContext(Dispatchers.IO) { runCatching { MetricsImages.runPlots(model.dir, runs, index) }.getOrDefault(emptyList()) }
+        }
+        if (runPlots.isEmpty()) Hint("drawing…")
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            runPlots.forEach { PlotImage(it) }
+        }
+        plot("runs.png")?.let { PlotImage(it) }
     }
-    plots.firstOrNull { it.file.name == "summary.png" }?.let { PlotImage(it) }
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.Top) {
-        plots.filter { it.file.name == "labels.png" || it.file.name == "confusion.png" }.forEach { PlotImage(it) }
-    }
-    plots.firstOrNull { it.file.name == "history.png" }?.let { PlotImage(it) }
-    if (runs.size > 1) {
-        Fold("RUNS", runs.size, open = false, key = "runs") {
-            KeyValues(*runs.mapIndexed { i, r -> "${i + 1}" to "acc ${fmt(r.accuracy)}  F1 ${fmt(r.macroF1)}  ${r.validation}" }.toTypedArray())
+
+    val session = listOfNotNull(plot("confidence.png"), plot("latency.png"))
+    if (session.isNotEmpty()) {
+        SubTitle("FROM THE SESSIONS")
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            session.forEach { PlotImage(it) }
         }
     }
-    run.warnings.forEach { Hint("warning: $it") }
 }
 
-/** The csv files behind a model, the training data and the last validation set: open in a viewer, or preview here */
+/** A labeled csv read once per file version: its rows and which columns hold the text and label */
+private class CsvFacts(val table: List<List<String>>, val textColumn: Int, val labelColumn: Int) {
+    val rows: List<List<String>> get() = table.drop(1)
+    val labels: Map<String, Int> get() = rows.mapNotNull { it.getOrNull(labelColumn)?.trim()?.takeIf(String::isNotEmpty) }.groupingBy { it }.eachCount()
+    val wordCounts: List<Int> get() = rows.mapNotNull { it.getOrNull(textColumn)?.trim()?.takeIf(String::isNotEmpty) }.map { it.split(Regex("\\s+")).size }
+}
+
+@Composable
+private fun rememberCsv(file: File): CsvFacts? = remember(file.path, file.lastModified()) {
+    runCatching {
+        val table = parseCsv(file.readText()).filter { row -> row.any { it.isNotBlank() } }
+        if (table.size < 2) return@runCatching null
+        val headers = table.first().map { it.trim() }
+        val structure = inferStructure(headers, table.drop(1)) ?: return@runCatching null
+        CsvFacts(table, headers.indexOf(structure.textColumn), headers.indexOf(structure.labelColumn))
+    }.getOrNull()
+}
+
+/**
+ * The data behind a model. The csv files it was trained and validated on, each with how many rows per label (so
+ * an unbalanced set is visible at once), how long the texts are, and the first rows; then what the model has run
+ * on since: the texts its sessions were asked and the requests the server answered.
+ */
 @Composable
 private fun DataBlock(model: ModelInfo) {
     val files = listOfNotNull(model.dataFile?.let { "trained on" to it }, model.validationFile?.takeIf { it != model.dataFile }?.let { "validated on" to it })
-    SubTitle("DATA")
-    if (files.isEmpty()) {
-        Hint(if (model.manifest.data != null) "${model.manifest.data} is not in AMP/ any more" else "no data file recorded")
-        return
-    }
+    SubTitle("DATA FILES")
+    if (files.isEmpty()) Hint(if (model.manifest.data != null) "${model.manifest.data} is not in AMP/ any more" else "no data file recorded; the dummy's head is written, not trained")
     files.forEach { (role, file) ->
+        val facts = rememberCsv(file)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(role, color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.width(92.dp))
-            Text(file.name, color = FontColor, fontSize = 12.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(file.name, color = FontColor, fontSize = 12.sp, fontFamily = FontFamily.Monospace, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Spacer(Modifier.width(10.dp))
+            Meta(facts?.let { "${it.rows.size} rows · ${it.labels.size} labels" } ?: "no text and label columns")
+            Spacer(Modifier.weight(1f))
             AccentButton("Open in viewer") { openFile(file) }
+        }
+        if (facts != null) {
+            val known = model.manifest.labels.toSet()
+            val balance = facts.labels.entries.sortedByDescending { it.value }
+            Fold("rows per label", balance.size, open = true, key = "${model.name}:${file.path}:labels") {
+                BarRows(balance.map { (label, n) -> BarRow(label, n, if (label in known || known.isEmpty()) null else "not a label of ${model.name}") })
+            }
+            val words = facts.wordCounts
+            if (words.isNotEmpty()) {
+                val buckets = listOf("1–2 words" to 1..2, "3–4" to 3..4, "5–6" to 5..6, "7–9" to 7..9, "10+" to 10..Int.MAX_VALUE)
+                Fold("text length", null, open = false, key = "${model.name}:${file.path}:lengths") {
+                    BarRows(buckets.map { (name, range) -> BarRow(name, words.count { it in range }) })
+                }
+            }
         }
         Fold("preview ${file.name}", null, open = false, key = "${model.name}:${file.path}") { CsvPreview(file) }
     }
+
+    val logFile = SessionRuns.logFile(model.dir)
+    val logged = remember(model.name, logFile.lastModified()) { SessionRuns.read(model.dir, limit = 2000) }
+    val incomingFile = SessionRuns.incomingFile(model.dir)
+    val incoming = remember(model.name, incomingFile.lastModified()) { SessionRuns.incoming(model.dir) }
+    SubTitle("RAN ON")
+    if (logged.isEmpty() && incoming == 0) Hint("nothing yet: open a session or listen and send it text")
+    else {
+        KeyValues(
+            "sessions" to "${logged.size} texts answered, in ${logFile.name}",
+            "served" to if (incoming == 0) "no requests yet" else "$incoming requests, in ${incomingFile.name}",
+        )
+        if (logged.isNotEmpty()) {
+            val byLabel = logged.mapNotNull { it.top }.groupingBy { it }.eachCount().entries.sortedByDescending { it.value }
+            Fold("answered with", byLabel.size, open = true, key = "${model.name}:answered") {
+                BarRows(byLabel.map { (label, n) -> BarRow(label, n) })
+            }
+            Fold("last texts", null, open = false, key = "${model.name}:last") {
+                KeyValues(*logged.takeLast(12).reversed().map { r -> (r.top ?: "-") to "${r.text.take(70)}  (${r.millis} ms)" }.toTypedArray())
+            }
+        }
+    }
+}
+
+private data class BarRow(val label: String, val value: Int, val note: String? = null)
+
+/** Counts as calm horizontal bars of one hue, the longest filling the row, the count and an optional note beside each */
+@Composable
+private fun BarRows(rows: List<BarRow>) {
+    if (rows.isEmpty()) { Hint("none"); return }
+    val max = rows.maxOf { it.value }.coerceAtLeast(1)
+    val labelWidth = (rows.maxOf { it.label.length } * 7 + 12).coerceIn(60, 180).dp
+    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        rows.forEach { row ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(row.label, color = FontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.width(labelWidth))
+                Box(modifier = Modifier.weight(1f).height(8.dp).clip(RoundedCornerShape(4.dp)).background(PanelBorder)) {
+                    Box(modifier = Modifier.fillMaxHeight().fillMaxWidth(row.value.toFloat() / max).clip(RoundedCornerShape(4.dp)).background(ChartAccent))
+                }
+                Spacer(Modifier.width(10.dp))
+                Text(row.value.toString(), color = FontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.width(40.dp))
+                row.note?.let { Meta(it) }
+            }
+        }
+    }
+}
+
+/** What the model needs to run, each line checked on this machine: met, not met, or only information */
+@Composable
+private fun RequirementsBlock(model: ModelInfo) {
+    var requirements by remember(model.name) { mutableStateOf<List<Requirement>?>(null) }
+    // The port probe binds a socket, so the checks run off the UI thread and again when serving changes
+    LaunchedEffect(model.name, model.listening, model.serving) {
+        requirements = withContext(Dispatchers.IO) { runCatching { ModelRequirements.check(model.dir, model.manifest, model.serving, model.listening) }.getOrDefault(emptyList()) }
+    }
+    val checks = requirements
+    SubTitle("REQUIREMENTS")
+    if (checks == null) { Hint("checking…"); return }
+    val unmet = checks.count { it.ok == false }
+    Hint(if (unmet == 0) "everything the model needs is here" else "$unmet not met: initMod and Listen will fail until they are")
+    Column(modifier = Modifier.fillMaxWidth()) {
+        checks.forEachIndexed { i, r ->
+            if (i > 0) Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(PanelBorder))
+            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.Top) {
+                Text(
+                    when (r.ok) { true -> "✓"; false -> "✗"; null -> "·" },
+                    color = when (r.ok) { true -> SuccessColor; false -> DangerColor; null -> MutedFontColor },
+                    fontSize = 12.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.width(18.dp),
+                )
+                Text(r.name, color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.width(110.dp))
+                SelectionContainer(modifier = Modifier.weight(1f)) {
+                    Text(r.detail, color = if (r.ok == false) LogErrorTextColor else LogMessageColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp)
+                }
+            }
+        }
+    }
+}
+
+/** The console lines that name the model, read off the same list the sandbox console shows */
+private fun consoleLinesAbout(name: String): List<ResponseDto> {
+    val pattern = Regex("(?i)(^|[^A-Za-z0-9_.-])" + Regex.escape(name) + "([^A-Za-z0-9_.-]|$)")
+    return consoleData.filter { it.source == INTERNAL_SOURCE && (it.message ?: "").let(pattern::containsMatchIn) }
+}
+
+/**
+ * The console of the model: every internal line that names it (what initMod, serve, validate and the builder
+ * said), newest last, or with the switch everything the models, packages and sessions log.
+ */
+@Composable
+private fun ConsoleBlock(name: String, mine: List<ResponseDto>) {
+    var all by remember(name) { mutableStateOf(false) }
+    val pattern = remember { Regex("(?i)model|validat|package|session|collection|metrics|module|env '|jar|sample|build|initMod|ort:|auth:|publish|serve") }
+    val lines = (if (all) consoleData.filter { it.source == INTERNAL_SOURCE && (it.message ?: "").let(pattern::containsMatchIn) } else mine).takeLast(400)
+    val scroll = rememberScrollState()
+    LaunchedEffect(lines.size, all) { scroll.scrollTo(scroll.maxValue) }
+    val time = remember { DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault()) }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        SubTitle("CONSOLE")
+        Spacer(Modifier.width(10.dp))
+        Meta("${lines.size} lines")
+        Spacer(Modifier.weight(1f))
+        Toggle("this model", !all) { all = false }
+        Spacer(Modifier.width(6.dp))
+        Toggle("all models", all) { all = true }
+    }
+    var height by remember { mutableStateOf(ModelsCache.consoleHeight) }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(height.dp)
+            .clip(RoundedCornerShape(6.dp))
+            .background(CodeBackground)
+            .border(1.dp, ConsoleBorderColor, RoundedCornerShape(6.dp))
+            .verticalScroll(scroll)
+            .padding(horizontal = 10.dp, vertical = 6.dp)
+    ) {
+        if (lines.isEmpty()) Meta(if (all) "nothing yet" else "nothing about $name yet: open a session, listen or validate")
+        SelectionContainer {
+            Column {
+                lines.forEach { e ->
+                    Row {
+                        Text(e.time?.let { time.format(it) } ?: "", color = LogTimestampColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp)
+                        Spacer(Modifier.width(8.dp))
+                        Text(e.message ?: "", color = if (e.level == LogLevel.ERROR) LogErrorTextColor else LogMessageColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp)
+                    }
+                }
+            }
+        }
+    }
+    HeightHandle(height, min = 100f, max = 900f) { height = it; ModelsCache.consoleHeight = it }
 }
 
 /** The first rows of a csv as a monospace table */
@@ -849,7 +1250,7 @@ private fun PlotImage(plot: MetricsPlot) {
 /* ---------- PACKAGES ---------- */
 
 @Composable
-private fun PackagesTab(
+private fun ColumnScope.PackagesTab(
     snapshot: ModelsSnapshot,
     selectedName: String?,
     onSelect: (String) -> Unit,
@@ -878,8 +1279,9 @@ private fun PackagesTab(
     var query by remember { mutableStateOf("") }
     val shown = snapshot.jars.filter { it.matches(query) }
     val selected = snapshot.jars.firstOrNull { it.name == selectedName } ?: shown.firstOrNull()
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Column(modifier = Modifier.width(260.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Row(modifier = Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        var listWidth by remember { mutableStateOf(ModelsCache.listWidth) }
+        Column(modifier = Modifier.width(listWidth.dp).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             SearchField(query) { query = it }
             if (shown.isEmpty()) Hint("no matches")
             snapshot.collections.forEach { collection ->
@@ -892,17 +1294,31 @@ private fun PackagesTab(
                 val jars = groups[location] ?: return@forEach
                 Fold(location, jars.size, open = location != "On the server" || query.isNotBlank() || jars.any { it.name == selected?.name }, key = location) {
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        jars.forEach { jar -> JarRow(jar, selected = jar.name == selected?.name, onSelect = { onSelect(jar.name) }) }
+                        jars.forEach { jar -> JarRow(jar, selected = jar.name == selected?.name, onFetch = { onFetch(jar) }, onSelect = { onSelect(jar.name) }) }
                     }
                 }
             }
         }
-        if (selected != null) JarDetail(selected, Modifier.weight(1f), onFetch = { onFetch(selected) }, onTerminate = onTerminate)
+        VerticalSeparator { listWidth = it; ModelsCache.listWidth = it }
+        if (selected != null) JarDetail(selected, Modifier.weight(1f).fillMaxHeight(), onFetch = { onFetch(selected) }, onTerminate = onTerminate)
     }
 }
 
+/** The right-click actions of a package: the same as its detail panel's buttons, plus the copy of the call that opens it */
 @Composable
-private fun JarRow(jar: JarInfo, selected: Boolean, onDetach: (() -> Unit)? = null, onSelect: () -> Unit) {
+private fun jarMenu(jar: JarInfo, onFetch: (() -> Unit)? = null, onDetach: (() -> Unit)? = null): List<ContextMenuItem> {
+    val clipboard = LocalClipboardManager.current
+    return listOfNotNull(
+        ContextMenuItem("Copy initMod(\"${jar.name}\")") { clipboard.setText(AnnotatedString("initMod(\"${jar.name}\")")) },
+        ContextMenuItem("Open page") { openInBrowser(jar.page) },
+        if (!jar.local && onFetch != null) ContextMenuItem("Fetch", onFetch) else null,
+        jar.file?.let { f -> ContextMenuItem("Reveal file") { openInBrowser(f.parentFile.toURI().toString()) } },
+        onDetach?.let { ContextMenuItem("Detach from collection", it) },
+    )
+}
+
+@Composable
+private fun JarRow(jar: JarInfo, selected: Boolean, onDetach: (() -> Unit)? = null, onFetch: (() -> Unit)? = null, onSelect: () -> Unit) {
     ListRow(
         name = jar.name,
         active = jar.open > 0,
@@ -911,6 +1327,7 @@ private fun JarRow(jar: JarInfo, selected: Boolean, onDetach: (() -> Unit)? = nu
         status = jar.status,
         underline = jar.open > 0,
         onDetach = onDetach,
+        menu = jarMenu(jar, onFetch, onDetach),
         onSelect = onSelect,
     )
 }
@@ -1011,7 +1428,7 @@ private fun JarDetail(jar: JarInfo, modifier: Modifier = Modifier, onFetch: () -
             jar.file?.let { f -> SmallButton("Reveal file") { openInBrowser(f.parentFile.toURI().toString()) } }
         }
 
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp).padding(bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 12.dp).padding(bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             KeyValues("opens with" to "initMod(\"${jar.name}\"), a fresh instance per call")
 
             Fold("SOURCE", null, open = false, key = "${jar.name}:source") { KeyValues(
@@ -1056,7 +1473,7 @@ private fun JarDetail(jar: JarInfo, modifier: Modifier = Modifier, onFetch: () -
 
 @Composable
 private fun SessionsTab(sessions: List<SessionInfo>, onTerminate: (SessionInfo) -> Unit, onTerminateAll: () -> Unit) {
-    SectionTitle("SESSIONS", sessions.size) { if (sessions.isNotEmpty()) SmallButton("Terminate all", onClick = onTerminateAll) }
+    SectionTitle("SESSIONS", sessions.size) { if (sessions.isNotEmpty()) DangerButton("Terminate all", onClick = onTerminateAll) }
     if (sessions.isEmpty()) {
         Hint("no open sessions")
         return
@@ -1064,7 +1481,7 @@ private fun SessionsTab(sessions: List<SessionInfo>, onTerminate: (SessionInfo) 
     var query by remember { mutableStateOf("") }
     val q = query.trim().lowercase()
     val shown = sessions.filter { q.isEmpty() || it.owner.lowercase().contains(q) || it.kind.lowercase().contains(q) || "#${it.id}".contains(q) }
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         if (sessions.size > 4) SearchField(query) { query = it }
         if (shown.isEmpty()) Hint("no matches")
         SessionList(shown, showOwner = true, onTerminate)
@@ -1077,7 +1494,7 @@ private fun SessionsOf(sessions: List<SessionInfo>, onTerminate: (SessionInfo) -
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
         SubTitle("SESSIONS  ${sessions.size}")
         Spacer(Modifier.weight(1f))
-        if (sessions.size > 1) SmallButton("Terminate all") { sessions.forEach(onTerminate) }
+        if (sessions.size > 1) DangerButton("Terminate all") { sessions.forEach(onTerminate) }
     }
     if (sessions.isEmpty()) Hint("none open")
     else SessionList(sessions, showOwner = false, onTerminate)
@@ -1098,7 +1515,14 @@ private fun SessionList(sessions: List<SessionInfo>, showOwner: Boolean, onTermi
 @Composable
 private fun SessionRow(session: SessionInfo, showOwner: Boolean, onTerminate: () -> Unit) {
     var showLog by remember(session.key) { mutableStateOf(false) }
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp)) {
+    val clipboard = LocalClipboardManager.current
+    val menu = listOfNotNull(
+        ContextMenuItem("Terminate", onTerminate),
+        if (session.hasLog) ContextMenuItem(if (showLog) "Hide log" else "Show log") { showLog = !showLog } else null,
+        if (session.hasLog) ContextMenuItem("Copy log") { clipboard.setText(AnnotatedString(session.log.joinToString("\n") { "${'$'}{it.time} ${'$'}{it.kind} ${'$'}{it.text}" })) } else null,
+        ContextMenuItem("Copy #${session.id}") { clipboard.setText(AnnotatedString("${session.id}")) },
+    )
+    ContextMenuArea(items = { menu }) { Column(modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             StatusDot(session.running)
             Spacer(Modifier.width(8.dp))
@@ -1110,13 +1534,13 @@ private fun SessionRow(session: SessionInfo, showOwner: Boolean, onTerminate: ()
                 SmallButton(if (showLog) "Hide log" else "Log ${session.log.size}") { showLog = !showLog }
                 Spacer(Modifier.width(6.dp))
             }
-            SmallButton("Terminate", onClick = onTerminate)
+            DangerButton("Terminate", onClick = onTerminate)
         }
         if (showLog) {
             Spacer(Modifier.height(6.dp))
             LogBox(session.log)
         }
-    }
+    } }
 }
 
 /** The last lines of a session's log, console style: time, kind and text */
@@ -1145,6 +1569,98 @@ private fun LogBox(entries: List<SessionLogEntry>) {
                     }
                 }
             }
+        }
+    }
+}
+
+/* ---------- GUIDE ---------- */
+
+/** One paragraph of the guide */
+@Composable
+private fun Para(text: String) {
+    Text(text, color = LogMessageColor, fontSize = 12.sp, fontFamily = FontFamily.SansSerif, lineHeight = 18.sp, modifier = Modifier.padding(bottom = 6.dp))
+}
+
+/** A few lines a script would hold, in the console's box so they can be selected and copied */
+@Composable
+private fun Lines(vararg lines: String) {
+    SelectionContainer {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(6.dp))
+                .background(CodeBackground)
+                .border(1.dp, ConsoleBorderColor, RoundedCornerShape(6.dp))
+                .padding(horizontal = 10.dp, vertical = 6.dp)
+        ) { lines.forEach { Text(it, color = LogMessageColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp) } }
+    }
+    Spacer(Modifier.height(6.dp))
+}
+
+/**
+ * How to work with this page and the models, packages and sessions behind it, one fold per subject: what an
+ * intent model is and how it is built, validated, served and published; the same from a script; packages and
+ * collections; sessions and memory; the files under AMP/; how to read the charts.
+ */
+@Composable
+private fun GuideTab() {
+    SectionTitle("GUIDE", null)
+    Column(modifier = Modifier.widthIn(max = 860.dp).verticalScroll(rememberScrollState()).padding(bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Fold("What an intent model is", null, open = true, key = "guide:model") {
+            Para("An intent model turns a sentence into one of a few labels, like greeting, lights or weather. It has two parts: the encoder, a BERT model (bge) that turns the text into 768 numbers, and the head, a small dense network trained on your rows that turns those numbers into a score per label. Only the head is yours: it lives in AMP/modules/<name>/ as model.onnx with module.json (name, labels, encoder, how it was trained), metrics.json (every validation), serving.json and sessions.log. The encoder is shared by every model and loaded once.")
+            Para("The dummy model is there from the first start: a head with made-up weights over the same encoder, so the page has something to show and a script can call initMod(\"dummy\") before anything is trained. Its scores mean nothing.")
+        }
+        Fold("Building one", null, open = false, key = "guide:build") {
+            Para("Press + New model. Give it a name, a sentence about what it is for, and a csv with a text column and a label column (the columns are inferred from the header; Sample data writes AMP/sample-intents.csv with 45 rows over three labels). A test csv is optional; without one, 20% of the rows are held out. Build embeds every row through the encoder, fits the head for 150 epochs, validates it and exports it. The card above the list follows the build; the console lines of the model say the rest.")
+            Para("The list groups models by the data they were trained on, running ones first, then by accuracy. Search matches names, labels, status and data files. Right-click a row for its actions.")
+        }
+        Fold("Reading the metrics", null, open = false, key = "guide:metrics") {
+            Para("Every validation is a run; Validate on sample data or Validate on file adds one, and a build adds the first. Pick a run on the strip. Scores per label: for every label, precision (of what the model called that label, how much really was), recall (of the rows of that label, how much it found) and F1 (their harmonic mean) on one 0 to 1 axis, with the row count; the macro row averages the labels. Confusion matrix: every actual label in a row, what the model answered in the columns; the diagonal is right, a bright cell off it is the confusion to fix, and the caption names the biggest.")
+            Para("Scores by run shows accuracy, macro F1 and every label's F1 across the runs, the latest at the right: a row that lightens is improving. From the sessions: how sure the model is (where every label's scores fall between 0 and 1 across every answer it gave) and how long an answer takes.")
+        }
+        Fold("Serving it", null, open = false, key = "guide:serve") {
+            Para("Listen starts an HTTP server for the model on the host, port and path in Configure (loopback by default), with POST {\"text\": \"…\"} or GET ?text=… returning the scores as JSON. Copy and Copy curl in Configure give the address and a working call. What it answers is appended to incoming.jsonl, so it can be reviewed and labeled later. Listening resumes when the app starts again, until Stop.")
+            Para("Publish sends the module to the Amie server under your account (sign in first); Open website opens its page there.")
+        }
+        Fold("From a script", null, open = false, key = "guide:script") {
+            Para("In the sandbox, amie is the API; every name below is also reachable without the prefix. initMod(name) gives the session of an exported model. A model has one session at most: the one already open is returned, so running a script again, or Open session on the page, never opens another. inference(text) returns \"label:score\" strings, best first. close() closes it; the Sessions tab can terminate it too.")
+            Lines(
+                "val model = initMod(\"dummy\")",
+                "model.inference(\"turn the lights on\")   // [\"lights:0.57\", \"weather:0.47\", ...]",
+                "model.close()",
+            )
+            Para("Training from a script: source a csv, optionally relate a test file to it, then build. validateMetrics, metricsChart, metricsHistory and confusionMatrix print the stored runs in the console.")
+            Lines(
+                "val train = source(\"sample-intents.csv\")",
+                "relate(train, \"test.csv\")             // optional",
+                "modelBuilder(\"lights\", train)",
+                "validateMetrics(\"lights\")",
+            )
+        }
+        Fold("Packages", null, open = false, key = "guide:packages") {
+            Para("A package is a jar with a class that has run(String) and close(). The Packages tab lists the jars in AMP/pluginDir and the env, and the ones the Amie server offers; Fetch downloads one, + Add jar copies one in. A collection is a folder of jars that belong together, for example every jar that runs on Java 21, made with + New collection. The detail panel says what a jar needs (Java version, language), where it came from and everything it contains, searchable.")
+            Para("Unlike a model, a package is a bottle: every initMod(\"name.jar\") opens a fresh instance in its own class loader, and each is a session of its own.")
+            Lines("val plugin = initMod(\"example.jar\")", "plugin.inference(\"hello\")", "plugin.close()")
+        }
+        Fold("Sessions and memory", null, open = false, key = "guide:memory") {
+            Para("Every open model, package or bare ONNX session is listed on the Sessions tab with its log (what it was asked and answered) and can be terminated there. The encoder is the heavy part, hundreds of MB outside the Java heap, and it is loaded once and shared by every session, listener, validation and build on it; the last one to close frees it. The footer shows what the process holds of the machine's memory, the heap against its limit, and the encoders loaded. It turns red near the limit: close sessions and stop listeners you don't need.")
+        }
+        Fold("Requirements", null, open = false, key = "guide:requirements") {
+            Para("The Requirements tab of a model checks, on this machine, everything it needs before initMod or Listen can succeed: the encoder folder with model.onnx, tokenizer.json and a config whose hidden size matches the head, the head's own model.onnx, as many labels as outputs, the ONNX runtime, Java, the heap limit and whether the serving port is free. A red cross is something to fix; a dot is only information.")
+        }
+        Fold("Files under AMP/", null, open = false, key = "guide:files") {
+            Lines(
+                "AMP/modules/modules.json          the models by name",
+                "AMP/modules/<name>/module.json    name, labels, encoder, description, how it was trained",
+                "AMP/modules/<name>/model.onnx     the head",
+                "AMP/modules/<name>/metrics.json   every validation run",
+                "AMP/modules/<name>/serving.json   host, port, path, methods, whether it listens",
+                "AMP/modules/<name>/sessions.log   what its sessions were asked and answered",
+                "AMP/modules/<name>/incoming.jsonl what the server answered",
+                "AMP/modules/<name>/plots/         the charts, drawn when the metrics or the log change",
+                "AMP/sample-intents.csv            the sample data",
+                "AMP/pluginDir/                    package jars and collections.json",
+            )
         }
     }
 }
@@ -1189,10 +1705,10 @@ private fun pct(value: Double) = "${(value * 100).toInt()}%"
  * underlined in green; a stopped one is not. With onDetach, a Detach button appears while the pointer is over it.
  */
 @Composable
-private fun ListRow(name: String, active: Boolean, selected: Boolean, meta: String, status: String, underline: Boolean = false, onDetach: (() -> Unit)? = null, onSelect: () -> Unit) {
+private fun ListRow(name: String, active: Boolean, selected: Boolean, meta: String, status: String, underline: Boolean = false, onDetach: (() -> Unit)? = null, menu: List<ContextMenuItem> = emptyList(), onSelect: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val hovered by interactionSource.collectIsHoveredAsState()
-    Column(
+    ContextMenuArea(items = { menu }) { Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(6.dp))
@@ -1213,12 +1729,81 @@ private fun ListRow(name: String, active: Boolean, selected: Boolean, meta: Stri
             }
         }
         Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp).height(2.dp).background(if (underline) SuccessColor else Color.Transparent))
+    } }
+}
+
+/** One URL a model is reached at: the method, the address, and Copy for the address and for a curl call that uses it */
+@Composable
+private fun CopyLine(label: String, shown: String, copy: String = shown, curl: String? = null) {
+    val clipboard = LocalClipboardManager.current
+    var copied by remember(shown) { mutableStateOf<String?>(null) }
+    LaunchedEffect(copied) { if (copied != null) { delay(1500); copied = null } }
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        Text(label.padEnd(4), color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp)
+        Spacer(Modifier.width(12.dp))
+        SelectionContainer(modifier = Modifier.weight(1f, fill = false)) {
+            Text(shown, color = LogMessageColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        Spacer(Modifier.width(8.dp))
+        copied?.let { Meta(it); Spacer(Modifier.width(6.dp)) }
+        SmallButton("Copy") { clipboard.setText(AnnotatedString(copy)); copied = "copied" }
+        if (curl != null) {
+            Spacer(Modifier.width(4.dp))
+            SmallButton("Copy curl") { clipboard.setText(AnnotatedString(curl)); copied = "copied curl" }
+        }
+    }
+}
+
+/**
+ * The rule between a list and its detail panel: 1dp drawn, a wider strip under the pointer, dragged sideways to
+ * resize the list (180 to 640dp); the cursor says so and the rule brightens while it is hovered
+ */
+@Composable
+private fun VerticalSeparator(onWidth: (Float) -> Unit) {
+    val density = LocalDensity.current.density
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
+    var width by remember { mutableStateOf(ModelsCache.listWidth) }
+    val drag = rememberDraggableState { delta ->
+        width = (width + delta / density).coerceIn(180f, 640f)
+        onWidth(width)
+    }
+    Box(
+        modifier = Modifier
+            .fillMaxHeight()
+            .width(7.dp)
+            .hoverable(interactionSource)
+            .pointerHoverIcon(PointerIcon(java.awt.Cursor(java.awt.Cursor.E_RESIZE_CURSOR)))
+            .draggable(drag, Orientation.Horizontal),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(modifier = Modifier.fillMaxHeight().width(1.dp).background(if (hovered) PanelBorderSelected else PanelDividerColor))
+    }
+}
+
+/** A handle under a box: dragged up or down to change the box's height; the cursor says so */
+@Composable
+private fun HeightHandle(height: Float, min: Float, max: Float, onHeight: (Float) -> Unit) {
+    val density = LocalDensity.current.density
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
+    val drag = rememberDraggableState { delta -> onHeight((height + delta / density).coerceIn(min, max)) }
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(8.dp)
+            .hoverable(interactionSource)
+            .pointerHoverIcon(PointerIcon(java.awt.Cursor(java.awt.Cursor.N_RESIZE_CURSOR)))
+            .draggable(drag, Orientation.Vertical),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(modifier = Modifier.width(36.dp).height(2.dp).clip(RoundedCornerShape(1.dp)).background(if (hovered) PanelBorderSelected else PanelBorder))
     }
 }
 
 /** The bordered panel of the selected item */
 @Composable
-private fun DetailPanel(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+private fun DetailPanel(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
@@ -1539,6 +2124,27 @@ private fun AccentButton(label: String, enabled: Boolean = true, onClick: () -> 
             .hoverable(interactionSource)
             .clickable(enabled = enabled, interactionSource = interactionSource, indication = null) { onClick() }
             .padding(horizontal = 10.dp, vertical = 4.dp)
+    )
+}
+
+/** The chip of the actions that end something: Terminate, Destroy. A dark red that brightens on hover */
+@Composable
+private fun DangerButton(label: String, enabled: Boolean = true, onClick: () -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
+    Text(
+        label,
+        color = if (enabled) FontColor else MutedFontColor.copy(alpha = 0.5f),
+        fontSize = 11.sp,
+        fontWeight = FontWeight.Medium,
+        maxLines = 1,
+        modifier = Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(when { !enabled -> DangerButton.copy(alpha = 0.4f); hovered -> DangerButtonHover; else -> DangerButton })
+            .border(1.dp, if (enabled) DangerButtonBorder else PanelBorder, RoundedCornerShape(6.dp))
+            .hoverable(interactionSource)
+            .clickable(enabled = enabled, interactionSource = interactionSource, indication = null) { onClick() }
+            .padding(horizontal = 9.dp, vertical = 4.dp)
     )
 }
 

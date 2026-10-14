@@ -51,10 +51,11 @@ fun buildClassifier(
     validation: List<LabeledText>? = null,
     validationName: String? = null,
     dataName: String? = null,
+    description: String? = null,
 ): File? {
     ModelBuildProgress.start(modelName)
     return try {
-        buildClassifierPhases(samples, modelName, encoder, validation, validationName, dataName)
+        buildClassifierPhases(samples, modelName, encoder, validation, validationName, dataName, description)
             .also { if (it == null && ModelBuildProgress.current.value != null) ModelBuildProgress.failed("not built") }
     } catch (e: Throwable) {
         ModelBuildProgress.failed(e.message ?: e.javaClass.simpleName)
@@ -69,6 +70,7 @@ private fun buildClassifierPhases(
     validation: List<LabeledText>?,
     validationName: String?,
     dataName: String?,
+    description: String?,
 ): File? {
     ModelBuildProgress.phase(BuildPhase.CHECKING, detail = "${samples.size} samples")
     val check = checkVariability(samples)
@@ -120,9 +122,11 @@ private fun buildClassifierPhases(
     val model = DenseNet(inputDim.toInt(), hiddenDim, labels.size)
     logInternal("modelBuilder: fitting dense[$hiddenDim relu] -> dense[${labels.size}] for $EPOCHS epochs")
     ModelBuildProgress.phase(BuildPhase.TRAINING, steps = EPOCHS, detail = "${trainIdx.size} samples")
+    val batchSize = minOf(16, trainX.size)
+    val learningRate = 0.01f
     val last = model.fit(
         trainX, IntArray(trainIdx.size) { labelIndex[trainIdx[it]] },
-        epochs = EPOCHS, batchSize = minOf(16, trainX.size), learningRate = 0.01f,
+        epochs = EPOCHS, batchSize = batchSize, learningRate = learningRate,
     ) { epoch ->
         val summary = "epoch ${epoch.epoch} loss ${fmt4(epoch.loss)} accuracy ${fmt3(epoch.accuracy)}"
         ModelBuildProgress.step(epoch.epoch, summary)
@@ -146,6 +150,17 @@ private fun buildClassifierPhases(
             outputDim = layers.last().outDim,
             labels = labels,
             data = dataName,
+            description = description?.takeIf { it.isNotBlank() },
+            architecture = "dense[$inputDim -> $hiddenDim] relu -> dense[$hiddenDim -> ${labels.size}] softmax over mean-pooled ${File(encoder).name}",
+            epochs = EPOCHS,
+            batchSize = batchSize,
+            learningRate = learningRate.toDouble(),
+            hiddenDim = hiddenDim,
+            trainRows = trainIdx.size,
+            validationRows = validationIdx.size,
+            validation = metrics.validation,
+            finalLoss = last.loss,
+            trainAccuracy = last.accuracy,
         )
         val file = writeModule(manifest, denseStackToOnnx(layers, manifest.input, manifest.output, modelName))
         appendMetrics(file.parentFile, metrics)

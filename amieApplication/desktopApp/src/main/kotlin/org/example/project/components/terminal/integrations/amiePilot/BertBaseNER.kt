@@ -47,9 +47,11 @@ class BertOnnxModel(val modelPath: String) : ModelInterface {
     val outputTensor: List<Array<Array<FloatArray>>>
         get() = _tensorList
 
+    // Only the last run's matrix is kept: every run used to add one more, which grew without bound while a model served
     private fun addOutputTensor(tensor: OnnxTensor) {
         @Suppress("UNCHECKED_CAST")
         val matrix = tensor.value as Array<Array<FloatArray>>
+        _tensorList.clear()
         _tensorList.add(matrix)
     }
 
@@ -215,7 +217,13 @@ class InitMod(private val moduleName: String? = null) {
 
         val env = OrtSessions.env
         val head = OrtSessions.open("module:$name", File(dir, manifest.model).absolutePath)
-        val encoder = BertOnnxModel(manifest.encoder)
+        // The encoder is shared with every other session on the same folder; only the small head is this session's own
+        val encoder = try {
+            SharedEncoders.acquire(manifest.encoder)
+        } catch (e: Throwable) {
+            head.close()
+            throw e
+        }
         logInternal("initMod: '$name' session ready (${manifest.input} [${manifest.inputDim}] -> ${manifest.output} [${manifest.outputDim}])")
 
         return object : InteractionModel {
@@ -224,12 +232,15 @@ class InitMod(private val moduleName: String? = null) {
 
             // text -> encoder hidden state -> mean pooling -> exported head
             override fun inference(text: String): List<String> {
-                encoder.sayHello(text)
-                val hidden = encoder.getContextTensor() ?: return emptyList<String>().also {
-                    logInternal("initMod: '$name' encoder returned no hidden state", LogLevel.ERROR)
+                // The encoder keeps its last hidden state, so one text at a time goes through it
+                val pooled = synchronized(encoder) {
+                    encoder.sayHello(text)
+                    val hidden = encoder.getContextTensor() ?: return emptyList<String>().also {
+                        logInternal("initMod: '$name' encoder returned no hidden state", LogLevel.ERROR)
+                    }
+                    @Suppress("UNCHECKED_CAST")
+                    meanPooling(hidden.value as Array<Array<FloatArray>>)
                 }
-                @Suppress("UNCHECKED_CAST")
-                val pooled = meanPooling(hidden.value as Array<Array<FloatArray>>)
                 val scores = OnnxTensor.createTensor(env, arrayOf(pooled)).use { input ->
                     head.run(mapOf(manifest.input to input)).use { result ->
                         @Suppress("UNCHECKED_CAST")
@@ -246,7 +257,7 @@ class InitMod(private val moduleName: String? = null) {
 
             override fun close() {
                 head.close()
-                encoder.close()
+                SharedEncoders.release(manifest.encoder)
             }
         }
     }
@@ -258,8 +269,9 @@ fun initContext(text: String, tokens: (matrix: LongArray) -> Unit = {}): Array<A
         logInternal("forwardContext: text is empty", LogLevel.ERROR)
         return null
     }
-    val inst = BertOnnxModel("/Users/samuel/Documents/onnx/bert/bge")
-    try {
+    val encoderPath = "/Users/samuel/Documents/onnx/bert/bge"
+    val inst = SharedEncoders.acquire(encoderPath)
+    try { synchronized(inst) {
         logInternal("forwardContext: running ${text.length} chars through bge")
         inst.sayHello(text)
         logInternal("forwardContext: ${inst.lastTokenIds.size} tokens ${inst.lastTokenIds.contentToString()}")
@@ -274,27 +286,27 @@ fun initContext(text: String, tokens: (matrix: LongArray) -> Unit = {}): Array<A
         val matrix = contextTensor.value as Array<Array<FloatArray>>
         logInternal("forwardContext: last_hidden_state shape ${contextTensor.info.shape.contentToString()}")
         return matrix
-    } catch (e: Exception) {
+    } } catch (e: Exception) {
         logInternal("forwardContext failed: ${e.message}", LogLevel.ERROR)
         return null
     } finally {
-        inst.close() //[H]AutoCloseable, check it out!
+        SharedEncoders.release(encoderPath)
     }
 }
 
 // One encoder session for many texts; each result is that text's last_hidden_state
 // Runs every text through the encoder; onProgress gets (done, total) after each one
 fun embedTexts(texts: List<String>, encoder: String, onProgress: (Int, Int) -> Unit = { _, _ -> }): List<Array<Array<FloatArray>>> {
-    val inst = BertOnnxModel(encoder)
-    try {
-        return texts.mapIndexed { index, text ->
-            inst.sayHello(text)
-            val hidden = inst.getContextTensor() ?: throw IllegalStateException("encoder returned no hidden state for '$text'")
-            @Suppress("UNCHECKED_CAST")
-            (hidden.value as Array<Array<FloatArray>>).also { onProgress(index + 1, texts.size) }
+    // Shared with any open session on the same encoder, so a build never loads a second copy
+    return SharedEncoders.use(encoder) { inst ->
+        texts.mapIndexed { index, text ->
+            synchronized(inst) {
+                inst.sayHello(text)
+                val hidden = inst.getContextTensor() ?: throw IllegalStateException("encoder returned no hidden state for '$text'")
+                @Suppress("UNCHECKED_CAST")
+                (hidden.value as Array<Array<FloatArray>>)
+            }.also { onProgress(index + 1, texts.size) }
         }
-    } finally {
-        inst.close()
     }
 }
 

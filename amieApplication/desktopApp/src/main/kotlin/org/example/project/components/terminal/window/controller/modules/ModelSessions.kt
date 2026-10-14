@@ -72,12 +72,26 @@ object ModelSessions {
 
     val all: List<ModelSession> @Synchronized get() = sessions.values.toList()
 
-    /** Opens the module exported to AMP/modules/<name> as a new session */
-    fun open(name: String): ModelSession {
+    /**
+     * The session of the module exported to AMP/modules/<name>. A model has one session at most: the one already
+     * open is returned (so a script run again, two scripts, or the page's button don't pile up sessions), else a
+     * new one is opened.
+     */
+    fun open(name: String): ModelSession = acquire(name).first
+
+    /** The session of the model and whether this call opened it, for a caller that closes only what it opened */
+    @Synchronized
+    fun acquire(name: String): Pair<ModelSession, Boolean> {
+        val existing = sessions.values.firstOrNull { it.name == name && !it.closed }
+        if (existing != null) {
+            existing.log.add("open", "reused: a model has one session")
+            logInternal("initMod: '$name' is already open as session #${existing.id}, that one is used")
+            return existing to false
+        }
         val session = ModelSession(ids.incrementAndGet(), name, InitMod(name).create())
         session.log.add("open", "opened as session #${session.id}")
-        synchronized(this) { sessions[session.id] = session }
-        return session
+        sessions[session.id] = session
+        return session to true
     }
 
     fun close(id: Int): Boolean {
