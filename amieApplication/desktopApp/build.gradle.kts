@@ -71,22 +71,88 @@ dependencies {
     kotlin("plugin.serialization")
 }
 
+// The BERT models a distribution ships: the NER model in this folder, the bge encoder in its bge/ subfolder.
+// -Pamie.modelsDir=<path> or AMIE_MODELS_DIR points at another copy.
+val modelsDir: String = (findProperty("amie.modelsDir") as String?)
+    ?: System.getenv("AMIE_MODELS_DIR")
+    ?: "/Users/samuel/Documents/onnx/bert"
+val appResourcesDir = layout.buildDirectory.dir("appResources")
+
+// The AMP folder a packaged app seeds its own from on the first start: the shipped settings, plugin dir and sample
+// data, but not this machine's logs, sign-in, UI scale or exported models
+val prepareBundledAmp by tasks.registering(Sync::class) {
+    from("AMP") {
+        exclude("logs.txt", "session.json", "keycloak.json", "settings.json", "modules/**", "**/.DS_Store")
+    }
+    into(appResourcesDir.map { it.dir("common/AMP") })
+}
+
+// Puts the models into the app image after jpackage built it, so neither Gradle nor jpackage copies 800 MB twice.
+// On macOS the files are APFS clones (cp -c) and take no extra disk; elsewhere they are copied.
+val bundleModels by tasks.registering {
+    dependsOn("createDistributable")
+    val appImages = layout.buildDirectory.dir("compose/binaries/main/app").get().asFile
+    val source = File(modelsDir)
+    inputs.property("modelsDir", modelsDir)
+    outputs.upToDateWhen { false }
+    doLast {
+        require(File(source, "model.onnx").isFile && File(source, "bge/model.onnx").isFile) {
+            "No BERT models at ${source.path} (expected model.onnx and bge/model.onnx); pass -Pamie.modelsDir=<folder>"
+        }
+        val resourcesDirs = appImages.walkTopDown().filter { it.isDirectory && it.name == "resources" && it.parentFile.name == "app" }.toList()
+        require(resourcesDirs.isNotEmpty()) { "No app/resources folder under $appImages" }
+        resourcesDirs.forEach { resources ->
+            val target = File(resources, "models/bert")
+            target.deleteRecursively()
+            target.mkdirs()
+            // The NER model's own files plus the bge folder; sibling folders such as other encoders stay out
+            val wanted = source.listFiles { f -> f.isFile && !f.name.startsWith(".") }!!.toList() + File(source, "bge")
+            val mac = System.getProperty("os.name").lowercase().contains("mac")
+            wanted.forEach { f ->
+                if (mac) {
+                    val cmd = listOf("cp", "-c", "-R", f.absolutePath, target.absolutePath)
+                    val proc = ProcessBuilder(cmd).redirectErrorStream(true).start()
+                    val out = proc.inputStream.bufferedReader().readText()
+                    check(proc.waitFor() == 0) { "cp -c failed for ${f.name}: $out" }
+                } else {
+                    f.copyRecursively(File(target, f.name), overwrite = true)
+                }
+            }
+            File(target, "bge/.DS_Store").delete()
+            val size = target.walk().filter { it.isFile }.sumOf { it.length() } / (1024 * 1024)
+            this.logger.lifecycle("Bundled BERT models into ${target.relativeTo(appImages)} ($size MB)")
+        }
+    }
+}
+
 compose.desktop {
     application {
         mainClass = "org.example.project.MainKt"
 
         nativeDistributions {
-            packageName = "AmieApp"
+            packageName = "amie pilot"
             packageVersion = "1.0.0"
+            description = "Amie pilot: a Kotlin sandbox that trains and serves intent models on a BERT encoder"
+            vendor = "Amie"
 
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            modules("java.net.http", "java.scripting", "java.sql", "jdk.httpserver")
-            packageName = "amie pilot"
+            // ORT, DJL tokenizers, the Kotlin scripting compiler and ktor reach into many JDK modules; the whole runtime goes in
+            includeAllModules = true
+
+            // Shipped next to the jars as app/resources: the seeded AMP folder, and models/bert once bundleModels ran
+            appResourcesRootDir.set(appResourcesDir)
 
             macOS {
-                iconFile.set(project.file("/Users/samuel/Documents/GitHub/amieAppStable/amie application/shared/src/commonMain/composeResources/drawable/amieDistributionIconNew.icns"))
+                iconFile.set(project(":shared").file("src/commonMain/composeResources/drawable/amieDistributionIconNew.icns"))
                 bundleID = "com.amie.app"
             }
         }
     }
+}
+
+// The Compose plugin registers its packaging tasks after evaluation, so they are wired up as they appear
+tasks.configureEach {
+    if (name == "prepareAppResources") dependsOn(prepareBundledAmp)
+    // Every installer is built from the app image, so the models go in before it is packaged
+    if (name in setOf("packageDmg", "packageMsi", "packageDeb", "packageDistributionForCurrentOS")) dependsOn(bundleModels)
 }

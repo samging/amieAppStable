@@ -1,8 +1,13 @@
 # The AMP folder
 
-Everything the app writes lives in `AMP/` inside its working directory (`amieApplication/desktopApp/AMP/` when
-started with `./gradlew :desktopApp:run`). Nothing is kept anywhere else on the machine, so copying this folder
-moves your scripts, models, metrics, plugins and sign-in to another checkout.
+Everything the app writes lives in `AMP/`. Started with `./gradlew :desktopApp:run` that is `AMP/` inside the
+working directory (`amieApplication/desktopApp/AMP/`). The packaged app (DMG, MSI, DEB) has no useful working
+directory, so it keeps AMP in the user's application-data folder: `~/Library/Application Support/amie pilot/AMP` on
+macOS, `%APPDATA%\amie pilot\AMP` on Windows, `~/.local/share/amie-pilot/AMP` on Linux. On its first start that
+folder is seeded from the `AMP/` shipped inside the app (`backend.json`, `componentSettings.json`, `pluginDir/`,
+`env/`, `sample-intents.csv`); the dummy model is written next. `AMIE_AMP_DIR` names another folder for either mode.
+Nothing is kept anywhere else on the machine, so copying this folder moves your scripts, models, metrics, plugins
+and sign-in to another checkout or machine.
 
 | Path | What it holds | Tracked in git |
 |---|---|---|

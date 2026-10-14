@@ -30,10 +30,10 @@ Documentation is a Markdown site in [`docs/`](docs/index.md) built with [MkDocs]
   Gradle's foojay resolver downloads one if it is missing.
 - **Gradle wrapper.** Use `./gradlew` from the repository root. Gradle 9.3 with the configuration cache on.
 - **Android SDK** only for the Android app. Put its path in `local.properties` (`sdk.dir=...`).
-- **ONNX encoder** for building and running intent models: a BERT-style model folder with `model.onnx` and
-  `tokenizer.json`. The default path is `/Users/samuel/Documents/onnx/bert/bge`
-  (`DEFAULT_ENCODER` in `jetbrainDLBuilder/JetBuilder.kt`); the bundled NER model is expected in
-  `/Users/samuel/Documents/onnx/bert`.
+- **BERT models** for building and running intent models: the NER model folder (`model.onnx`, `tokenizer.json`,
+  `config.json`) with the `bge` encoder in its `bge/` subfolder. A development run looks in
+  `/Users/samuel/Documents/onnx/bert`, or in `AMIE_MODELS_DIR` when set (`BundledModels.kt`). A packaged app ships
+  both models inside itself under `app/resources/models/bert/` and needs nothing on the machine.
 - **Keycloak** in Docker on `http://localhost:8080` for sign-in (see [docs/authentication.md](docs/authentication.md)).
   Without it the app still runs: the login page offers "Continue as guest".
 - **Amie backend** (optional): the Spring Boot `packageRepository` from the Amie repository, used by the device
@@ -53,9 +53,10 @@ All commands run from the repository root.
 # Compile only (fast check)
 ./gradlew :desktopApp:compileKotlin
 
-# Native installer (DMG on macOS, MSI on Windows, DEB on Linux)
+# Native installer (DMG on macOS, MSI on Windows, DEB on Linux), with the BERT models inside
 ./gradlew :desktopApp:packageDistributionForCurrentOS
-# output: amieApplication/desktopApp/build/compose/binaries/main/
+# output: amieApplication/desktopApp/build/compose/binaries/main/   (app image under app/, installer under dmg|msi|deb/)
+# the models are taken from /Users/samuel/Documents/onnx/bert; another copy: -Pamie.modelsDir=<folder> or AMIE_MODELS_DIR
 
 # Android
 ./gradlew :androidApp:assembleDebug
@@ -67,8 +68,11 @@ All commands run from the repository root.
 
 In IntelliJ or Android Studio, open the repository root and use the run configurations in the toolbar.
 
-The desktop app stores everything it writes under `AMP/` in its working directory. With `./gradlew :desktopApp:run`
-that is `amieApplication/desktopApp/AMP/`:
+The desktop app stores everything it writes under `AMP/`. With `./gradlew :desktopApp:run` that is
+`amieApplication/desktopApp/AMP/` in the working directory; the packaged app keeps it in the user's application-data
+folder (`~/Library/Application Support/amie pilot/AMP` on macOS, `%APPDATA%\amie pilot\AMP` on Windows,
+`~/.local/share/amie-pilot/AMP` on Linux), seeded on the first start from the `AMP/` shipped in the app. `AMIE_AMP_DIR`
+names another folder:
 
 | Path | What it holds |
 |---|---|

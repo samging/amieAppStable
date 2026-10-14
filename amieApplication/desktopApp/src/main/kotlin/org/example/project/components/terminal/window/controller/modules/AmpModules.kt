@@ -5,6 +5,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.example.project.components.terminal.window.controller.LogLevel
 import org.example.project.components.terminal.window.controller.jetbrainDLBuilder.DEFAULT_ENCODER
+import org.example.project.components.terminal.integrations.amiePilot.BundledModels
 import org.example.project.components.terminal.window.controller.logInternal
 import org.example.project.getDirectory
 import java.io.ByteArrayOutputStream
@@ -156,7 +157,8 @@ fun readModule(name: String): Pair<File, ModuleManifest>? {
         logInternal("module '$name' not found in ${modulesDir.absolutePath}", LogLevel.ERROR)
         return null
     }
-    return dir to moduleJson.decodeFromString<ModuleManifest>(manifestFile.readText())
+    val manifest = moduleJson.decodeFromString<ModuleManifest>(manifestFile.readText())
+    return dir to manifest.copy(encoder = BundledModels.resolveEncoder(manifest.encoder))
 }
 
 const val DUMMY_MODEL = "dummy"

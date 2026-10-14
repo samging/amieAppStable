@@ -19,13 +19,14 @@ object SharedEncoders {
     private class Entry(val encoder: BertOnnxModel) { var holders = 0 }
     private val entries = HashMap<String, Entry>()
 
-    private fun key(path: String) = runCatching { File(path).canonicalPath }.getOrDefault(path)
+    // The folder a caller names may be another machine's; the bundled encoder of that name stands in for it
+    private fun key(path: String) = runCatching { File(BundledModels.resolveEncoder(path)).canonicalPath }.getOrDefault(path)
 
     /** The encoder of that folder, loaded on the first call and shared after it */
     @Synchronized
     fun acquire(path: String): BertOnnxModel {
         val k = key(path)
-        val entry = entries[k] ?: Entry(BertOnnxModel(path)).also {
+        val entry = entries[k] ?: Entry(BertOnnxModel(k)).also {
             entries[k] = it
             logInternal("encoder: loaded ${File(path).name} (${bytes(File(path, "model.onnx").length())} on disk)")
         }

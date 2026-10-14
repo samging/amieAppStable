@@ -10,17 +10,23 @@ import io.ktor.client.request.forms.formData
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.example.project.auth.AuthState
 import org.example.project.components.terminal.window.controller.LogLevel
 import org.example.project.components.terminal.window.controller.logInternal
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.time.Instant
 
@@ -34,7 +40,7 @@ data class BackendProfile(
     val bio: String = "",
 )
 
-/** One file the backend stored for a user in the GitHub package repository (`/user-packages`) */
+/** One file the backend stored for a user in the S3 bucket (`uploads/<user>/<lang>/<file>`, listed by `/user-packages`) */
 @Serializable
 data class BackendPackage(
     val name: String = "",
@@ -54,6 +60,10 @@ data class BackendStatus(
     val problem: String? = null,
 )
 
+/** One line of the user's error log on the backend (`GET /errors`): when the app reported what */
+@Serializable
+data class BackendError(val time: String = "", val error: String = "", val message: String = "")
+
 class BackendException(message: String, val status: Int? = null) : Exception(message)
 
 /**
@@ -64,6 +74,9 @@ object AmieBackend {
     val config: BackendConfig get() = BackendConfig.load()
 
     private val json = Json { ignoreUnknownKeys = true }
+    // Only for failures that must stay out of the console (reporting an error must not produce another one)
+    private val logger = LoggerFactory.getLogger("AmieBackend")
+    private val stateNamePattern = Regex("[A-Za-z0-9._-]{1,64}")
     private val http = HttpClient(Java) {
         install(HttpTimeout) {
             requestTimeoutMillis = 120_000
@@ -94,7 +107,7 @@ object AmieBackend {
 
     /**
      * Uploads a file to the signed-in user's package folder (`uploads/<user>/<language>/<name>` in the
-     * backend's GitHub repository) through `POST /upload`. The website's dashboard lists it afterwards.
+     * backend's S3 bucket) through `POST /upload`. The website's dashboard lists it afterwards.
      */
     suspend fun upload(file: File, language: String, username: String): String {
         if (!file.isFile) throw BackendException("${file.name} is not a file")
@@ -118,7 +131,8 @@ object AmieBackend {
         }
         val body = response.bodyAsText()
         if (!response.status.isSuccess()) throw BackendException(describe(response.status, body), response.status.value)
-        // The backend answers 200 with "Error uploading file: ..." when GitHub refuses (for example no GITHUB_TOKEN)
+        // The backend answers 200 "File uploaded successfully", 400 with the reasons a jar was refused and 502 when
+        // the store is unreachable; an "Error ..." body on a 2xx is kept as a failure in case an older backend answers
         if (body.trimStart().startsWith("Error", ignoreCase = true)) throw BackendException("The backend couldn't store ${file.name}: ${body.take(200)}", response.status.value)
         logInternal("backend: uploaded ${file.name} (${file.length()} bytes) for $username as $language")
         return body
@@ -147,6 +161,84 @@ object AmieBackend {
         }
         logInternal("backend: '$name' removed from the website for $username ($removed files)")
         return removed
+    }
+
+    /**
+     * Adds an entry to the signed-in user's error log (`POST /errors`; the website's dashboard shows the log under
+     * "Errors from your app"). A guest's report goes to `POST /handle-login-error` as before. Never throws and
+     * never writes to the console: a report that fails only reaches the debug log, so it cannot loop.
+     */
+    suspend fun reportError(kind: String, message: String) {
+        try {
+            val token = AuthState.accessToken()
+            val response = if (token != null) {
+                http.post(config.url("errors")) {
+                    bearerAuth(token)
+                    contentType(ContentType.Application.Json)
+                    setBody(buildJsonObject { put("error", kind); put("message", message) }.toString())
+                }
+            } else {
+                http.post(config.url("handle-login-error")) {
+                    contentType(ContentType.Application.Json)
+                    setBody(buildJsonObject { put("error", message); put("username", "guest") }.toString())
+                }
+            }
+            if (!response.status.isSuccess()) logger.debug("error report '{}' answered {}", kind, response.status.value)
+        } catch (e: Exception) {
+            logger.debug("couldn't report error '{}': {}", kind, e.message)
+        }
+    }
+
+    /** The signed-in user's error log, newest first (`GET /errors?username=`) */
+    suspend fun errors(): List<BackendError> {
+        val response = http.get(config.url("errors")) {
+            bearerAuth(token())
+            parameter("username", AuthState.user)
+        }
+        val body = response.bodyAsText()
+        if (!response.status.isSuccess()) throw BackendException(describe(response.status, body), response.status.value)
+        return runCatching { json.decodeFromString<List<BackendError>>(body) }.getOrDefault(emptyList())
+    }
+
+    /** `state/<name>` for a valid state name; the backend keeps it as `uploads/<user>/state/<name>.json` */
+    private fun stateUrl(name: String): String {
+        if (!stateNamePattern.matches(name)) throw BackendException("State name '$name' must match [A-Za-z0-9._-]{1,64}")
+        return config.url("state/$name")
+    }
+
+    /** Names of the signed-in user's saved states (`GET /state`), for example `devices` */
+    suspend fun listStates(): List<String> {
+        val response = http.get(config.url("state")) { bearerAuth(token()) }
+        val body = response.bodyAsText()
+        if (!response.status.isSuccess()) throw BackendException(describe(response.status, body), response.status.value)
+        return runCatching { json.decodeFromString<List<String>>(body) }.getOrDefault(emptyList())
+    }
+
+    /** The saved state [name] as the JSON text the backend stores (`GET /state/{name}`); null when there is none */
+    suspend fun loadState(name: String): String? {
+        val response = http.get(stateUrl(name)) { bearerAuth(token()) }
+        if (response.status == HttpStatusCode.NotFound) return null
+        val body = response.bodyAsText()
+        if (!response.status.isSuccess()) throw BackendException(describe(response.status, body), response.status.value)
+        return body
+    }
+
+    /** Stores [json] (any JSON document, at most 1 MiB) as the saved state [name] (`PUT /state/{name}`) */
+    suspend fun saveState(name: String, json: String) {
+        val response = http.put(stateUrl(name)) {
+            bearerAuth(token())
+            contentType(ContentType.Application.Json)
+            setBody(json)
+        }
+        if (!response.status.isSuccess()) throw BackendException(describe(response.status, response.bodyAsText()), response.status.value)
+    }
+
+    /** Removes the saved state [name] (`DELETE /state/{name}`); false when there was none */
+    suspend fun deleteState(name: String): Boolean {
+        val response = http.delete(stateUrl(name)) { bearerAuth(token()) }
+        if (response.status == HttpStatusCode.NotFound) return false
+        if (!response.status.isSuccess()) throw BackendException(describe(response.status, response.bodyAsText()), response.status.value)
+        return true
     }
 
     /** One round trip that tells the Models page whether the backend is up and knows this user */

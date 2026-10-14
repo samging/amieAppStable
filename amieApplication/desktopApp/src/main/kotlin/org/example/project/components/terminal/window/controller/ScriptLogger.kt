@@ -1,5 +1,7 @@
 package org.example.project.components.terminal.window.controller
 
+import kotlinx.coroutines.runBlocking
+import org.example.project.backend.AmieBackend
 import org.example.project.components.terminal.integrations.amiePilot.InteractionModel
 import java.nio.file.Path
 import org.example.project.components.terminal.window.controller.logToConsole
@@ -37,7 +39,24 @@ interface ScriptLogger {
         else ModelSessions.open(modelName.trim())
     // Package jar sessions: packages.available(), packages.fetch("x.jar"), packages.print(), packages.closeAll()
     val packages: JarPackages get() = JarPackages
-    
+    // Saved states of the signed-in user on the Amie backend (uploads/<user>/state/<name>.json): any JSON text under
+    // a name matching [A-Za-z0-9._-]{1,64}. Blocking calls like a package fetch; a failure is one ERROR line
+    fun saveState(name: String, json: String) {
+        runCatching { runBlocking { AmieBackend.saveState(name, json) } }
+            .onSuccess { log("saveState: '$name' stored on the backend (${json.length} chars)") }
+            .onFailure { log("saveState: '$name' not stored: ${it.message}", LogLevel.ERROR) }
+    }
+    fun loadState(name: String): String? =
+        runCatching { runBlocking { AmieBackend.loadState(name) } }
+            .onSuccess { log(if (it == null) "loadState: no state '$name' on the backend" else "loadState: '$name' read from the backend (${it.length} chars)") }
+            .onFailure { log("loadState: '$name' not read: ${it.message}", LogLevel.ERROR) }
+            .getOrNull()
+    fun listStates(): List<String> =
+        runCatching { runBlocking { AmieBackend.listStates() } }
+            .onSuccess { log("listStates: ${it.size} saved state(s) on the backend" + (if (it.isEmpty()) "" else ": " + it.joinToString(", "))) }
+            .onFailure { log("listStates: not read: ${it.message}", LogLevel.ERROR) }
+            .getOrDefault(emptyList())
+
     // Default no-op implementations for optional script actions
     // A fixed ONNX model with initMod's interface (inference, getStatus, close); its session is managed by OrtSessions
     fun importModelOnnx(it: Path): InteractionModel? = runCatching { openOnnxModel(it) }.getOrNull()

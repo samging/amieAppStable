@@ -6,7 +6,7 @@
 |---|---|---|
 | JDK 21 | The desktop module pins a Java 21 toolchain | Gradle's foojay resolver downloads one if it is missing |
 | Gradle wrapper | `./gradlew` from the repository root | Gradle 9.3, configuration cache on |
-| ONNX encoder | `modelBuilder` and `initMod` embed text with a BERT-style model | A folder with `model.onnx` and `tokenizer.json`; default path `/Users/samuel/Documents/onnx/bert/bge` (`DEFAULT_ENCODER` in `jetbrainDLBuilder/JetBuilder.kt`) |
+| BERT models | `modelBuilder` and `initMod` embed text with the `bge` encoder; `initMod()` runs the NER model | The NER folder (`model.onnx`, `tokenizer.json`) with `bge/` inside it: `/Users/samuel/Documents/onnx/bert` for a Gradle run, or `AMIE_MODELS_DIR` (`BundledModels.kt`). The packaged app ships them in `app/resources/models/bert/` |
 | Keycloak (optional) | Sign-in, the Models page's backend card, publishing | Docker on `http://localhost:8080`; without it choose **Continue as guest** |
 | Amie backend (optional) | Devices, packages, **Publish** | Address in `AMP/backend.json`; see [Amie backend](backend-integration.md) |
 | Android SDK (optional) | Only for the Android app | `sdk.dir=...` in `local.properties` |
@@ -19,7 +19,7 @@ All commands run from the repository root.
 ./gradlew :desktopApp:run                 # run the desktop app
 ./gradlew :desktopApp:hotRun --auto       # hot reload while editing
 ./gradlew :desktopApp:compileKotlin       # compile only (fast check)
-./gradlew :desktopApp:packageDistributionForCurrentOS   # DMG / MSI / DEB under amieApplication/desktopApp/build/compose/binaries/main/
+./gradlew :desktopApp:packageDistributionForCurrentOS   # DMG / MSI / DEB under amieApplication/desktopApp/build/compose/binaries/main/, BERT models included
 ```
 
 In IntelliJ or Android Studio open the repository root and use the run configurations in the toolbar.

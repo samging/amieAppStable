@@ -12,6 +12,7 @@ import org.example.project.components.terminal.window.controller.modules.Metrics
 import org.example.project.components.terminal.window.controller.modules.appendMetrics
 import org.example.project.components.terminal.window.controller.modules.computeMetrics
 import org.example.project.components.terminal.integrations.amiePilot.embedTexts
+import org.example.project.components.terminal.integrations.amiePilot.BundledModels
 
 
 //sentence -> mean pooling -> dense -> softmax
@@ -34,7 +35,8 @@ fun meanPooling(tensor: Array<Array<FloatArray>>) : FloatArray {
     return sentenceVector
 }
 
-const val DEFAULT_ENCODER = "/Users/samuel/Documents/onnx/bert/bge"
+/** The encoder a model is trained on unless the call names one: the bundled bge */
+val DEFAULT_ENCODER: String get() = BundledModels.encoder
 const val EPOCHS = 150
 private const val EPOCH_LOG_EVERY = 25
 

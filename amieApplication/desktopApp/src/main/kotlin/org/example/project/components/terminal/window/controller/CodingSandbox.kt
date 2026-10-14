@@ -344,9 +344,10 @@ fun CodingSandbox(navController: NavController) {
                                 override fun internalEnv(): List<String> = env.print()
 
                                 override fun importPlugin(plugin: String) {
-                                    val file = File("/Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/corePlugins.json")
-                                    val reader = DeviceManagerFactory.create(file)
-                                    reader.getPlugins()
+                                    // AMP/pluginDir/corePlugins.json names the core plugin set; absent on a fresh checkout
+                                    val file = File(getDirectory().toString(), "pluginDir/corePlugins.json")
+                                    if (file.isFile) DeviceManagerFactory.create(file).getPlugins()
+                                    else logToConsole(ResponseDto(time = Instant.now(), message = "importPlugin: no ${file.path}", source = SCRIPT_SOURCE))
                                     logToConsole(ResponseDto(time = Instant.now(), message = "importPlugin $plugin", source = SCRIPT_SOURCE))
                                     val res = jars.run(plugin)
                                     logToConsole(ResponseDto( time = Instant.now(), message = res.toString(), source = SCRIPT_SOURCE))

@@ -177,7 +177,7 @@ class BertOnnxModel(val modelPath: String) : ModelInterface {
     }
 }
 fun initAmie(text: String): List<String> {
-    val inst = BertOnnxModel("/Users/samuel/Documents/onnx/bert")
+    val inst = BertOnnxModel(BundledModels.ner)
     try {
         return inst.sayHello(text)
     } finally {
@@ -191,7 +191,7 @@ class InitMod(private val moduleName: String? = null) {
     fun create() : InteractionModel = if (moduleName == null) nerModel() else moduleModel(moduleName)
 
     private fun nerModel(): InteractionModel {
-        val inst = BertOnnxModel("/Users/samuel/Documents/onnx/bert")
+        val inst = BertOnnxModel(BundledModels.ner)
         return object : InteractionModel {
 
             override fun getStatus(): Any {
@@ -283,7 +283,7 @@ fun initContext(text: String, tokens: (matrix: LongArray) -> Unit = {}): Array<A
         logInternal("forwardContext: text is empty", LogLevel.ERROR)
         return null
     }
-    val encoderPath = "/Users/samuel/Documents/onnx/bert/bge"
+    val encoderPath = BundledModels.encoder
     val inst = SharedEncoders.acquire(encoderPath)
     try { synchronized(inst) {
         logInternal("forwardContext: running ${text.length} chars through bge")
@@ -325,7 +325,7 @@ fun embedTexts(texts: List<String>, encoder: String, onProgress: (Int, Int) -> U
 }
 
 fun getTensor(text: String = ""): Array<Array<FloatArray>>? {
-    val inst = BertOnnxModel("/Users/samuel/Documents/onnx/bert/bge")
+    val inst = BertOnnxModel(BundledModels.encoder)
     try {
         inst.sayHello(text)
         val contextTensors = inst.getContextTensor()
@@ -335,7 +335,7 @@ fun getTensor(text: String = ""): Array<Array<FloatArray>>? {
     return null
 }
 fun getShapeContext() : List<Long> {
-    val inst = BertOnnxModel("/Users/samuel/Documents/onnx/bert/bge")
+    val inst = BertOnnxModel(BundledModels.encoder)
     try {
         inst.sayHello("hello world")
         println("--- context tensors debug: ---")

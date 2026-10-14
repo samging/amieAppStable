@@ -54,6 +54,7 @@ Defined in `ScriptLogger.kt`. The most used calls (prefix `amie.` optional):
 | `importModelOnnx("path.onnx")` | Any ONNX model behind the `inference / getStatus / close` interface |
 | `sessions.print()`, `sessions.cancel("name")`, `sessions.cancelAll()` | The open ORT sessions |
 | `packages.available()`, `packages.fetch("x.jar")`, `packages.print()`, `packages.closeAll()` | The package jars the server offers, a download into `AMP/pluginDir`, the open package sessions |
+| `saveState("name", json)`, `loadState("name")`, `listStates()` | A JSON text kept per user on the Amie backend (signed in): store it under a name, read it back (null when absent), list the names |
 | `jars.run("plugin.jar")`, `jars.quit("plugin.jar")` | Runs a static `run()` or `main` of a plugin jar once; not a package session |
 | `implementation("group:module:version")`, `amie.import("...")` | Add a package to the script's environment |
 | `implementation("my.jar")`, `amie.import("my.jar")` | Add a jar file to the environment |
@@ -173,6 +174,19 @@ weighted (embedding 60%, training 30%, ...) into one fraction that drives:
 
 Every 25 epochs the loss and accuracy are also logged to the console. Finished builds (with their duration and
 outcome) stay in `ModelBuildProgress.history`; the status line shows the last one while idle.
+
+## Saved states
+
+Signed in with Keycloak, a script can keep small JSON documents on the Amie backend, which stores them as
+`uploads/<user>/state/<name>.json` next to your packages (your devices live there as `devices`). The calls block
+like a package fetch and print one line each; a failure (a guest, an unreachable backend, a bad name) is one ERROR
+line and `loadState` then returns null. A name matches `[A-Za-z0-9._-]{1,64}`, a document is at most 1 MiB.
+
+```kotlin
+saveState("labels", """{"intents": ["greet", "bye"]}""")   // PUT /state/labels
+listStates().forEach { log(it) }                                 // devices, labels, ...
+val labels = loadState("labels")                                 // the JSON text, null when there is none
+```
 
 ## Serving a model
 

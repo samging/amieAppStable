@@ -51,6 +51,7 @@ import kotlinx.serialization.json.Json
 import org.example.project.components.render.templates.Client
 import org.example.project.components.render.templates.FallbackTypes
 import org.example.project.components.render.templates.RestType
+import org.example.project.backend.ErrorReporter
 import org.example.project.getDirectory
 import java.io.File
 import java.time.Instant
@@ -144,6 +145,8 @@ fun logToConsole(dto: ResponseDto) {
             logger.error("Error writing to log file: ${e.message}")
         }
     }
+    // Errors also go to the signed-in user's log on the backend; report() only queues, the request runs elsewhere
+    if (dto.level == LogLevel.ERROR) ErrorReporter.report(dto.source ?: "app", dto.message ?: "")
 }
 
 // Runtime/model internals; shown in every terminal so they also reach the logging terminal
@@ -307,12 +310,10 @@ fun TerminalWindow(
     }
     val scope = rememberCoroutineScope()
 
+    // Asks the backend to republish the device compatibility endpoints (POST /post-endpoints, no body needed; the
+    // backend keeps them in the S3 bucket as `repositoryInformations`) and remembers the task with the answer's status
     suspend fun update(body: TerminalTask ) {
-        val repoOwner = "samging"
-        val repoName = "codeRepository"
-        val path = "repositoryInformations"
-        val url = "https://api.github.com/repos/$repoOwner/$repoName/contents/$path"
-        val response = client.rest<Any>(url, restType = RestType.POST, body = body)
+        val response = client.rest<Any>("post-endpoints", restType = RestType.POST, body = body)
         response?.let {
             messageOver = TerminalTask(
                 time = Instant.now(),
@@ -525,14 +526,11 @@ fun TerminalWindow(
 
                     scope.launch {
                         try {
-                            val repoOwner = "samging"
-                            val repoName = "codeRepository"
-                            val path = "repositoryInformations"
-                            val url = "https://api.github.com/repos/$repoOwner/$repoName/contents/$path"
-
+                            // Any other input is a task for the backend: republish the device compatibility endpoints
+                            // (POST /post-endpoints) and show what GET /fetch-endpoints lists afterwards (name -> description)
                             val newTask = TerminalTask(task = rawInput, time = Instant.now(), status = 0)
                             messageOver = newTask
-                            val response = client.rest<Any>(url, restType = RestType.POST, body = newTask)
+                            val response = client.rest<Any>("post-endpoints", restType = RestType.POST, body = newTask)
                             response?.let {
                                 logToConsole(ResponseDto(
                                     time = Instant.now(),
@@ -540,6 +538,13 @@ fun TerminalWindow(
                                     level = LogLevel.DATA
                                 ))
                             }
+                            val endpoints = client.rest<Any>("fetch-endpoints", restType = RestType.GET).orEmpty()
+                            logToConsole(ResponseDto(
+                                time = Instant.now(),
+                                message = if (endpoints.isEmpty()) "no compatible endpoints listed by the backend"
+                                else endpoints.entries.joinToString("\n", prefix = "${endpoints.size} compatible endpoints:\n") { (name, description) -> "$name -> ${description ?: ""}" },
+                                level = LogLevel.DATA
+                            ))
                         } catch (e: Exception) {
                             logger.error(e.toString())
                             logToConsole(ResponseDto(time = Instant.now(), message = "Request failed: ${e.message}", level = LogLevel.ERROR))
