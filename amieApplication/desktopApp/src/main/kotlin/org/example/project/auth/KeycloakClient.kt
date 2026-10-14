@@ -36,6 +36,13 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
 /** What went wrong while talking to Keycloak, in words the login page can show */
+/**
+ * Scopes every sign-in asks for. offline_access makes Keycloak issue an offline refresh token, which outlives the
+ * realm's SSO session (30 min idle by default) and only expires after the realm's offline idle timeout (30 days by
+ * default, renewed every time it is used), so the app can sign the same user back in days later.
+ */
+const val OFFLINE_SCOPE = "openid profile email offline_access"
+
 open class AuthException(message: String, val status: Int? = null, cause: Throwable? = null) : Exception(message, cause)
 
 /** The account exists but Keycloak wants the email verified before it signs in; the mail has been sent */
@@ -111,7 +118,7 @@ class KeycloakClient(val config: KeycloakConfig) {
             append("grant_type", "password")
             append("username", username.trim())
             append("password", password)
-            append("scope", "openid profile email")
+            append("scope", OFFLINE_SCOPE)
         })
     }
 

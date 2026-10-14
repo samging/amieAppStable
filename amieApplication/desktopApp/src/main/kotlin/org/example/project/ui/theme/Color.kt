@@ -37,9 +37,28 @@ val PanelDividerColor = Color(0xFF333333)
 val GutterBackground = Color(0xFF0D0D0D)
 val LineNumberColor = Color(0xFF5A5A5A)
 
-// Console log levels
-val LogInfoColor = Color(0xFFA8A8A8)
-val LogErrorColor = Color(0xFFF85149)
-val LogDataColor = Color(0xFF56D4BC)
-val LogInternalColor = Color(0xFFFFFFFF)
-val LogTimestampColor = Color(0xFF666666)
+// Console log levels: one hue per level so the chips and badges are told apart at a glance
+val LogInfoColor = Color(0xFF79B8FF)      // blue
+val LogErrorColor = Color(0xFFFF7B72)     // red
+val LogDataColor = Color(0xFF7EE787)      // green
+val LogInternalColor = Color(0xFFD2A8FF)  // violet
+val LogTimestampColor = Color(0xFF6E7681)
+// Message text: neutral for ordinary lines, a light tint of the level for errors and data
+val LogMessageColor = Color(0xFFD8DEE6)
+val LogErrorTextColor = Color(0xFFFFB4AE)
+val LogDataTextColor = Color(0xFFC6F0CF)
+val LogInternalTextColor = Color(0xFFE2D6F5)
+// Alternate rows get a faint stripe so wrapped lines stay grouped
+val LogRowStripe = Color(0x0AFFFFFF)
+
+// Sandbox editor: syntax colours over EditorBackground and the completion dropdown
+val EditorKeywordColor = Color(0xFFC792EA)   // purple/pink: fun, val, if
+val EditorApiColor = Color(0xFF56D4BC)       // teal: amie and the script API names
+val EditorStringColor = Color(0xFFF2A65A)    // warm orange
+val EditorCommentColor = Color(0xFF6B7280)   // muted grey
+val EditorNumberColor = Color(0xFF82AAFF)    // light blue
+val EditorAnnotationColor = Color(0xFFE5C07B)
+val EditorPunctuationColor = Color(0xFFB4BCC8)
+val CompletionBackground = Color(0xFF1C1C1E)
+val CompletionBorder = Color(0xFF3A3A3C)
+val CompletionSelected = Color(0xFF2E3A44)

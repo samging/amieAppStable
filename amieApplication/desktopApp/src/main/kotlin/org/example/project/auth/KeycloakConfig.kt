@@ -50,7 +50,7 @@ data class KeycloakConfig(
         return endpoint +
             "?client_id=${enc(clientId)}" +
             "&response_type=code" +
-            "&scope=${enc("openid profile email")}" +
+            "&scope=${enc(OFFLINE_SCOPE)}" +
             "&redirect_uri=${enc(redirectUri)}" +
             "&state=${enc(state)}" +
             "&code_challenge=${enc(codeChallenge)}" +

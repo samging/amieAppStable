@@ -5,15 +5,24 @@ A Kotlin Multiplatform workspace with a Compose Desktop app (`amieApplication/de
 product: a scripting sandbox that trains small intent classifiers on top of a BERT encoder, serves them over
 HTTP, runs plugin jars, and manages connected devices. Sign-in goes through Keycloak.
 
-Documentation lives in Markdown files:
+Documentation is a Markdown site in [`docs/`](docs/index.md) built with [MkDocs](https://www.mkdocs.org/)
+(`mkdocs.yml`): read it on GitHub, or run `mkdocs serve` and open http://127.0.0.1:8000. Pages:
 
 | Topic | File |
 |---|---|
-| Build, run, package, project layout | this file |
-| Writing scripts, `amie.*` API, building models, build progress | [docs/sandbox-scripting.md](docs/sandbox-scripting.md) |
-| Amie backend and website: addresses, bearer tokens, publishing models | [docs/backend-integration.md](docs/backend-integration.md) |
-| Login, registration and SSO with Keycloak | [docs/authentication.md](docs/authentication.md) |
-| Models page: resources, uptime, traffic, serving | [docs/models-page.md](docs/models-page.md) |
+| Overview and the app in one minute | [docs/index.md](docs/index.md) |
+| Prerequisites, build, run, first start | [docs/getting-started.md](docs/getting-started.md) |
+| Signing in once and staying signed in | [docs/sign-in.md](docs/sign-in.md) |
+| The editor (completion, highlighting), running, the console and its filters | [docs/sandbox.md](docs/sandbox.md) |
+| Every function a script can call, build phases | [docs/sandbox-scripting.md](docs/sandbox-scripting.md) |
+| Building models, metrics tables and ASCII charts, publishing | [docs/models.md](docs/models.md) |
+| Serving a model over HTTP | [docs/serving.md](docs/serving.md) |
+| Device dashboard | [docs/devices.md](docs/devices.md) |
+| What the app writes to `AMP/` | [docs/amp-folder.md](docs/amp-folder.md) |
+| Keycloak realm and client setup | [docs/authentication.md](docs/authentication.md) |
+| Amie backend and website: addresses, bearer tokens, publishing | [docs/backend-integration.md](docs/backend-integration.md) |
+| Models page tiles | [docs/models-page.md](docs/models-page.md) |
+| Troubleshooting | [docs/troubleshooting.md](docs/troubleshooting.md) |
 
 ## Prerequisites
 
@@ -68,21 +77,22 @@ that is `amieApplication/desktopApp/AMP/`:
 | `AMP/modules/<name>/` | Exported models: `model.onnx`, `module.json`, `metrics.json`, `serving.json`, `incoming.jsonl` |
 | `AMP/env/` | Script package environments and the Maven download cache |
 | `AMP/keycloak.json` | Keycloak server, realm, client id and secret (git-ignored) |
-| `AMP/session.json` | The signed-in session so a restart signs you back in (git-ignored) |
+| `AMP/session.json` | The signed-in session (offline token) so a restart signs you back in (git-ignored) |
 | `AMP/componentSettings.json` | Configured devices |
 | `AMP/logs.txt` | Everything the console showed |
 
 ## Using the app
 
-1. **Welcome** → **Continue**. If nobody is signed in you land on the login page; sign in with a Keycloak
-   account, create one, or continue as a guest.
+1. **Welcome** → **Continue**. The first time you land on the login page; sign in with a Keycloak account, create
+   one, or continue as a guest. The session is kept, so later starts go straight on.
 2. **Sandbox** (the console icon in the left sidebar). Write a Kotlin script in `main.kts` and press the green
    **Run** button at the bottom of the sidebar. While it runs the button turns into a progress ring and the status
-   line under the console header shows what is happening; `amie.modelBuilder(...)` reports its phases there.
-   Details in [docs/sandbox-scripting.md](docs/sandbox-scripting.md).
+   line under the console header shows what is happening; `modelBuilder(...)` reports its phases there. The API
+   is called without a prefix (`source`, `modelBuilder`, `metricsChart`, …) and the editor completes it.
+   Details in [docs/sandbox.md](docs/sandbox.md) and [docs/sandbox-scripting.md](docs/sandbox-scripting.md).
 3. **Models** (the second sidebar icon). A full page with the app's resource usage and every model's uptime,
-   requests, latency and validation, plus serving settings, plugin jars and ORT sessions. It needs a Keycloak
-   sign-in. Details in [docs/models-page.md](docs/models-page.md).
+   requests, latency and validation, plus serving settings, plugin jars and ORT sessions. Open to guests; only the
+   backend card and Publish need a sign-in. Details in [docs/models.md](docs/models.md).
 4. **Dashboard** (`home1/`): device cards with configure, manage, connect and disconnect screens; **+** adds a device.
 
 ## Project layout
@@ -97,10 +107,11 @@ amieApplication/
     components/terminal/window/controller/
       CodingSandbox.kt              editor + console + Run button + run status bar
       ModelsPage.kt                 model statistics route
-      ScriptLogger.kt               the `amie` object scripts call
+      ScriptLogger.kt               the API scripts call (also bound as `amie`)
+      SandboxApi.kt                 the API list: prelude for prefix-free calls and editor completion
       TerminalWindow.kt             console, log levels, log file
       jetbrainDLBuilder/            modelBuilder: data checks, DenseNet training, BuildProgress
-      modules/                      exported modules, metrics, ModelServer, SystemStats
+      modules/                      exported modules, metrics and their ASCII charts, ModelServer, SystemStats
       modelLoaders/                 ORT sessions and model loaders
       envBuilder/                   script package environments (Maven resolution)
       pluginEngine/                 plugin jar runner

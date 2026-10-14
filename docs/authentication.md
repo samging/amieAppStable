@@ -89,9 +89,26 @@ not be expired (`auth/Jwt.kt`, `KeycloakClient.sessionOf`).
 
 `AuthState` (`auth/AuthSession.kt`) holds the signed-in user as a `StateFlow` that the window header, the welcome
 page and the Models page observe. The session (access, refresh and id tokens plus the username and email claims)
-is saved in `AMP/session.json`; on the next start it is restored, refreshed if the access token expired, and dropped
-if the refresh token expired too. **Log out** in the header calls Keycloak's logout endpoint with the refresh token
-and deletes the file. `AuthState.accessToken()` gives other code a valid bearer token, refreshing when needed.
+is saved in `AMP/session.json`.
+
+Every sign-in (password, browser and registration) asks for the scopes `openid profile email offline_access`
+(`OFFLINE_SCOPE` in `KeycloakClient.kt`). With `offline_access`, Keycloak issues an **offline refresh token** that
+outlives the SSO session: in this realm the SSO session idles out after 30 minutes and ends after 10 hours, while
+an offline session only idles out after 30 days and is renewed every time the token is used. This needs the user to
+hold the realm role `offline_access` (a default role for new users) and the client to offer the `offline_access`
+scope (it is in the `amie` client's optional scopes). The access token lives 60 seconds, so every start refreshes it.
+
+On the next start `restore()` is run on a background thread and `AuthState.restoring` is true until it has decided;
+the welcome page's **Continue** waits for it so a signed-in user never lands on the login page. A session is
+restored as is when its access token is valid, refreshed when it expired, and dropped only when:
+
+- Keycloak answered and refused the refresh token (revoked, logged out elsewhere, offline session over), or
+- the saved session belongs to another realm URL than `AMP/keycloak.json` names, or
+- the user pressed **Log out**, which calls Keycloak's logout endpoint with the refresh token and deletes the file.
+
+When Keycloak is **unreachable** the session is kept and marked as the current one; `AuthState.accessToken()`
+retries the refresh on the next call that needs a bearer token. The `auth:` lines in `AMP/logs.txt` say which of
+these happened.
 
 ## Relation to the Amie backend
 

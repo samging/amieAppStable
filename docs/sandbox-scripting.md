@@ -1,65 +1,80 @@
-# Sandbox scripting
+# Scripting API
 
-The sandbox is a Kotlin script editor (`main.kts`) with a console. The script runs inside the app with an
-`amie` object bound to it; everything it logs shows in the console on the right and is appended to `AMP/logs.txt`.
+The sandbox is a Kotlin script editor (`main.kts`) with a console (how to use the editor, the completion dropdown and
+the console filters is in [The sandbox](sandbox.md)). The script runs inside the app with the sandbox API bound to
+it; everything it logs shows in the console on the right and is appended to `AMP/logs.txt`.
+
+Every function below can be called **directly** (`source("x.csv")`) or through the `amie` object
+(`amie.source("x.csv")`). The only difference is `amie.import`: without the prefix write
+`implementation("group:module:version")` or `dependency(...)` for a package and `environment(SettingsEnv(...))` for
+an environment, since a bare `import(...)` reads as a Kotlin import.
 
 ## Running a script
 
 1. Type in the editor. The script is saved to `AMP/pluginDir/main.kts` as you type.
 2. Press the green **Run** button at the bottom of the left sidebar.
 3. While the script runs the button becomes a spinning ring (it fills with the model build's progress when
-   `amie.modelBuilder` is working), the status line under the console header reads `Running main.kts · 12s`,
+   `modelBuilder` is working), the status line under the console header reads `Running main.kts · 12s`,
    and pressing Run again only logs "Script is already running".
 4. When it ends the status line shows `Finished in 41s` or `Failed after 3s`, and the console gets the same line.
 
-The console chips (INTERNAL, ERROR, DATA, INFO) filter what is shown; **Clear** empties the view, the log file keeps it all.
+The console chips (Internal, Error, Data, Info) filter what is shown; **Clear** empties the view, the log file keeps it all.
 
 ### Run phases
 
-- **Configuration.** `amie.import("group:module:version")` and `amie.import(SettingsEnv("env", "profile"))` calls are
-  read from the script text *before* it compiles, the packages are resolved from Maven Central (cached under
+- **Configuration.** `implementation("group:module:version")` / `amie.import("...")` and
+  `environment(SettingsEnv("env", "profile"))` / `amie.import(SettingsEnv(...))` calls are read from the script text *before* it compiles, the packages are resolved from Maven Central (cached under
   `AMP/env/caches`) and put on the script's classpath. Each env (`AMP/env/<name>/env.lock.json`) keeps what was ever
   imported into it, like a virtualenv.
-- **Execution.** The script is wrapped with `val amie = bindings["logger"] as ScriptLogger` and evaluated with the
-  Kotlin JSR-223 engine on a background thread.
+- **Execution.** The script's own `import` lines are moved to the top, then `val amie = bindings["logger"] as ScriptLogger`
+  and a prelude of top-level functions delegating to it (`fun source(path: String) = amie.source(path)`, …) are
+  inserted before the rest of the code, and the whole is evaluated with the Kotlin JSR-223 engine on a background
+  thread. The prelude is generated from one list (`SandboxApi.kt`), which also feeds the editor's completion dropdown.
 
-## The `amie` API
+## The API
 
-Defined in `ScriptLogger.kt`. The most used calls:
+Defined in `ScriptLogger.kt`. The most used calls (prefix `amie.` optional):
 
 | Call | What it does |
 |---|---|
-| `amie.log("...")`, `amie.info`, `amie.error`, `amie.data` | Console lines at the given level |
-| `amie.source("train.csv")` | Reads a labeled CSV (text and label columns are inferred from headers like `text`, `label`, `intent`). Looked up as given, then in `AMP/`, then `AMP/pluginDir/` |
-| `amie.relate(train, "test.csv")` | Attaches a test file to a training source; the model validates on it instead of a split. Remembered in `AMP/relations.json` |
-| `amie.sourceFile("file.csv", column = "")` | Raw rows keyed by index, optionally one column |
-| `amie.modelBuilder("name", data)` | Trains and exports an intent classifier (below) |
-| `amie.modelBuilder("name") { ... }` | Same, the lambda returns the data |
-| `amie.initMod("name")` | Opens an exported model; `.inference("text")` returns `label:probability` sorted best first; `.close()` |
-| `amie.initMod()` | The bundled BERT NER model |
-| `amie.validateMetrics("name", labels = listOf(...))` | Prints the stored validation table of a model |
-| `amie.forwardContext("text") { ids -> }` | Runs the encoder and returns the hidden state `[batch][token][hidden]` |
-| `amie.importModelOnnx("path.onnx")` | Any ONNX model behind the `inference / getStatus / close` interface |
-| `amie.sessions.print()`, `amie.sessions.cancel("name")`, `amie.sessions.cancelAll()` | The open ORT sessions |
-| `amie.jars.run("plugin.jar")`, `amie.jars.quit("plugin.jar")` | Plugin jars from `AMP/pluginDir` or the env |
-| `amie.import("group:module:version")` | Add a package to the script's environment |
-| `amie.import("my.jar")` | Add a jar file to the environment |
-| `amie.internalEnv()` | Print what the environment contains |
+| `log("...")`, `info`, `error`, `data` | Console lines at the given level |
+| `source("train.csv")` | Reads a labeled CSV (text and label columns are inferred from headers like `text`, `label`, `intent`). Looked up as given, then in `AMP/`, then `AMP/pluginDir/` |
+| `relate(train, "test.csv")` | Attaches a test file to a training source; the model validates on it instead of a split. Remembered in `AMP/relations.json` |
+| `sourceFile("file.csv", column = "")` | Raw rows keyed by index, optionally one column |
+| `modelBuilder("name", data)` | Trains and exports an intent classifier (below) |
+| `modelBuilder("name") { ... }` | Same, the lambda returns the data |
+| `initMod("name")` | Opens an exported model; `.inference("text")` returns `label:probability` sorted best first; `.close()` |
+| `initMod()` | The bundled BERT NER model |
+| `validateMetrics("name", labels = listOf(...))` | Prints the stored validation table of a model |
+| `metricsChart("name", labels = listOf(...))` | ASCII bars: accuracy, macro F1 and the F1 of each label with precision, recall and support |
+| `metricsHistory("name")` | ASCII line chart of accuracy and macro F1 across every build |
+| `confusionMatrix("name")` | The last validation's confusion matrix as a shaded ASCII grid |
+| `forwardContext("text") { ids -> }` | Runs the encoder and returns the hidden state `[batch][token][hidden]` |
+| `importModelOnnx("path.onnx")` | Any ONNX model behind the `inference / getStatus / close` interface |
+| `sessions.print()`, `sessions.cancel("name")`, `sessions.cancelAll()` | The open ORT sessions |
+| `jars.run("plugin.jar")`, `jars.quit("plugin.jar")` | Plugin jars from `AMP/pluginDir` or the env |
+| `implementation("group:module:version")`, `amie.import("...")` | Add a package to the script's environment |
+| `implementation("my.jar")`, `amie.import("my.jar")` | Add a jar file to the environment |
+| `environment(SettingsEnv("name", "profile"))`, `amie.import(SettingsEnv(...))` | Select the script environment (must be written literally) |
+| `internalEnv()` | Print what the environment contains |
 
 ## Building a model
 
 ```kotlin
-val train = amie.source("intents.csv")          // columns: text,label
-amie.relate(train, "intents-test.csv")          // optional test file
-val model = amie.modelBuilder("intents", train)
-model.modelStatus()                             // the stored validation report
+val train = source("intents.csv")          // columns: text,label
+relate(train, "intents-test.csv")          // optional test file
+val model = modelBuilder("intents", train)
+model.modelStatus()                        // the stored validation table
+model.modelChart()                         // bars, build history and confusion matrix
 
-val m = amie.initMod("intents")
-amie.log(m.inference("turn the lights on").first())
+val m = initMod("intents")
+log(m.inference("turn the lights on").first())
 m.close()
 ```
 
-Accepted data shapes: a `DataSource` from `amie.source`, `List<Pair<text, label>>`, `Map<label, List<text>>`, or
+The charts are described with examples in [Models and metrics](models.md#reading-the-metrics).
+
+Accepted data shapes: a `DataSource` from `source`, `List<Pair<text, label>>`, `Map<label, List<text>>`, or
 rows of `[text, ..., label]`.
 
 ### What modelBuilder does

@@ -45,6 +45,13 @@ interface ScriptLogger {
     // Reads the last stored validation of AMP/modules/<modelName> and prints it; labels narrows the table to those labels
     fun validateMetrics(modelName: String, labels: List<String> = emptyList()): MetricsReport =
         MetricsReport.load(modelName).print(labels)
+    // ASCII bar chart of the stored validation: accuracy, macro F1 and the F1 of each label (or the given ones)
+    fun metricsChart(modelName: String, labels: List<String> = emptyList()): MetricsReport =
+        MetricsReport.load(modelName).chart(labels)
+    // ASCII line chart of accuracy and macro F1 across every build of the model
+    fun metricsHistory(modelName: String): MetricsReport = MetricsReport.load(modelName).history()
+    // The last validation's confusion matrix as an ASCII grid
+    fun confusionMatrix(modelName: String): MetricsReport = MetricsReport.load(modelName).confusion()
     fun implementation(it: BuildSettings) {}
     fun import(it: SettingsEnv) {}
     // Gradle-style dependency, "group:module:version" or a jar file name; literal calls are sourced before the script compiles
@@ -75,5 +82,11 @@ abstract class ModelCreationalInterface {
         val name = modelName
         if (name != null) MetricsReport.load(name).print()
         else logToConsole(ResponseDto(time = Instant.now(), message = "Status of model ${this.javaClass.simpleName}"))
+    }
+
+    // The stored validation as ASCII charts: bars per label, the build history and the confusion matrix
+    fun modelChart(): Unit {
+        val name = modelName ?: return logToConsole(ResponseDto(time = Instant.now(), message = "modelChart: nothing was exported", level = LogLevel.ERROR))
+        MetricsReport.load(name).chart().history().confusion()
     }
 }

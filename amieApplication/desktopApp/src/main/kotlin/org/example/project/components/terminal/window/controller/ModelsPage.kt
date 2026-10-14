@@ -178,8 +178,9 @@ private fun readSnapshot(): ModelsSnapshot {
 
 /**
  * The models route: what the app process uses, every intent model with its uptime, traffic, latency and
- * validation, the model being built, plugin jars and open ORT sessions. It needs a Keycloak sign-in: a guest
- * or signed-out user sees a prompt to log in instead.
+ * validation, the model being built, plugin jars and open ORT sessions. Everything comes from local files under
+ * AMP/ (modules/<name>/metrics.json, serving.json, pluginDir), so a guest sees it too; only the Amie backend card
+ * and Publish need a Keycloak sign-in.
  */
 @Composable
 fun ModelsPage(navController: NavController) {
@@ -193,32 +194,12 @@ fun ModelsPage(navController: NavController) {
             modelsSelected = true,
             onModels = {},
         )
-        if (session == null) {
-            SignInPrompt(onLogin = { navController.navigate("login") { launchSingleTop = true } })
-        } else {
-            ModelsContent(user = session!!.username)
-        }
+        ModelsContent(user = session?.username, onLogin = { navController.navigate("login") { launchSingleTop = true } })
     }
 }
 
 @Composable
-private fun SignInPrompt(onLogin: () -> Unit) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Model statistics", color = FontColor, fontSize = 22.sp, fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.SansSerif)
-            Spacer(Modifier.height(8.dp))
-            Text(
-                "Sign in with your Keycloak account to see resources, uptime and traffic of your models.",
-                color = MutedFontColor, fontSize = 13.sp, fontFamily = FontFamily.SansSerif
-            )
-            Spacer(Modifier.height(18.dp))
-            SmallButton("Sign in", AddButton, onClick = onLogin)
-        }
-    }
-}
-
-@Composable
-private fun ModelsContent(user: String) {
+private fun ModelsContent(user: String?, onLogin: () -> Unit) {
     var snapshot by remember { mutableStateOf(ModelsSnapshot()) }
     var refresh by remember { mutableStateOf(0) }
     val scope = rememberCoroutineScope()
@@ -247,13 +228,18 @@ private fun ModelsContent(user: String) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Models", color = FontColor, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.SansSerif)
             Spacer(Modifier.weight(1f))
-            Meta("signed in as $user · refreshes every 1.5s")
+            Meta(if (user != null) "signed in as $user · refreshes every 1.5s" else "guest · read from AMP/modules · refreshes every 1.5s")
         }
         Spacer(Modifier.height(14.dp))
 
         snapshot.system?.let { SystemOverview(it, models = snapshot.models) }
 
-        BackendCard(user = user, publishedNames = snapshot.models.map { it.name })
+        if (user != null) {
+            BackendCard(user = user, publishedNames = snapshot.models.map { it.name })
+        } else {
+            SectionTitle("AMIE BACKEND", 0) { SmallButton("Sign in", AddButton, onClick = onLogin) }
+            Hint("Sign in with Keycloak to publish models to the Amie backend. Statistics and metrics stay local and need no account.")
+        }
 
         build?.let {
             SectionTitle("BUILDING", 1)
@@ -270,11 +256,13 @@ private fun ModelsContent(user: String) {
                 onListen = { on, settings ->
                     background { if (on) ModelServer.start(model.name, settings) else ModelServer.stop(model.name) }
                 },
-                onPublish = {
-                    background {
-                        val (dir, _) = readModule(model.name) ?: error("module '${model.name}' not found")
-                        AmieBackend.publishModule(model.name, dir, user)
-                        BackendCardState.refresh()
+                onPublish = user?.let { signedIn ->
+                    {
+                        background {
+                            val (dir, _) = readModule(model.name) ?: error("module '${model.name}' not found")
+                            AmieBackend.publishModule(model.name, dir, signedIn)
+                            BackendCardState.refresh()
+                        }
                     }
                 },
             )
@@ -362,7 +350,8 @@ private fun ModelCard(
     lastBuild: ModelBuild?,
     onSave: (ServingSettings) -> Unit,
     onListen: (Boolean, ServingSettings) -> Unit,
-    onPublish: () -> Unit = {},
+    // Null for a guest: publishing needs the Keycloak session
+    onPublish: (() -> Unit)? = null,
 ) {
     var expanded by remember(model.name) { mutableStateOf(false) }
     var host by remember(model.name) { mutableStateOf(model.serving.host) }
@@ -456,9 +445,12 @@ private fun ModelCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text("Publish to Amie", color = FontColor, fontSize = 12.sp)
-                    Meta("uploads model.onnx and module.json to your package folder; the website's dashboard lists them")
+                    Meta(
+                        if (onPublish != null) "uploads model.onnx and module.json to your package folder; the website's dashboard lists them"
+                        else "sign in with Keycloak to upload this model to the Amie backend"
+                    )
                 }
-                SmallButton("Publish", AddButton, onClick = onPublish)
+                if (onPublish != null) SmallButton("Publish", AddButton, onClick = onPublish)
             }
         }
     }

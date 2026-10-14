@@ -76,8 +76,9 @@ data class EnvLock(
 /** What a script declares, read before it compiles (the configuration phase) */
 data class EnvPlan(val envName: String, val activeProfile: String, val imports: List<String>) {
     companion object {
-        private val importCall = Regex("""amie\.(?:import|implementation)\(\s*"([^"]+)"\s*\)""")
-        private val settingsCall = Regex("""amie\.import\(\s*SettingsEnv\(([^)]*)\)\s*\)""")
+        // `amie.` is optional: the sandbox prelude exposes implementation/dependency (and environment for SettingsEnv) prefix-free
+        private val importCall = Regex("""(?<![\w.])(?:amie\.)?(?:import|implementation|dependency)\(\s*"([^"]+)"\s*\)""")
+        private val settingsCall = Regex("""(?<![\w.])(?:amie\.)?(?:import|environment)\(\s*SettingsEnv\(([^)]*)\)\s*\)""")
         private val stringArg = Regex("""(?:(\w+)\s*=\s*)?"([^"]*)"""")
 
         fun scan(code: String): EnvPlan {

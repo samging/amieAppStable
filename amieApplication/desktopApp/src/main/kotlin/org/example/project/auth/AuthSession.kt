@@ -44,6 +44,10 @@ object AuthState {
     private val _session = MutableStateFlow<AuthSession?>(null)
     val session: StateFlow<AuthSession?> = _session.asStateFlow()
 
+    // True from start-up until restore() has decided whether a saved session comes back; pages wait on it
+    private val _restoring = MutableStateFlow(true)
+    val restoring: StateFlow<Boolean> = _restoring.asStateFlow()
+
     val user: String get() = _session.value?.username ?: ""
     val signedIn: Boolean get() = _session.value != null
 
@@ -58,20 +62,28 @@ object AuthState {
         logInternal("auth: signed in as ${session.username} (${session.issuer})")
     }
 
-    /** Brings back the saved session, refreshing it when the access token has expired */
+    /**
+     * Brings back the saved session, refreshing it when the access token has expired. The user is only signed out
+     * when Keycloak refuses the refresh token; when Keycloak can't be reached the session is kept and refreshed on
+     * the next call that needs a token.
+     */
     suspend fun restore(): AuthSession? {
-        val saved = runCatching { json.decodeFromString<AuthSession>(file.readText()) }.getOrNull() ?: return null
-        if (saved.realmUrl != client.config.issuer) {
-            logInternal("auth: saved session is for ${saved.realmUrl}, not ${client.config.issuer}; signed out")
-            forget()
-            return null
+        try {
+            val saved = runCatching { json.decodeFromString<AuthSession>(file.readText()) }.getOrNull() ?: return null
+            if (saved.realmUrl != client.config.issuer) {
+                logInternal("auth: saved session is for ${saved.realmUrl}, not ${client.config.issuer}; signed out")
+                forget()
+                return null
+            }
+            if (!saved.expired()) {
+                _session.value = saved
+                logInternal("auth: restored session of ${saved.username}")
+                return saved
+            }
+            return refresh(saved, keepWhenUnreachable = true)
+        } finally {
+            _restoring.value = false
         }
-        if (!saved.expired()) {
-            _session.value = saved
-            logInternal("auth: restored session of ${saved.username}")
-            return saved
-        }
-        return refresh(saved)
     }
 
     /** A fresh access token, refreshing when the current one is about to expire; null when signed out */
@@ -81,7 +93,7 @@ object AuthState {
         return refresh(current)?.accessToken
     }
 
-    private suspend fun refresh(session: AuthSession): AuthSession? {
+    private suspend fun refresh(session: AuthSession, keepWhenUnreachable: Boolean = false): AuthSession? {
         if (session.refreshExpired()) {
             logInternal("auth: session of ${session.username} expired, sign in again")
             forget()
@@ -89,9 +101,21 @@ object AuthState {
         }
         return try {
             client.refresh(session.refreshToken!!).also { signIn(it) }
+        } catch (e: AuthException) {
+            if (e.status != null) {
+                // Keycloak answered and refused the token (revoked, logged out elsewhere, offline session over)
+                logInternal("auth: Keycloak refused the saved session of ${session.username}: ${e.message}", LogLevel.ERROR)
+                forget()
+                null
+            } else {
+                // Keycloak is down or unreachable: keep the session, the next token request tries again
+                logInternal("auth: couldn't refresh the session of ${session.username} (${e.message}); kept, will retry", LogLevel.ERROR)
+                if (keepWhenUnreachable) _session.value = session
+                null
+            }
         } catch (e: Exception) {
             logInternal("auth: refresh failed: ${e.message}", LogLevel.ERROR)
-            forget()
+            if (keepWhenUnreachable) _session.value = session
             null
         }
     }

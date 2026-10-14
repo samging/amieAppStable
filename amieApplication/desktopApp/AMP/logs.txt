@@ -99,3 +99,5 @@ Waiting for logs...
 > [INTERNAL] [internal] 2026-10-14T02:33:46.432493Z auth: signed in as 123 (http://192.168.1.114:8080/realms/master)
 > [INTERNAL] [internal] 2026-10-14T12:33:12.642697Z auth: session of 123 expired, sign in again
 > [INTERNAL] [internal] 2026-10-14T12:36:22.957125Z auth: signed out
+> [INTERNAL] [internal] 2026-10-14T13:03:38.166956Z auth: signed in as 123 (http://192.168.1.114:8080/realms/master)
+> [ERROR] [internal] 2026-10-14T13:03:40.988774Z backend: http://192.168.1.114:8080 unreachable: Host is down

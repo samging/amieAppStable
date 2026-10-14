@@ -72,6 +72,11 @@ import org.example.project.ui.theme.LogErrorColor
 import org.example.project.ui.theme.LogInfoColor
 import org.example.project.ui.theme.LogInternalColor
 import org.example.project.ui.theme.LogTimestampColor
+import org.example.project.ui.theme.LogMessageColor
+import org.example.project.ui.theme.LogErrorTextColor
+import org.example.project.ui.theme.LogDataTextColor
+import org.example.project.ui.theme.LogInternalTextColor
+import org.example.project.ui.theme.LogRowStripe
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import javax.script.ScriptEngineManager
@@ -203,33 +208,43 @@ private fun ResponseDto.shortSource(): String = source?.substringAfterLast('/') 
 private val ConsoleCompactWidth = 640.dp
 
 @Composable
-private fun ConsoleLine(msg: ResponseDto, compact: Boolean = false) {
+private fun ConsoleLine(msg: ResponseDto, compact: Boolean = false, striped: Boolean = false) {
     val levelColor = msg.level.color()
     val mono = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 12.sp, lineHeight = ConsoleLineHeight)
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(if (striped) LogRowStripe else Color.Transparent, RoundedCornerShape(3.dp))
+            .padding(horizontal = 6.dp, vertical = 3.dp),
         verticalAlignment = Alignment.Top
     ) {
         Text(
             text = msg.time?.let { logTimeFormat.format(it) } ?: "--:--:--",
-            style = mono.copy(color = LogTimestampColor),
+            style = mono.copy(color = LogTimestampColor, fontSize = 11.sp),
             modifier = Modifier.width(ConsoleTimeWidth)
         )
         // Same height as one text line so the badge sits centered on the first line
         Box(modifier = Modifier.width(ConsoleLevelWidth).height(20.dp), contentAlignment = Alignment.CenterStart) {
-            Text(
-                text = msg.level.name,
-                style = mono.copy(color = levelColor, fontSize = 10.sp, lineHeight = 14.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .width(ConsoleLevelWidth - 10.dp)
-                    .background(levelColor.copy(alpha = 0.14f), RoundedCornerShape(4.dp))
-                    .padding(vertical = 1.dp)
-            )
+                    .background(levelColor.copy(alpha = 0.16f), RoundedCornerShape(4.dp))
+                    .padding(horizontal = 5.dp, vertical = 2.dp)
+            ) {
+                Box(modifier = Modifier.size(5.dp).background(levelColor, RoundedCornerShape(50)))
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    text = msg.level.name.lowercase(),
+                    style = mono.copy(color = levelColor, fontSize = 10.sp, lineHeight = 12.sp, fontWeight = FontWeight.Bold),
+                    maxLines = 1
+                )
+            }
         }
         if (!compact) {
             Text(
                 text = msg.shortSource(),
-                style = mono.copy(color = LogTimestampColor),
+                style = mono.copy(color = LogTimestampColor, fontSize = 11.sp),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.width(ConsoleSourceWidth).padding(end = 8.dp)
@@ -239,9 +254,12 @@ private fun ConsoleLine(msg: ResponseDto, compact: Boolean = false) {
             text = msg.text(),
             style = mono.copy(
                 fontSize = 13.sp,
+                // Ordinary lines in a neutral light grey; errors and data in a light tint of their level
                 color = msg.color?.let { Color(it) } ?: when (msg.level) {
-                    LogLevel.INFO -> Color(0xFFc7cbd4)
-                    else -> levelColor
+                    LogLevel.INFO -> LogMessageColor
+                    LogLevel.ERROR -> LogErrorTextColor
+                    LogLevel.DATA -> LogDataTextColor
+                    LogLevel.INTERNAL -> LogInternalTextColor
                 }
             ),
             modifier = Modifier.weight(1f)
@@ -334,8 +352,8 @@ fun TerminalWindow(
                 ) {
                     SelectionContainer {
                         Column {
-                            for (msg in consoleData.filter { it.belongsTo(source) && it.level in levels }) {
-                                ConsoleLine(msg, compact)
+                            consoleData.filter { it.belongsTo(source) && it.level in levels }.forEachIndexed { i, msg ->
+                                ConsoleLine(msg, compact, striped = i % 2 == 1)
                             }
                         }
                     }

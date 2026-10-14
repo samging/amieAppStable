@@ -3,8 +3,10 @@
 Route `models`, opened from the second icon in the sandbox sidebar. It is a full page (not a side panel) in
 `components/terminal/window/controller/ModelsPage.kt`, and it re-reads everything every 1.5 seconds while open.
 
-It requires a Keycloak sign-in: a guest or signed-out user sees a "Sign in" prompt instead of the statistics. The
-page shows who is signed in at the top.
+Everything on it is read from local files and in-process counters, so it is open to guests too: the header says
+"signed in as …" or "guest · read from AMP/modules". Only the **AMIE BACKEND** card and the **Publish** button need a
+Keycloak sign-in; a guest sees a **Sign in** button in their place. How to read the metrics, in the console and as
+charts, is in [Models and metrics](models.md).
 
 ## Overview tiles
 
@@ -36,7 +38,7 @@ session statistics come from `modelLoaders/OrtSessions.kt`, which times every ru
 
 ## Building
 
-While `amie.modelBuilder` runs in the sandbox, a **BUILDING** card shows the model's phase, step and progress bar,
+While `modelBuilder` runs in the sandbox, a **BUILDING** card shows the model's phase, step and progress bar,
 from the same `ModelBuildProgress` state the sandbox uses (see [sandbox-scripting.md](sandbox-scripting.md)).
 
 ## Jars and sessions

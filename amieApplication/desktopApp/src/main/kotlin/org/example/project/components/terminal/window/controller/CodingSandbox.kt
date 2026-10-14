@@ -17,8 +17,6 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import dev.snipme.highlights.Highlights
 import dev.snipme.highlights.model.SyntaxLanguage
-import dev.snipme.highlights.model.SyntaxThemes
-import dev.snipme.kodeview.view.CodeEditText
 import org.jetbrains.jewel.foundation.theme.JewelTheme
 import org.jetbrains.jewel.intui.standalone.theme.IntUiTheme
 import org.jetbrains.jewel.ui.component.Text
@@ -58,7 +56,6 @@ import org.example.project.ui.theme.PanelDividerColor
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.TextFieldDefaults
 import androidx.compose.ui.text.style.TextAlign
 import org.example.project.ui.theme.ConsoleInputBackground
 import org.example.project.ui.theme.EditorBackground
@@ -143,6 +140,26 @@ fun prewarmScriptEngine() {
 private const val SANDBOX_SOURCE = "sandbox"
 private const val SCRIPT_SOURCE = "$SANDBOX_SOURCE/main.kts"
 
+private val importDirective = Regex("""^\s*import\s+[\w.]+(\.\*)?(\s+as\s+\w+)?\s*$""")
+
+/**
+ * What the engine evaluates: the user's import directives first (they must lead the file), then the ScriptLogger
+ * import and `val amie`, then the SandboxApi prelude so the API is callable without the prefix, then the rest of
+ * the user's code with its import lines blanked so its line numbers keep their spacing. main.kts stays the raw code.
+ */
+internal fun assembleScript(code: String): String {
+    val lines = code.lines()
+    val imports = lines.filter { importDirective.matches(it) }
+    val body = lines.joinToString("\n") { if (importDirective.matches(it)) "" else it }
+    return buildString {
+        imports.forEach { append(it.trim()).append('\n') }
+        append("import org.example.project.components.terminal.window.controller.ScriptLogger\n")
+        append("val amie = bindings[\"logger\"] as ScriptLogger\n")
+        append(SandboxApi.prelude())
+        append(body)
+    }
+}
+
 @Composable
 fun CodingSandbox(navController: NavController) {
     var selectedIndex by remember { mutableStateOf(1) }
@@ -164,12 +181,12 @@ fun CodingSandbox(navController: NavController) {
         mutableStateOf(
             Highlights.Builder()
                 .code("" +
-                        "val constraints = mutableListOf<String>()\n" +
-                        "val goals = mutableListOf<String>()\n" +
-                        "amie.initAmie()\n"
+                        "// The script API is in scope: log(), source(), modelBuilder(), ... (amie.name works too)\n" +
+                        "log(\"hello from main.kts\")\n" +
+                        "val train = source(\"intents.csv\")\n"
                 )
                 .language(SyntaxLanguage.KOTLIN)
-                .theme(SyntaxThemes.default(darkMode = true))
+                .theme(sandboxSyntaxTheme)
                 .build()
         )
     }
@@ -313,7 +330,7 @@ fun CodingSandbox(navController: NavController) {
                                     if (ScriptEnvironments.current?.name == it.envName) {
                                         logInternal("env '${it.envName}' (profile ${it.activeProfile}) is the sourced environment")
                                     } else {
-                                        logInternal("env '${it.envName}' must be selected with a literal amie.import(SettingsEnv(\"${it.envName}\", ...)) to be sourced", LogLevel.ERROR)
+                                        logInternal("env '${it.envName}' must be selected with a literal environment(SettingsEnv(\"${it.envName}\", ...)) or amie.import(SettingsEnv(...)) to be sourced", LogLevel.ERROR)
                                     }
                                 }
 
@@ -370,11 +387,7 @@ fun CodingSandbox(navController: NavController) {
                             // Rebuild assembly.kts from the editor's current code on every run so it never evaluates a stale copy
                             pluginPath.parentFile?.mkdirs()
                             pluginPath.writeText(code)
-                            assemblyPath.writeText(
-                                "import org.example.project.components.terminal.window.controller.ScriptLogger\n" +
-                                "val amie = bindings[\"logger\"] as ScriptLogger\n" +
-                                code
-                            )
+                            assemblyPath.writeText(assembleScript(code))
                             try {
                                 // Execution phase: env packages are loaded through the env classloader
                                 withContextClassLoader(envLoader) {
@@ -423,27 +436,22 @@ fun CodingSandbox(navController: NavController) {
                         )
                         Box(modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState())) {
                             key(editorGeneration) {
-                            CodeEditText(
-                                highlights = highlights,
-                                onValueChange = { newCode ->
-                                    codeField.value = newCode
-                                    highlights = Highlights.Builder()
-                                        .code(newCode)
-                                        .language(highlights.getLanguage())
-                                        .theme(highlights.getTheme())
-                                        .build()
-                                },
-                                modifier = Modifier
-                                    .widthIn(min = viewportWidth - GutterWidth)
-                                    .heightIn(min = viewportHeight),
-                                textStyle = editorTextStyle,
-                                colors = TextFieldDefaults.textFieldColors(
-                                    backgroundColor = Color.Transparent,
-                                    focusedIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent,
-                                    cursorColor = FontColor
+                                SandboxEditor(
+                                    initialCode = highlights.getCode(),
+                                    highlights = highlights,
+                                    onCodeChange = { newCode ->
+                                        codeField.value = newCode
+                                        highlights = Highlights.Builder()
+                                            .code(newCode)
+                                            .language(highlights.getLanguage())
+                                            .theme(highlights.getTheme())
+                                            .build()
+                                    },
+                                    textStyle = editorTextStyle,
+                                    modifier = Modifier
+                                        .widthIn(min = viewportWidth - GutterWidth)
+                                        .heightIn(min = viewportHeight),
                                 )
-                            )
                             }
                         }
                     }
@@ -692,21 +700,47 @@ private fun ConsoleHeader(
 @Composable
 private fun LevelChip(level: LogLevel, on: Boolean, count: Int, onClick: () -> Unit) {
     val color = level.color()
-    Text(
-        text = "${level.name} $count",
-        style = TextStyle(
-            color = if (on) color else MutedFontColor.copy(alpha = 0.6f),
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
-            fontFamily = FontFamily.Monospace
-        ),
+    // A filled chip in the level's own hue when on; outlined and dim when its lines are hidden
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
-            .clip(RoundedCornerShape(4.dp))
-            .background(if (on) color.copy(alpha = 0.14f) else Color.Transparent)
-            .border(1.dp, if (on) color.copy(alpha = 0.35f) else ConsoleBorderColor, RoundedCornerShape(4.dp))
+            .clip(RoundedCornerShape(5.dp))
+            .background(if (on) color.copy(alpha = 0.22f) else Color.Transparent)
+            .border(1.dp, if (on) color.copy(alpha = 0.7f) else ConsoleBorderColor, RoundedCornerShape(5.dp))
             .clickable { onClick() }
-            .padding(horizontal = 6.dp, vertical = 2.dp)
-    )
+            .padding(horizontal = 8.dp, vertical = 3.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(7.dp)
+                .clip(CircleShape)
+                .background(if (on) color else MutedFontColor.copy(alpha = 0.35f))
+        )
+        Spacer(Modifier.width(6.dp))
+        Text(
+            text = level.name.lowercase().replaceFirstChar { it.uppercase() },
+            style = TextStyle(
+                color = if (on) color else MutedFontColor.copy(alpha = 0.55f),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                fontFamily = FontFamily.SansSerif,
+                letterSpacing = 0.2.sp
+            )
+        )
+        Spacer(Modifier.width(6.dp))
+        Text(
+            text = count.toString(),
+            style = TextStyle(
+                color = if (on) color.copy(alpha = 0.9f) else MutedFontColor.copy(alpha = 0.45f),
+                fontSize = 10.sp,
+                fontFamily = FontFamily.Monospace
+            ),
+            modifier = Modifier
+                .clip(RoundedCornerShape(3.dp))
+                .background(if (on) color.copy(alpha = 0.16f) else ConsoleBorderColor.copy(alpha = 0.6f))
+                .padding(horizontal = 4.dp, vertical = 1.dp)
+        )
+    }
 }
 
 @Composable

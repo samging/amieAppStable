@@ -85,6 +85,9 @@ import amiemultiplatform.shared.generated.resources.ascii_amie_welcome
 @Composable
 fun WelcomePage(navController: NavHostController) {
     val session by org.example.project.auth.AuthState.session.collectAsState()
+    // The saved session is restored on a background thread at start-up; Continue waits for it so a signed-in
+    // user is never sent to the login page again
+    val restoring by org.example.project.auth.AuthState.restoring.collectAsState()
 
     Column(
         modifier = Modifier
@@ -118,15 +121,22 @@ fun WelcomePage(navController: NavHostController) {
             onClick = {
                 navController.navigate(if (session != null) "home1/" else "login")
             },
+            enabled = !restoring,
             modifier = Modifier.fillMaxWidth(0.4f).height(48.dp),
             shape = RoundedCornerShape(10.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color.White,
-                contentColor = Color.Black
+                contentColor = Color.Black,
+                disabledContainerColor = Color.White.copy(alpha = 0.6f),
+                disabledContentColor = Color.Black.copy(alpha = 0.6f),
             ),
         ) {
             Text(
-                "Continue",
+                when {
+                    restoring -> "Restoring session…"
+                    session != null -> "Continue as ${session!!.username}"
+                    else -> "Continue"
+                },
                 fontWeight = FontWeight.SemiBold,
                 fontFamily = FontFamily.SansSerif,
                 letterSpacing = 0.5.sp,

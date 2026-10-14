@@ -93,7 +93,8 @@ fun AppBaseTemplate() {
 
             composable("welcome") {
                 Column(modifier = Modifier.fillMaxSize()) {
-                    WindowHeader(name = "Welcome", showOnBack = false, onBack = {})
+                    // No account chip or Log in button here: Continue is the only way on from the welcome screen
+                    WindowHeader(name = "Welcome", showOnBack = false, showUser = false, onBack = {})
                     WelcomePage(navController = navController)
                 }
             }
