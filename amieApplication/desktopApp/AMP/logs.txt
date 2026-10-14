@@ -101,3 +101,5 @@ Waiting for logs...
 > [INTERNAL] [internal] 2026-10-14T12:36:22.957125Z auth: signed out
 > [INTERNAL] [internal] 2026-10-14T13:03:38.166956Z auth: signed in as 123 (http://192.168.1.114:8080/realms/master)
 > [ERROR] [internal] 2026-10-14T13:03:40.988774Z backend: http://192.168.1.114:8080 unreachable: Host is down
+> [INTERNAL] [internal] 2026-10-14T13:06:16.760574Z auth: signed in as 123 (http://192.168.1.114:8080/realms/master)
+> [ERROR] [internal] 2026-10-14T13:06:21.762375Z backend: http://192.168.1.114:8080 unreachable: Connect timeout has expired [url=http://192.168.1.114:8080/me, connect_timeout=5000 ms]

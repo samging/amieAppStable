@@ -1,3 +1,1 @@
-val constraints = mutableListOf<String>()
-val goals = mutableListOf<String>()
-amie.forwardContext("hi")
+val validateMetrics()
