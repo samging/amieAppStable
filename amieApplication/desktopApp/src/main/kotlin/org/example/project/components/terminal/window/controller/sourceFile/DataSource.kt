@@ -87,7 +87,8 @@ class DataSource internal constructor(
             return source
         }
 
-        private fun locate(path: String): File? {
+        /** The file a data path names: as given, in AMP/, or in AMP/pluginDir/ */
+        fun locate(path: String): File? {
             val given = File(path)
             val amp = File(getDirectory().toString())
             return (if (given.isAbsolute) listOf(given) else listOf(given, File(amp, path), File(amp, "pluginDir/$path")))

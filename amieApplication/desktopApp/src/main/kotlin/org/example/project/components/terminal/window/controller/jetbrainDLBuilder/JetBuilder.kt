@@ -50,10 +50,11 @@ fun buildClassifier(
     encoder: String = DEFAULT_ENCODER,
     validation: List<LabeledText>? = null,
     validationName: String? = null,
+    dataName: String? = null,
 ): File? {
     ModelBuildProgress.start(modelName)
     return try {
-        buildClassifierPhases(samples, modelName, encoder, validation, validationName)
+        buildClassifierPhases(samples, modelName, encoder, validation, validationName, dataName)
             .also { if (it == null && ModelBuildProgress.current.value != null) ModelBuildProgress.failed("not built") }
     } catch (e: Throwable) {
         ModelBuildProgress.failed(e.message ?: e.javaClass.simpleName)
@@ -67,6 +68,7 @@ private fun buildClassifierPhases(
     encoder: String,
     validation: List<LabeledText>?,
     validationName: String?,
+    dataName: String?,
 ): File? {
     ModelBuildProgress.phase(BuildPhase.CHECKING, detail = "${samples.size} samples")
     val check = checkVariability(samples)
@@ -143,6 +145,7 @@ private fun buildClassifierPhases(
             inputDim = inputDim,
             outputDim = layers.last().outDim,
             labels = labels,
+            data = dataName,
         )
         val file = writeModule(manifest, denseStackToOnnx(layers, manifest.input, manifest.output, modelName))
         appendMetrics(file.parentFile, metrics)

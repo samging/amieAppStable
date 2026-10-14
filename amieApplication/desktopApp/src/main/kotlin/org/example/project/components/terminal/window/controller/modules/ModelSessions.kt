@@ -72,15 +72,10 @@ object ModelSessions {
 
     val all: List<ModelSession> @Synchronized get() = sessions.values.toList()
 
-    /** Opens the module exported to AMP/modules/<name>, or the collection of that name, as a new session */
+    /** Opens the module exported to AMP/modules/<name> as a new session */
     fun open(name: String): ModelSession {
-        val collection = if (moduleExists(name)) null else ModelCollections.find(name)
-        val session = if (collection != null) {
-            ModelSession(ids.incrementAndGet(), name, CollectionModel(collection), "collection", ModelCollections.sessionsLogFile(name))
-        } else {
-            ModelSession(ids.incrementAndGet(), name, InitMod(name).create())
-        }
-        session.log.add("open", if (collection != null) "opened as session #${session.id} over ${collection.models.joinToString()}" else "opened as session #${session.id}")
+        val session = ModelSession(ids.incrementAndGet(), name, InitMod(name).create())
+        session.log.add("open", "opened as session #${session.id}")
         synchronized(this) { sessions[session.id] = session }
         return session
     }

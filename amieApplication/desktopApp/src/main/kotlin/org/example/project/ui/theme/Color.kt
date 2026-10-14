@@ -80,7 +80,9 @@ val ChipHoverBackground = Color(0xFF2C2C2C)
 val ChipBorderColor = Color(0xFF343434)
 // The one accent on the page: the actions that create, build, validate or search (the header's + blue), and
 // the charts. ChartSecond is the second series next to it, checked for colour-blind separation on the panel.
-val AccentButtonHover = Color(0xFF5F9BFF)
-val ChartAccent = AddButton
+val PageAccent = Color(0xFF2B5797)
+val PageAccentHover = Color(0xFF356AB5)
+val AccentButtonHover = PageAccentHover
+val ChartAccent = Color(0xFF3568C4)
 val ChartSecond = Color(0xFFC9742A)
 val ChartGrid = Color(0xFF242424)

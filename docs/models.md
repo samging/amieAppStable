@@ -24,7 +24,7 @@ become warnings), embeds every text, trains for 150 epochs, validates, and expor
 | File | Content |
 |---|---|
 | `model.onnx` | The trained layers, written as ONNX (opset 13) |
-| `module.json` | Encoder path, input and output sizes, pooling, the label list |
+| `module.json` | Encoder path, input and output sizes, pooling, the label list, the data file it was trained on |
 | `metrics.json` | **One entry per build**: accuracy, macro F1, per-label precision / recall / F1 / support, the confusion matrix, warnings, what it was validated on |
 | `serving.json` | Host, port, path, methods and whether it listens |
 | `incoming.jsonl` | Every request the served model received |
@@ -118,8 +118,6 @@ log(m.inference("turn the lights on").first())   // "lights:0.97"
 m.close()
 ```
 
-`initMod("<collection>")` opens every model of a collection made on the Models page as one session: the answers
-of all members come back in one list sorted by score, prefixed with the model name (`dummy/lights:0.61`).
 `initMod()` with no name opens the bundled NER model; `importModelOnnx("path.onnx")` opens any ONNX model behind
 the same `inference / getStatus / close` interface. Every `initMod("name")` is a session the Models page lists
 and can terminate; what it was asked and answered is logged per session (behind **Log** on the page and in

@@ -91,10 +91,11 @@ that is `amieApplication/desktopApp/AMP/`:
    is called without a prefix (`source`, `modelBuilder`, `metricsChart`, …) and the editor completes it.
    Details in [docs/sandbox.md](docs/sandbox.md) and [docs/sandbox-scripting.md](docs/sandbox-scripting.md).
 3. **Models** (the second sidebar icon), three tabs. **Models**: build one from a csv (**+ New model**, with a
-   bundled sample set), validate any model on a csv to get its metrics, group models into collections that open,
-   listen and validate as one, and every intent model as a component: configure how it is served, listen or
-   stop, open a session, publish it (Keycloak sign-in). **Packages**: the jars a script can open, searchable down to a class name, each
-   with its build, the Java it needs and its contents. **Sessions**: every open session with its log and a
+   bundled sample set), validate any model on a csv to get its metrics as images, models grouped by the data
+   they were trained on, and every intent model as a component: configure how it is served, listen or stop,
+   open a session, publish it (Keycloak sign-in), open its csv. **Packages**: the jars a script can open, searchable down to a class name, in
+   collections (folders such as "jvm21" with every jar that runs there), each with its build, the Java it needs
+   and its contents. **Sessions**: every open session with its log and a
    Terminate button. A fixed `dummy` model is there from the first start. Details in [docs/models.md](docs/models.md).
 4. **Dashboard** (`home1/`): device cards with configure, manage, connect and disconnect screens; **+** adds a device.
 

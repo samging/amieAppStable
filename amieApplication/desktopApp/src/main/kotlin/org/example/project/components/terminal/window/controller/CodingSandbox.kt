@@ -359,7 +359,8 @@ fun CodingSandbox(navController: NavController) {
                                     val test = (produced as? org.example.project.components.terminal.window.controller.sourceFile.DataSource)?.related
                                     val exported = try {
                                         org.example.project.components.terminal.window.controller.jetbrainDLBuilder.buildClassifier(
-                                            samples, modelName, validation = test?.samples(), validationName = test?.name
+                                            samples, modelName, validation = test?.samples(), validationName = test?.name,
+                                            dataName = (produced as? org.example.project.components.terminal.window.controller.sourceFile.DataSource)?.name,
                                         )
                                     } catch (e: java.lang.reflect.InvocationTargetException) {
                                         e.cause?.printStackTrace()

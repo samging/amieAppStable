@@ -44,7 +44,6 @@ Defined in `ScriptLogger.kt`. The most used calls (prefix `amie.` optional):
 | `modelBuilder("name", data)` | Trains and exports an intent classifier (below) |
 | `modelBuilder("name") { ... }` | Same, the lambda returns the data |
 | `initMod("name")` | Opens an exported model as a session (listed on the Models page, terminable there); `.inference("text")` returns `label:probability` sorted best first; `.close()`. `initMod("dummy")` works on a fresh checkout |
-| `initMod("collection")` | Every model of a collection (Models page) as one session; answers from all members, sorted by score, prefixed `model/` |
 | `initMod()` | The bundled BERT NER model |
 | `initMod("name.jar")` | A new instance of a package jar behind the same interface: `.inference("text")` calls its `run(text)`, `.close()` its `close()`. Looked up in the env, `AMP/pluginDir`, as a path, then fetched from the Amie server (below) |
 | `validateMetrics("name", labels = listOf(...))` | Prints the stored validation table of a model |

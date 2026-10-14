@@ -6,31 +6,36 @@ is kept for the life of the app (`ModelsCache`), so coming back to the page show
 read after start-up is local only (files, sessions, listeners) and the one slow read, the server's jar listing,
 is fetched right after and cached for a minute by `JarPackages`. Nothing on the page waits for the network.
 
-The page keeps to one quiet scheme, the same grays as the sandbox: white marks what is active (a listening
-model, a running session), gray marks everything else. One accent, the header's + blue, is reserved for the
-actions that create, build, validate, open or search (**+ New model**, **Build**, **Validate…**, **Open as one**,
-**Add to…**, **+ Add jar**, **Fetch**, the search boxes and the group-by toggles) and for the charts, so they are
-found at a glance. Lists are flat rows; only the selected item has a panel.
+The page keeps to one quiet scheme, the same grays as the sandbox. One dark blue is reserved for the actions that
+create, build, validate, open or add (**+ New model**, **Build**, **Sample data**, **Validate…**, **Open
+session**, **Open in viewer**, **+ New collection**, **+ Add**, **+ Add jar**, **Fetch**) and for the search
+boxes, so they are found at a glance; the charts use a lighter step of the same blue. A running model or an open
+package is underlined in green in the list and under its panel header; a stopped one is not marked. Lists are
+flat rows; only the selected item has a panel.
 
 ## Layout
 
 Under the window header sits a tab strip like the sandbox's panel tabs, with three tabs and their counts:
-**Models**, **Packages** and **Sessions**. The right end of the strip shows the model being built (while a build
-runs), the Keycloak username with **Open website** (the site's dashboard), or **Sign in** for a guest. Signing in
-is only needed for **Publish**; everything else works without an account. Each tab is a list on the left and one
-detail panel on the right for the selected item. Lists longer than a few items get a filter box; the package list
-always has one.
+**Models**, **Packages** and **Sessions**, and **Open website** (the site's dashboard) at its right end when
+signed in. Signing in happens in the window header (**Log in**) and is only needed for **Publish**; everything
+else works without an account. Each tab is a list on the left and one detail panel on the right for the selected
+item, both with a filter box (the sessions list once it is long).
+
+At the bottom of the page sits **OUTPUT**: the lines the models, packages, sessions, builds and validations log
+(the same lines the sandbox console shows, filtered to those), newest last, with the build or validation in
+progress named on its header with its step. Nothing about progress sits at the top of the page.
 
 ## Models
 
-The list has one line per module in `AMP/modules`: a status dot, the name, its last accuracy (or
-`not validated`), the port it listens on and its open sessions, and at the right `running`, `inferring` or
-`stopped`. The filter box above matches the name, a label, the status, the encoder, the file a model was validated
-on and a collection name. **group by** switches between two groupings, remembered while the app runs:
-**collection**, one fold per collection (a model can be in several) and **Not in a collection** for the rest; or
-**status**, **Running** (listening or with a session open) and **Stopped**. Clicking a line selects it; the panel
-on the right shows that model only, with the status line (listening address, label count) under its name and the
-actions at the right of the header:
+The list has one line per module in `AMP/modules`: the name, its last accuracy (or `not validated`), the port it
+listens on and its open sessions, and at the right `running`, `inferring` or `stopped`; a running one is
+underlined in green. Models are grouped by the data they were trained on (the csv name the builder records in
+`module.json` since this version; the dummy sits under *written, not trained*, older models under *unknown
+data*), so the same data trained twice sits together. Groups with a running model come first; inside a group the
+running models come first, then the most accurate. The filter box above matches the name, a label, the status,
+the data and the file a model was validated on. Clicking a line selects it; the panel on the right shows that
+model only, with the status line (listening address, the data it was trained on) under its name and the actions
+at the right of the header:
 
 | Action | What it does |
 |---|---|
@@ -40,12 +45,15 @@ actions at the right of the header:
 | **Publish** | Uploads `model.onnx` and `module.json` to the Amie backend (`POST /upload`, `progLanguage=onnx`) with the Keycloak token; a guest is sent to the sign-in page |
 
 Under the header: the labels, the encoder, when it was built and, while listening, the serving line with its
-request count, errors, average latency and uptime. Then **METRICS** from `AMP/modules/<name>/metrics.json` (`MetricsPlots.kt`): the
-run number and what it was validated on, three tiles (accuracy, macro F1, rows validated), the **F1 of every
-label** as a bar chart (hover a bar for its precision, recall and row count), the **confusion matrix** as a
-one-hue heatmap with truth in rows and prediction in columns and the count in every cell (hover a cell to read
-it), and with more than one run the **accuracy and macro F1 over the runs** as two lines with markers (hover a
-point for its date and values) over a folded **RUNS** list, then warnings. A model with no run yet
+request count, errors, average latency and uptime. Then **METRICS** from `AMP/modules/<name>/metrics.json`: the run
+number and what it was validated on, three tiles (accuracy, macro F1, rows validated), and the plots. The plots
+are images: `modules/MetricsImages.kt` draws them as PNG files into `AMP/modules/<name>/plots/` whenever
+`metrics.json` is newer than they are, and the page shows the files, so they open at once and can be used
+elsewhere as they are. `labels.png` is the **F1 of every label** as bars with precision, recall and row count
+beside each; `confusion.png` the **confusion matrix** as a one-hue heatmap with truth in rows, prediction in
+columns and the count in every cell; `history.png`, once there is more than one run, **accuracy and macro F1
+over the runs** as two lines with markers and the last values labelled, over a folded **RUNS** list. Then
+warnings. A model with no run yet
 (the dummy on a fresh checkout) says `no validation yet`. The two buttons beside the title make a run without
 training: **Validate on sample data** runs the model on `AMP/sample-intents.csv`, **Validate on file** on a csv
 of your choice (`modules/ModelValidation.kt`). Every row goes through a session of the model (it appears under
@@ -57,21 +65,6 @@ model owns as a row (`#id`, idle or inferring, runs, open for how long) with **L
 console still has the ASCII charts (`metricsChart`, `metricsHistory`, `confusionMatrix`, see
 [Models and metrics](models.md)).
 
-### Collections
-
-A collection is a named group of models that work together, kept in `AMP/modules/collections.json`
-(`modules/ModelCollections.kt`). In the model's panel, **COLLECTIONS** lists the ones it is in (each with **×**
-to leave) and **Add to…** offers the existing collections or a **New** name. In the list, grouped by collection,
-each fold starts with the collection's own actions:
-
-| Action | What it does |
-|---|---|
-| **Open as one** | One session over every member: the text goes to all of them and the answers come back as one list sorted by score, each prefixed with the model (`dummy/lights:0.61`). `initMod("<collection>")` in a script opens the same session (`CollectionModel`), listed under SESSIONS as kind `collection` with its own log in `AMP/modules/collections/<name>.sessions.log` |
-| **Listen all / Stop all** | Starts every member that is not listening with its saved settings, or stops every one that is |
-| **Validate all** | Runs one csv through every member, one metrics run each |
-| **Terminate** | Ends the collection's sessions |
-| **Delete collection** | Removes the group; the models stay |
-
 ### New model
 
 **+ New model** in the section header opens a form (it is open on its own when there are no models): **Name**,
@@ -81,7 +74,8 @@ file to validate on instead of a 20% split. As soon as the data file is chosen t
 it and shows how many samples and which labels it holds; **Build** then runs the same `buildClassifier` the
 sandbox's `modelBuilder` runs, on a background thread. While it runs a card at the top of the tab shows the phase,
 step and progress bar (and the tab strip names the model), from the same `ModelBuildProgress` state the sandbox
-uses; when it ends the new model is selected. Only one build runs at a time.
+uses and the output strip at the bottom prints its phases; when it ends the new model is selected. Only one
+build runs at a time.
 
 A fresh checkout has one component already: the **dummy** model (`modules/AmpModules.kt`, `ensureDummyModule`),
 a fixed one-layer head over the encoder with the labels `greeting`, `lights`, `weather`. It is written when
@@ -92,12 +86,23 @@ sample data** on the dummy (its weights are fixed, so expect poor numbers) and t
 
 ## Packages
 
-The list has one line per package jar a script can open, under three folding groups: **In AMP/pluginDir**,
-**In the env** and **On the server** (the website's `/api/jars`, else the S3 service's `/api/aws/jars`; folded
-by default). Each line shows the Java the jar needs and its version, and at the right `idle`, `2 open`,
-`inferring` or `on server`. The filter box above the groups matches the jar name, version, Java, the class a
-session opens on, and any class or resource name inside the jar, so a class can be found without knowing which
-jar holds it. **+ Add jar** copies a file into `AMP/pluginDir` and imports it into the env.
+The list has one line per package jar a script can open, first under the **collections** and then under three
+folding groups by place: **In AMP/pluginDir**, **In the env** and **On the server** (the website's `/api/jars`,
+else the S3 service's `/api/aws/jars`; folded by default). Each line shows the Java the jar needs and its version,
+and at the right `idle`, `2 open`, `inferring` or `on server`; an open one is underlined in green. The filter
+box above the groups matches the jar name, version, Java, a collection name, the class a session opens on, and
+any class or resource name inside the jar, so a class can be found without knowing which jar holds it.
+**+ Add jar** copies a file into `AMP/pluginDir` and imports it into the env.
+
+### Collections
+
+A collection is a folder of jars that belong together, kept in `AMP/pluginDir/collections.json`
+(`modules/PackageCollections.kt`), typically the jars that run on one Java: "jvm21" with every plugin that fits.
+**+ New collection** opens a form: a name, the jars to put in (toggles), and a **By Java** shortcut per Java
+version found among the jars (`jvm17`, `jvm21`, …) that names the collection and picks every jar that runs on
+that Java or older. Each collection is a fold at the top of the list with its jars as rows; moving the pointer
+over a row shows **Detach**, **+ Add** lists the jars that are not in it yet, and **Delete folder** removes the
+collection but keeps the jars. A jar can be in several collections, and its panel header says which.
 
 The detail panel describes the selected jar without running anything (`pluginEngine/JarInspector.kt`, read once
 per file version). Its header has the status line (status, `java 17+`, `kotlin` or `java`, version) and the

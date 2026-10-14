@@ -33,6 +33,8 @@ data class ModuleManifest(
     // Class names in output order
     val labels: List<String> = emptyList(),
     val createdAt: String = Instant.now().toString(),
+    // The data file the head was trained on, when known (a csv name); models trained on the same data group together
+    val data: String? = null,
 )
 
 @Serializable
