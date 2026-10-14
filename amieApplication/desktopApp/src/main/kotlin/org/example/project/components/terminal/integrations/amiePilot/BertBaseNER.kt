@@ -7,8 +7,14 @@ import ai.onnxruntime.OrtSession
 import java.nio.LongBuffer
 import java.nio.file.Paths
 import java.time.Instant
-import org.example.project.components.terminal.window.controller.logToConsole
-import org.example.project.components.terminal.window.controller.ResponseDto
+import org.example.project.components.terminal.window.controller.LogLevel
+import org.example.project.components.terminal.window.controller.logInternal
+import org.example.project.components.terminal.window.controller.modelLoaders.ManagedSession
+import org.example.project.components.terminal.window.controller.modelLoaders.OrtSessions
+import org.example.project.components.terminal.window.controller.jetbrainDLBuilder.meanPooling
+import org.example.project.components.terminal.window.controller.modules.modulesDir
+import org.example.project.components.terminal.window.controller.modules.readModule
+import java.io.File
 import org.jetbrains.kotlin.fir.scopes.impl.overrides
 
 //open fun requirements(req: listOf<String>?) {
@@ -31,10 +37,12 @@ interface ModelInterface {
 //@param: modelPath - path to the model directory
 class BertOnnxModel(val modelPath: String) : ModelInterface {
 
-    private val env = OrtEnvironment.getEnvironment()
+    private val env = OrtSessions.env
     private val modelDir = modelPath
     private val _tensorList = mutableListOf<Array<Array<FloatArray>>>()
     private var lastHiddenStateTensor: OnnxTensor? = null
+    var lastTokenIds: LongArray = LongArray(0)
+        private set
 
     val outputTensor: List<Array<Array<FloatArray>>>
         get() = _tensorList
@@ -45,10 +53,11 @@ class BertOnnxModel(val modelPath: String) : ModelInterface {
         _tensorList.add(matrix)
     }
 
-    val session: OrtSession
+    // Managed so it runs in the background and shows up in / can be cancelled from OrtSessions
+    val session: ManagedSession
     val tokenizer: HuggingFaceTokenizer
     init {
-        session = env.createSession("$modelDir/model.onnx")
+        session = OrtSessions.open("bert:${File(modelDir).name}", "$modelDir/model.onnx")
         tokenizer = HuggingFaceTokenizer.newInstance(Paths.get("$modelDir/tokenizer.json"))
     }
 
@@ -64,7 +73,7 @@ class BertOnnxModel(val modelPath: String) : ModelInterface {
         ids: LongArray,
         attentionMask: LongArray,
         tokenTypeIds: LongArray,
-        session: OrtSession,
+        session: ManagedSession,
         env: OrtEnvironment
     ): List<String> {
 
@@ -94,7 +103,7 @@ class BertOnnxModel(val modelPath: String) : ModelInterface {
 //            println("Maybe [CLS]: " + cls.contentToString())
 //        println("---- E raw results----")
 
-        session.outputNames.forEach { name ->
+        session.outputs.keys.forEach { name ->
             println("Output: $name")
         }
 
@@ -122,6 +131,7 @@ class BertOnnxModel(val modelPath: String) : ModelInterface {
     override fun sayHello(text: String): List<String>{
         if (text.isNotEmpty()) {
             val encoded = tokenizer.encode(text)
+            lastTokenIds = encoded.ids
 
             for ((index, i) in encoded.tokens.indices.withIndex()) {
                 val token = encoded.tokens[i]
@@ -140,7 +150,7 @@ class BertOnnxModel(val modelPath: String) : ModelInterface {
             return outputModel
         }
         else {
-            logToConsole(ResponseDto(time = Instant.now(), message = "Text is empty"))
+            logInternal("Text is empty")
             return emptyList()
         }
     }
@@ -149,7 +159,7 @@ class BertOnnxModel(val modelPath: String) : ModelInterface {
         if (lastHiddenStateTensor != null)  {
             return lastHiddenStateTensor
         } else {
-            logToConsole(ResponseDto(time = Instant.now(), message = "TensorList is empty | ${_tensorList.size}"))
+            logInternal("TensorList is empty | ${_tensorList.size}")
             return null
         }
         return null
@@ -157,7 +167,7 @@ class BertOnnxModel(val modelPath: String) : ModelInterface {
 
     override fun close() {
         session.close()
-        env.close()
+        tokenizer.close()
     }
 
     fun metadata() : Any {
@@ -173,10 +183,13 @@ fun initAmie(text: String): List<String> {
     }
 }
 
-class InitMod {
-    private val inst = BertOnnxModel("/Users/samuel/Documents/onnx/bert")
+// No name: the bundled BERT NER model. With a name: the module modelBuilder exported to AMP/modules/<name>
+class InitMod(private val moduleName: String? = null) {
 
-    fun create() : InteractionModel {
+    fun create() : InteractionModel = if (moduleName == null) nerModel() else moduleModel(moduleName)
+
+    private fun nerModel(): InteractionModel {
+        val inst = BertOnnxModel("/Users/samuel/Documents/onnx/bert")
         return object : InteractionModel {
 
             override fun getStatus(): Any {
@@ -185,7 +198,7 @@ class InitMod {
 
             override fun inference(text: String): List<String> {
                 val res = inst.sayHello(text)
-                logToConsole(ResponseDto(time = Instant.now(), message = res.joinToString ("\n")))
+                logInternal(res.joinToString ("\n"))
                 return res
             }
 
@@ -196,16 +209,92 @@ class InitMod {
         }
     }
 
+    private fun moduleModel(name: String): InteractionModel {
+        val (dir, manifest) = readModule(name) ?: throw IllegalArgumentException("Module '$name' not found in ${modulesDir.absolutePath}")
+        require(manifest.format == "onnx") { "Module '$name' has unsupported format ${manifest.format}" }
+
+        val env = OrtSessions.env
+        val head = OrtSessions.open("module:$name", File(dir, manifest.model).absolutePath)
+        val encoder = BertOnnxModel(manifest.encoder)
+        logInternal("initMod: '$name' session ready (${manifest.input} [${manifest.inputDim}] -> ${manifest.output} [${manifest.outputDim}])")
+
+        return object : InteractionModel {
+
+            override fun getStatus(): Any = manifest
+
+            // text -> encoder hidden state -> mean pooling -> exported head
+            override fun inference(text: String): List<String> {
+                encoder.sayHello(text)
+                val hidden = encoder.getContextTensor() ?: return emptyList<String>().also {
+                    logInternal("initMod: '$name' encoder returned no hidden state", LogLevel.ERROR)
+                }
+                @Suppress("UNCHECKED_CAST")
+                val pooled = meanPooling(hidden.value as Array<Array<FloatArray>>)
+                val scores = OnnxTensor.createTensor(env, arrayOf(pooled)).use { input ->
+                    head.run(mapOf(manifest.input to input)).use { result ->
+                        @Suppress("UNCHECKED_CAST")
+                        (result.get(0).value as Array<FloatArray>)[0]
+                    }
+                }
+                // "label:probability", most likely first
+                val res = scores.mapIndexed { i, score -> (manifest.labels.getOrNull(i) ?: i.toString()) to score }
+                    .sortedByDescending { it.second }
+                    .map { (label, score) -> "$label:$score" }
+                logInternal("initMod: '$name' -> ${res.joinToString()}")
+                return res
+            }
+
+            override fun close() {
+                head.close()
+                encoder.close()
+            }
+        }
+    }
+
 }
 
-fun initContext() {
+fun initContext(text: String, tokens: (matrix: LongArray) -> Unit = {}): Array<Array<FloatArray>>? {
+    if (text.isBlank()) {
+        logInternal("forwardContext: text is empty", LogLevel.ERROR)
+        return null
+    }
     val inst = BertOnnxModel("/Users/samuel/Documents/onnx/bert/bge")
     try {
-        inst.sayHello("hello world")
-        val contextTensors = inst.getContextTensor()
-        logToConsole(ResponseDto(time = Instant.now(), message = "${contextTensors}"))
+        logInternal("forwardContext: running ${text.length} chars through bge")
+        inst.sayHello(text)
+        logInternal("forwardContext: ${inst.lastTokenIds.size} tokens ${inst.lastTokenIds.contentToString()}")
+        tokens(inst.lastTokenIds)
+
+        val contextTensor = inst.getContextTensor() ?: run {
+            logInternal("forwardContext: model returned no last_hidden_state", LogLevel.ERROR)
+            return null
+        }
+        // Copy out of the ORT tensor before the session is closed
+        @Suppress("UNCHECKED_CAST")
+        val matrix = contextTensor.value as Array<Array<FloatArray>>
+        logInternal("forwardContext: last_hidden_state shape ${contextTensor.info.shape.contentToString()}")
+        return matrix
+    } catch (e: Exception) {
+        logInternal("forwardContext failed: ${e.message}", LogLevel.ERROR)
+        return null
     } finally {
         inst.close() //[H]AutoCloseable, check it out!
+    }
+}
+
+// One encoder session for many texts; each result is that text's last_hidden_state
+// Runs every text through the encoder; onProgress gets (done, total) after each one
+fun embedTexts(texts: List<String>, encoder: String, onProgress: (Int, Int) -> Unit = { _, _ -> }): List<Array<Array<FloatArray>>> {
+    val inst = BertOnnxModel(encoder)
+    try {
+        return texts.mapIndexed { index, text ->
+            inst.sayHello(text)
+            val hidden = inst.getContextTensor() ?: throw IllegalStateException("encoder returned no hidden state for '$text'")
+            @Suppress("UNCHECKED_CAST")
+            (hidden.value as Array<Array<FloatArray>>).also { onProgress(index + 1, texts.size) }
+        }
+    } finally {
+        inst.close()
     }
 }
 
@@ -216,7 +305,7 @@ fun getTensor(text: String = ""): Array<Array<FloatArray>>? {
         val contextTensors = inst.getContextTensor()
         @Suppress("UNCHECKED_CAST")
         return contextTensors?.value as Array<Array<FloatArray>>
-    } catch (e: Exception) { logToConsole(ResponseDto(time = Instant.now(), message = e.message.toString())) }
+    } catch (e: Exception) { logInternal(e.message.toString(), LogLevel.ERROR) }
     return null
 }
 fun getShapeContext() : List<Long> {

@@ -80,7 +80,7 @@ compose.desktop {
             packageVersion = "1.0.0"
 
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            modules("java.net.http", "java.scripting", "java.sql")
+            modules("java.net.http", "java.scripting", "java.sql", "jdk.httpserver")
             packageName = "amie pilot"
 
             macOS {

@@ -12,6 +12,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.RoundedCornerShape
 import org.example.project.data.remote.parser.DeviceManager
 import org.example.project.data.remote.parser.DeviceManagerCsv
 import org.example.project.data.remote.parser.DeviceManagerJson
@@ -35,7 +38,8 @@ fun SystemCommit(
 
     Column(modifier = modifier) {
         Button(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(46.dp),
+            shape = RoundedCornerShape(10.dp),
             onClick = {
                 deviceManager.writeConfig(
                     id = indexDevice,
@@ -46,11 +50,11 @@ fun SystemCommit(
                 redirectOnOk()
             },
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(AddButton.toArgb()),
-                contentColor = Color(FontColor.toArgb())
+                containerColor = AddButton,
+                contentColor = Color.White
             )
         ) {
-            Text("Connect", fontWeight = FontWeight.Bold)
+            Text("Connect", fontWeight = FontWeight.SemiBold, letterSpacing = 0.5.sp)
         }
     }
 }

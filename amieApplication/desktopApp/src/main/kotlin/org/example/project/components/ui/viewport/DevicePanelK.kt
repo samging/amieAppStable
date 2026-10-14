@@ -23,6 +23,15 @@ import org.example.project.ui.theme.UnifiedBodyBackground
 import org.example.project.ui.theme.UnifiedBorderColor
 import org.example.project.ui.theme.UnifiedBoxColor
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.ui.text.style.TextOverflow
+import org.example.project.ui.theme.AccentSoft
+import org.example.project.ui.theme.AddButton
+import org.example.project.ui.theme.DangerColor
+import org.example.project.ui.theme.MutedFontColor
+import org.example.project.ui.theme.SurfaceHover
 
 /**
  * A hardware connectivity dashboard utility panel that displays peripheral connection paths and
@@ -39,104 +48,118 @@ fun DevicePanelK(
     onConnectPage: () -> Unit,
     onDisconnect: () -> Unit = {}
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+    val cardShape = RoundedCornerShape(12.dp)
+
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(120.dp)
+            .height(96.dp)
             .padding(6.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color(UnifiedBoxColor.toArgb()))
+            .clip(cardShape)
+            .background(if (isHovered) SurfaceHover else UnifiedBoxColor)
             .border(
                 width = 1.dp,
-                color = Color(UnifiedBorderColor.toArgb()),
-                shape = RoundedCornerShape(12.dp)
+                color = if (isHovered) AddButton.copy(alpha = 0.5f) else UnifiedBorderColor,
+                shape = cardShape
             )
+            .hoverable(interactionSource)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp),
+                .padding(start = 16.dp, end = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(
+                modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    text = name.uppercase(),
-                    color = Color(FontColor.toArgb()),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontFamily = FontFamily.SansSerif,
-                    letterSpacing = 1.sp
-                )
-
                 Box(
-                    modifier = Modifier.width(1.dp).height(30.dp)
-                        .background(Color(UnifiedBorderColor.toArgb()))
-                )
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(AccentSoft),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Memory,
+                        contentDescription = null,
+                        tint = AddButton,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
 
-                BadgeLabel(text = deviceEdnpoint.toString())
-
-                BadgeLabel(text = "COM$endPort")
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = name,
+                        color = FontColor,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        fontFamily = FontFamily.SansSerif,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        BadgeLabel(text = deviceEdnpoint.toString())
+                        BadgeLabel(text = "COM$endPort")
+                    }
+                }
             }
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                horizontalArrangement = Arrangement.spacedBy(0.dp)
             ) {
-                IconButton(onClick = { onConnectPage() }) {
-                    Icon(
-                        imageVector = Icons.Default.Link,
-                        contentDescription = "Connect",
-                        tint = Color(FontColor.toArgb())
-                    )
-                }
-
-                IconButton(onClick = { onManage() }) {
-                    Icon(
-                        imageVector = Icons.Default.Terminal,
-                        contentDescription = "Manage",
-                        tint = Color(FontColor.toArgb())
-                    )
-                }
-
-                IconButton(onClick = { onDisconnect() }) {
-                    Icon(
-                        imageVector = Icons.Default.DeleteSweep,
-                        contentDescription = "Remove",
-                        tint = Color(FontColor.toArgb())
-                    )
-                }
-
-                IconButton(onClick = { onConfigure() }) {
-                    Icon(
-                        imageVector = Icons.Default.Settings,
-                        contentDescription = "Configure",
-                        tint = Color(FontColor.toArgb())
-                    )
-                }
+                CardAction(Icons.Default.Link, "Connect") { onConnectPage() }
+                CardAction(Icons.Default.Terminal, "Manage") { onManage() }
+                CardAction(Icons.Default.Settings, "Configure") { onConfigure() }
+                CardAction(Icons.Default.DeleteSweep, "Remove", hoverTint = DangerColor) { onDisconnect() }
             }
         }
     }
 }
 
 @Composable
+private fun CardAction(
+    icon: ImageVector,
+    contentDescription: String,
+    hoverTint: Color = FontColor,
+    onClick: () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier.size(34.dp).hoverable(interactionSource)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = if (isHovered) hoverTint else MutedFontColor,
+            modifier = Modifier.size(18.dp)
+        )
+    }
+}
+
+@Composable
 private fun BadgeLabel(text: String) {
     Surface(
-        color = Color(UnifiedBoxColor.toArgb()),
-        shape = RoundedCornerShape(4.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(UnifiedBorderColor.toArgb()))
+        color = UnifiedBodyBackground,
+        shape = RoundedCornerShape(6.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, UnifiedBorderColor)
     ) {
         Text(
             text = text,
-            color = Color(FontColor.toArgb()),
+            color = MutedFontColor,
             fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.Medium,
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
             fontFamily = FontFamily.Monospace
         )
     }
 }
-

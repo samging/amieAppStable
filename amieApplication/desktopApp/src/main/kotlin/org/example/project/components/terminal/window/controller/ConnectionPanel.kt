@@ -40,7 +40,6 @@ fun ConnectionPanel(name: String,
                     modifier: Modifier = Modifier,
                     endPoint: Int? = null,
                     status: Boolean,
-                    logFilePath: String = "logs.txt",
                     connectionRedirect: () -> Unit) {
 
     Column(modifier = modifier.fillMaxSize().background(Color(UnifiedBodyBackground.toArgb())).padding(16.dp)) {
@@ -94,7 +93,7 @@ fun ConnectionPanel(name: String,
         Spacer(modifier = Modifier.height(16.dp))
 
         Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(8.dp)).border(1.dp, Color(UnifiedBorderColor.toArgb()), RoundedCornerShape(8.dp))) {
-            TerminalWindow(title = name, deviceId = deviceId, modifier = Modifier.fillMaxSize(), logFilePath = logFilePath)
+            TerminalWindow(title = name, deviceId = deviceId, modifier = Modifier.fillMaxSize(), source = "connection/$deviceId")
         }
     }
 }

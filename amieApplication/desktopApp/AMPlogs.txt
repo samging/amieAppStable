@@ -384,3 +384,5 @@ O
 O
 O
 O
+> pluginDir/main.kt
+> /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/main.kts | /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/assembly.kts

@@ -9,14 +9,15 @@ import io.ktor.client.engine.java.Java
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.plugins.logging.LogLevel
-import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.timeout
+import io.ktor.client.request.HttpRequestBuilder
+import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
@@ -24,6 +25,8 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import org.example.project.auth.AuthState
+import org.example.project.backend.BackendConfig
 import org.example.project.data.remote.DeviceActions
 import org.example.project.data.remote.DeviceDto
 import java.io.IOException
@@ -40,7 +43,8 @@ data class sendDeviceStatusDto(
     val action: DeviceActions,
     val username: String,
     val deviceMap: Map<String, DeviceDto>
-    )
+)
+
 @Serializable
 data class FileItem(
     val name: String,
@@ -49,221 +53,162 @@ data class FileItem(
     val type: String
 )
 
-class Client {
+/**
+ * The app's client for the Amie backend (Spring Boot `packageRepository`).
+ *
+ * - The backend address comes from [BackendConfig] (`AMP/backend.json` or `AMIE_BACKEND_URL`).
+ * - Every request carries the Keycloak access token of the signed-in user as a bearer token, refreshed when
+ *   needed, so the backend endpoints that check `Authorization` (`/dashboard`, `/me`, `/profile`, `/upload`,
+ *   `/edit`) accept the app the same way they accept the website. Guests send no token.
+ * - Failures end up in [lastErrorMessage] and the dialog flags; a request that reached the server but was
+ *   refused is also reported to the backend's `/handle-login-error`.
+ */
+class Client(val config: BackendConfig = BackendConfig.load()) {
     var isLoading by mutableStateOf(false)
     val logger = org.slf4j.LoggerFactory.getLogger(Client::class.java)
     var validateResponse by mutableStateOf(false)
     var dialogResponse by mutableStateOf(false)
     var fatalDialogResponse by mutableStateOf(false)
     var lastErrorMessage by mutableStateOf<String?>(null)
-    val hostIp = "192.168.1.114"
+    val hostIp: String get() = config.base
 
     val client = HttpClient(Java) {
         install(HttpTimeout)
         install(ContentNegotiation) {
             json(Json { ignoreUnknownKeys = true })
         }
-        install(Logging) {
-            level = LogLevel.ALL
-        }
     }
 
-    suspend inline fun<reified T> rest(
+    /** The signed-in user's token for the Authorization header, or null for a guest */
+    @PublishedApi
+    internal suspend fun bearer(): String? = runCatching { AuthState.accessToken() }.getOrNull()
+
+    @PublishedApi
+    internal suspend fun HttpRequestBuilder.prepare(body: Any?) {
+        timeout {
+            requestTimeoutMillis = 15_000L
+            connectTimeoutMillis = 15_000L
+            socketTimeoutMillis = 15_000L
+        }
+        contentType(ContentType.Application.Json)
+        bearer()?.let { bearerAuth(it) }
+        body?.let { setBody(it) }
+    }
+
+    /**
+     * Calls the backend at `slug` (joined with `/`; an absolute URL is used as is) and decodes the JSON answer
+     * as a map, or as a list of [FileItem] keyed by name for [FallbackTypes.FILE_ITEM_LIST]. On any failure
+     * the error is recorded and an empty map comes back.
+     */
+    suspend inline fun <reified T> rest(
         vararg slug: String,
         restType: RestType,
         body: Any? = null,
         fallbackType: FallbackTypes = FallbackTypes.ANY
     ): Map<String, T?>? {
         isLoading = true
-        val hostIp = "192.168.1.114"
-        val slugPath = slug.joinToString("/")
-
-        println("DEBUG: Testing internet connectivity via google.com...")
-        try {
-            client.get("https://www.google.com")
-            println("DEBUG: Internet check successful")
-        } catch (e: Exception) {
-            println("DEBUG: Internet check FAILED: ${e.message}")
-        }
-
-        try {
-            val testResponse = client.get("http://$hostIp:8080/list-disk")
-            println("DEBUG: Local server check successful: ${testResponse.status}")
-        } catch (e: Exception) {
-            println("DEBUG: Local server check FAILED: ${e.message}")
-        }
-
-        println("DEBUG: Starting request for slug: $slugPath at http://$hostIp:8080/")
+        lastErrorMessage = null
+        val url = config.url(slug.joinToString("/"))
+        logger.debug("{} {}", restType, url)
 
         try {
             val response: HttpResponse = when (restType) {
-                RestType.GET -> {
-                    client.get("http://$hostIp:8080/$slugPath") {
-                        timeout {
-                            requestTimeoutMillis = 15_000L
-                            connectTimeoutMillis = 15_000L
-                            socketTimeoutMillis = 15_000L
-                        }
-                        contentType(ContentType.Application.Json)
-                    }
-                }
-
-                RestType.POST -> {
-                    client.post("http://$hostIp:8080/$slugPath") {
-                        timeout {
-                            requestTimeoutMillis = 15_000L
-                            connectTimeoutMillis = 15_000L
-                            socketTimeoutMillis = 15_000L
-                        }
-                        contentType(ContentType.Application.Json)
-                        body?.let { setBody(it) }
-                    }
-                }
-
-                RestType.PUT -> {
-                    client.put("http://$hostIp:8080/$slugPath") {
-                        timeout {
-                            requestTimeoutMillis = 15_000L
-                            connectTimeoutMillis = 15_000L
-                            socketTimeoutMillis = 15_000L
-                        }
-                        contentType(ContentType.Application.Json)
-                        body?.let { setBody(it) }
-                    }
-                }
+                RestType.GET -> client.get(url) { prepare(null) }
+                RestType.POST -> client.post(url) { prepare(body) }
+                RestType.PUT -> client.put(url) { prepare(body) }
             }
-
-            println("DEBUG: Received response with status: ${response.status}")
 
             if (!response.status.isSuccess()) {
-                val errorBody = try {
-                    response.body<String>()
-                } catch (e: Exception) {
-                    null
-                }
+                val errorBody = runCatching { response.bodyAsText() }.getOrNull()?.take(300)
                 val errorMessage = when (response.status.value) {
-                    401 -> "Unauthorized: Please check your credentials."
-                    404 -> "Not Found: The requested service could not be found."
-                    500 -> "Server Error: Something went wrong on the server."
-                    else -> errorBody ?: "Error code: ${response.status}"
+                    401 -> "Unauthorized: sign in again, the backend rejected the token."
+                    403 -> "Forbidden: the backend doesn't allow this for your account."
+                    404 -> "Not Found: the backend has no $url."
+                    500 -> "Server Error: something went wrong on the server."
+                    else -> errorBody?.takeIf { it.isNotBlank() } ?: "Error code: ${response.status}"
                 }
-                println("DEBUG: Request failed: $errorMessage")
-                handleLoginError(errorMessage)
+                logger.warn("{} {} failed: {} {}", restType, url, response.status, errorBody ?: "")
+                handleLoginError(errorMessage, report = true)
                 return emptyMap()
-            } else {
-                println("DEBUG: status ${response.status}")
-                validateResponse = true
-                try {
-                    return when (fallbackType) {
-                        FallbackTypes.FILE_ITEM_LIST -> {
-                            println("!!!!!!!!!!!")
-                            logger.info("Running fetchList")
-                            val list = fetchList<FileItem>(response)
-                            list?.associate { item ->
-                                val fileItem = item as FileItem
-                                fileItem.name to (fileItem as T)
-                            }
-                        }
-                        FallbackTypes.ANY -> {
-                            println("EVALUATED ANY!!!!")
-                            println("EVALUATED ANY!!!!")
-                            println("EVALUATED ANY!!!!")
-                            println("EVALUATED ANY!!!!")
-                            println("something")
-                            fetchMap<T>(response)
-                        }
-                        else -> {
-                            logger.info("DEBUG: Running fetchMap")
-                            println("EVALUATED WRONG!!!!")
-                            println("EVALUATED WRONG!!!!")
-                            println("EVALUATED WRONG!!!!")
-                            println("EVALUATED WRONG!!!!")
-                            fetchMap<T>(response)
-                        }
+            }
+
+            validateResponse = true
+            return try {
+                when (fallbackType) {
+                    FallbackTypes.FILE_ITEM_LIST -> {
+                        val items: List<FileItem> = fetchList<FileItem>(response) ?: emptyList()
+                        val byName: Map<String, T?> = items.associate { it.name to (it as T?) }
+                        byName
                     }
-                } catch (e: SerializationException) {
-                    println("DEBUG: Serialization failed, but status was success")
-                    mapOf("status" to "success")
-                } catch (e: Exception) {
-                    mapOf("status" to "success")
+                    FallbackTypes.ANY -> fetchMap<T>(response)
                 }
+            } catch (e: SerializationException) {
+                logger.warn("{} answered {} but the body didn't decode: {}", url, response.status, e.message)
+                mapOf("status" to ("success" as? T))
+            } catch (e: Exception) {
+                logger.warn("{} answered {} but the body didn't decode: {}", url, response.status, e.message)
+                mapOf("status" to ("success" as? T))
             }
         } catch (e: HttpRequestTimeoutException) {
-            handleLoginError("Request timed out: The server is taking too long to respond.")
-            return emptyMap()
+            handleLoginError("Request timed out: the backend at ${config.base} is taking too long to respond.")
         } catch (e: ConnectException) {
-            handleLoginError("Connection refused: Ensure the server is running at http://$hostIp:8080")
-            return emptyMap()
+            handleLoginError("Connection refused: ensure the Amie backend is running at ${config.base} (AMP/backend.json).")
         } catch (e: IOException) {
-            handleLoginError("Network error: Please check your internet connection.")
-            return emptyMap()
+            handleLoginError("Network error: ${e.message ?: "couldn't reach ${config.base}"}")
         } catch (e: Exception) {
-            println("DEBUG: Exception during request: ${e.message}")
-            e.printStackTrace()
+            logger.error("{} {} threw", restType, url, e)
             handleLoginError("Unexpected error: ${e.message}")
-            return emptyMap()
         } finally {
             isLoading = false
-            println("DEBUG: Request finished")
         }
         return emptyMap()
     }
 
-    @PublishedApi internal suspend inline fun <reified T> fetchList(
-        response: HttpResponse
-    ): List<T>? {
-        println("Iniside: fetchList")
-        val res = runCatching {
-            val jsonString = response.body<String>()
-            Json.decodeFromString(
-                kotlinx.serialization.builtins.ListSerializer(kotlinx.serialization.serializer<T>()),
-                jsonString
-            )
-        }.getOrNull()
-        println("RESULT: ${res}")
-        return res ?: emptyList<T>()
+    @PublishedApi
+    internal suspend inline fun <reified T> fetchList(response: HttpResponse): List<T>? {
+        val jsonString = response.body<String>()
+        return Json { ignoreUnknownKeys = true }.decodeFromString(
+            kotlinx.serialization.builtins.ListSerializer(kotlinx.serialization.serializer<T>()),
+            jsonString
+        )
     }
 
     @PublishedApi
-    internal suspend inline fun <reified T> fetchMap(
-        response: HttpResponse
-    ): Map<String, T?>? {
-        println("Inside fetchMap")
-        val res = runCatching {
-            val jsonString = response.body<String>()
-            Json.decodeFromString(
-                kotlinx.serialization.builtins.MapSerializer(
-                    kotlinx.serialization.serializer<String>(),
-                    kotlinx.serialization.serializer<T?>()
-                ),
-                jsonString
-            )
-        }.getOrNull()
-        println("RESULT: ${res}")
-        return res ?: emptyMap<String, T>()
+    internal suspend inline fun <reified T> fetchMap(response: HttpResponse): Map<String, T?>? {
+        val jsonString = response.body<String>()
+        return Json { ignoreUnknownKeys = true }.decodeFromString(
+            kotlinx.serialization.builtins.MapSerializer(
+                kotlinx.serialization.serializer<String>(),
+                kotlinx.serialization.serializer<T?>()
+            ),
+            jsonString
+        )
     }
 
-    suspend fun handleLoginError(errorMessage: String?) {
+    /**
+     * Records a failure for the UI. With [report] the backend's `/handle-login-error` is told as well, which
+     * only makes sense when the server answered (not when it couldn't be reached at all).
+     */
+    suspend fun handleLoginError(errorMessage: String?, report: Boolean = false) {
         lastErrorMessage = errorMessage
         dialogResponse = true
-        val hostIp = "192.168.1.114"
-
+        if (!report) return
         try {
-            val tweakResponse = client.post("http://$hostIp:8080/handle-login-error") {
+            val username = AuthState.user.ifEmpty { "guest" }
+            val tweakResponse = client.post(config.url("handle-login-error")) {
                 timeout {
                     requestTimeoutMillis = 9_000L
                     connectTimeoutMillis = 9_000L
                     socketTimeoutMillis = 9_000L
                 }
                 contentType(ContentType.Application.Json)
-                setBody(mapOf("error" to (errorMessage ?: "Unknown"), "username" to "unknown_user"))
+                setBody(mapOf("error" to (errorMessage ?: "Unknown"), "username" to username))
             }
-
             if (!tweakResponse.status.isSuccess()) {
                 fatalDialogResponse = true
             }
         } catch (e: Exception) {
-            println("Failed to log error to server: ${e.message}")
+            logger.debug("couldn't report the error to the backend: {}", e.message)
         }
     }
 }

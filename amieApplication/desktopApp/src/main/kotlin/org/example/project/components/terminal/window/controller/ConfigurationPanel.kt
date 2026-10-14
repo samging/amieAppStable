@@ -23,8 +23,7 @@ import org.example.project.ui.theme.UnifiedBodyBackground
 fun ConfigurationPanel(deviceId: String,
                        modifier: Modifier = Modifier,
                        endPointNumber: Int? = null,
-                       allowCmd: Boolean? = null,
-                       logFilePath: String = "logs.txt") {
+                       allowCmd: Boolean? = null) {
 
     Column(modifier = modifier.fillMaxSize().background(Color(UnifiedBodyBackground.toArgb())).padding(16.dp)) {
         Text(
@@ -41,7 +40,7 @@ fun ConfigurationPanel(deviceId: String,
                 deviceId = deviceId,
                 modifier = Modifier.fillMaxSize(),
                 allowCmd = allowCmd,
-                logFilePath = logFilePath
+                source = "config/$deviceId"
             )
         }
     }

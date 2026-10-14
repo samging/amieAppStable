@@ -1,7 +1,5 @@
 package org.example.project.components.render.templates
 
-//import amieappstable.shared.generated.resources.Res
-//import amieappstable.shared.generated.resources.ascii_amie_welcome
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -38,6 +36,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -76,50 +75,63 @@ import kotlinx.serialization.json.Json
 import java.nio.file.WatchEvent
 import androidx.navigation.NavHostController
 import org.example.project.ui.theme.FontColor
+import org.example.project.ui.theme.MutedFontColor
+import org.example.project.ui.theme.UnifiedBodyBackground
 import org.jetbrains.compose.resources.painterResource
+import amiemultiplatform.shared.generated.resources.Res
 import androidx.compose.foundation.layout.wrapContentSize
+import amiemultiplatform.shared.generated.resources.ascii_amie_welcome
 
 @Composable
 fun WelcomePage(navController: NavHostController) {
-    val sessionModel = remember { SessionModel() }
-    val scope = rememberCoroutineScope()
+    val session by org.example.project.auth.AuthState.session.collectAsState()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black),
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color(UnifiedBodyBackground.toArgb()), Color.Black)
+                )
+            )
+            .padding(horizontal = 32.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-              /*Image(
-                painter = painterResource(Res.drawable.ascii_amie_welcome),
-                contentDescription = "Amie Logo",
-//                modifier = Modifier
-//                    .align(Alignment.Center)
-//                    .offset(y = (-50).dp)
-            )*/
+        Image(
+            painter = painterResource(Res.drawable.ascii_amie_welcome),
+            contentDescription = "Amie Logo",
+        )
 
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Text(
+            text = "Device tooling, scripting and terminal in one place.",
+            color = MutedFontColor,
+            fontSize = 13.sp,
+            fontFamily = FontFamily.SansSerif
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
 
         Button(
             onClick = {
-                navController.navigate("home1/")
+                navController.navigate(if (session != null) "home1/" else "login")
             },
-            modifier = Modifier.fillMaxWidth(0.5f).height(52.dp),
-            shape = RoundedCornerShape(0.dp),
+            modifier = Modifier.fillMaxWidth(0.4f).height(48.dp),
+            shape = RoundedCornerShape(10.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color.White,
-                contentColor = Color.White
+                contentColor = Color.Black
             ),
-            enabled = !sessionModel.isLoading
         ) {
             Text(
                 "Continue",
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.SemiBold,
                 fontFamily = FontFamily.SansSerif,
-                letterSpacing = 1.sp,
+                letterSpacing = 0.5.sp,
                 color = Color.Black
             )
-
         }
     }
 }

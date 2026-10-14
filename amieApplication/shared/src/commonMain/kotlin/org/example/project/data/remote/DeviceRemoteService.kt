@@ -19,8 +19,7 @@ enum class DeviceActions {
     SET, GET
 }
 
-class DeviceRemoteService(private val client: HttpClient) {
-    private val baseUrl = "http://localhost:8080"
+class DeviceRemoteService(private val client: HttpClient, private val baseUrl: String = "http://localhost:8080") {
 
     suspend fun repositoryDeviceController(
         action: DeviceActions,

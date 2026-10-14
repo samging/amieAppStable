@@ -1,2 +1,101 @@
 System initialized
 Waiting for logs...
+> [INFO] [sandbox] 2026-10-14T00:50:39.363041Z Running pluginDir/main.kts
+> [INFO] [sandbox] 2026-10-14T00:50:47.141091Z Running pluginDir/main.kts
+> [INFO] [sandbox/main.kts] 2026-10-14T00:50:47.341899Z hi
+> [INFO] [sandbox] 2026-10-14T00:50:48.191424Z Running pluginDir/main.kts
+> [INFO] [sandbox] 2026-10-14T00:50:48.344692Z Script is already running
+> [INFO] [sandbox/main.kts] 2026-10-14T00:50:48.388891Z hi
+> [INFO] [sandbox] 2026-10-14T00:50:48.897832Z Running pluginDir/main.kts
+> [INFO] [sandbox/main.kts] 2026-10-14T00:50:49.049626Z hi
+> [INFO] [sandbox] 2026-10-14T00:50:49.389980Z Running pluginDir/main.kts
+> [INFO] [sandbox/main.kts] 2026-10-14T00:50:49.518072Z hi
+> [INFO] [sandbox] 2026-10-14T00:50:49.838229Z Running pluginDir/main.kts
+> [INFO] [sandbox/main.kts] 2026-10-14T00:50:49.953146Z hi
+> [INFO] [sandbox] 2026-10-14T00:50:50.162098Z Running pluginDir/main.kts
+> [INFO] [sandbox/main.kts] 2026-10-14T00:50:50.268462Z hi
+> [INFO] [sandbox] 2026-10-14T00:50:50.323547Z Running pluginDir/main.kts
+> [INFO] [sandbox/main.kts] 2026-10-14T00:50:50.453049Z hi
+> [INFO] [sandbox] 2026-10-14T00:50:50.487239Z Running pluginDir/main.kts
+> [INFO] [sandbox/main.kts] 2026-10-14T00:50:50.598911Z hi
+> [INFO] [sandbox] 2026-10-14T00:50:51.272482Z Running pluginDir/main.kts
+> [INFO] [sandbox/main.kts] 2026-10-14T00:50:51.378124Z hi
+> [INFO] [sandbox] 2026-10-14T00:50:52.457986Z Running pluginDir/main.kts
+> [INFO] [sandbox/main.kts] 2026-10-14T00:50:52.569680Z hi
+> [INFO] [sandbox] 2026-10-14T00:50:52.606849Z Running pluginDir/main.kts
+> [INFO] [sandbox/main.kts] 2026-10-14T00:50:52.702092Z hi
+> [INFO] [sandbox] 2026-10-14T00:50:52.762902Z Running pluginDir/main.kts
+> [INFO] [sandbox] 2026-10-14T00:50:52.896343Z Script is already running
+> [INFO] [sandbox/main.kts] 2026-10-14T00:50:52.899199Z hi
+> [INFO] [sandbox] 2026-10-14T00:50:54.490978Z Running pluginDir/main.kts
+> [INFO] [sandbox/main.kts] 2026-10-14T00:50:54.666637Z hi
+> [INFO] [sandbox] 2026-10-14T00:51:07.765738Z Running pluginDir/main.kts
+> [INFO] [sandbox/main.kts] 2026-10-14T00:51:07.989195Z hi
+> [INFO] [sandbox/main.kts] 2026-10-14T00:51:07.989300Z hi
+> [INFO] [sandbox/main.kts] 2026-10-14T00:51:07.989320Z hi
+> [INFO] [sandbox/main.kts] 2026-10-14T00:51:07.989334Z hi
+> [INFO] [sandbox/main.kts] 2026-10-14T00:51:07.989345Z hi
+> [INFO] [sandbox/main.kts] 2026-10-14T00:51:07.989356Z hi
+> [INFO] [sandbox/main.kts] 2026-10-14T00:51:07.989368Z hi
+> [INFO] [sandbox/main.kts] 2026-10-14T00:51:07.989382Z hi
+> [INFO] [sandbox/main.kts] 2026-10-14T00:51:07.989394Z hi
+> [INFO] [sandbox/main.kts] 2026-10-14T00:51:07.989405Z hi
+> [INFO] [sandbox/main.kts] 2026-10-14T00:51:07.989416Z hi
+> [INFO] [sandbox] 2026-10-14T00:51:41.467129Z Running pluginDir/main.kts
+> [INFO] [sandbox/main.kts] 2026-10-14T00:51:47.360840Z O\nO\nO\nO\nO\nO\nO\nO\nO
+> [INFO] [sandbox] 2026-10-14T00:54:06.206082Z Running pluginDir/main.kts
+> [INFO] [sandbox/main.kts] 2026-10-14T00:54:07.001906Z O\nO\nO\nO\nO\nO\nO\nO\nO
+> [INFO] [sandbox] 2026-10-14T00:54:31.946861Z Running pluginDir/main.kts
+> [INFO] 2026-10-14T00:54:32.728789Z O\nO\nO\nO\nO\nO\nO\nO
+> [INFO] [sandbox] 2026-10-14T00:57:50.497004Z Running pluginDir/main.kts
+> [ERROR] [sandbox] 2026-10-14T00:57:52.107798Z Error: ERROR No value passed for parameter 'tokens' (ScriptingHost7a287eb2_Line_0.kts:3:21)
+> [INFO] [sandbox] 2026-10-14T01:01:44.295842Z Running pluginDir/main.kts
+> [INFO] [internal] 2026-10-14T01:01:52.807341Z forwardContext: running 2 chars through bge
+> [DATA] [internal] 2026-10-14T01:01:52.837570Z forwardContext: 3 tokens [101, 7632, 102]
+> [DATA] [internal] 2026-10-14T01:01:52.837822Z forwardContext: last_hidden_state shape [1, 3, 768]
+> [INFO] [sandbox] 2026-10-14T01:31:54.387527Z Running pluginDir/main.kts
+> [INTERNAL] [internal] 2026-10-14T01:31:54.393334Z env 'default': sourcing no new imports
+> [INTERNAL] [internal] 2026-10-14T01:31:54.395426Z env 'default': sourced 0 packages, 0 in environment
+> [INFO] [sandbox] 2026-10-14T01:31:54.549163Z Script is already running
+> [INFO] [sandbox] 2026-10-14T01:31:54.676430Z Script is already running
+> [INFO] [sandbox] 2026-10-14T01:31:54.899431Z Script is already running
+> [INFO] [sandbox] 2026-10-14T01:31:55.053570Z Script is already running
+> [INFO] [sandbox] 2026-10-14T01:31:55.191461Z Script is already running
+> [INFO] [sandbox] 2026-10-14T01:31:55.337229Z Script is already running
+> [INFO] [sandbox] 2026-10-14T01:31:55.529533Z Script is already running
+> [INFO] [sandbox] 2026-10-14T01:31:55.678504Z Script is already running
+> [INFO] [sandbox] 2026-10-14T01:31:55.824227Z Script is already running
+> [INFO] [sandbox] 2026-10-14T01:31:55.940707Z Script is already running
+> [INFO] [sandbox] 2026-10-14T01:31:56.068252Z Script is already running
+> [INFO] [sandbox] 2026-10-14T01:31:56.181568Z Script is already running
+> [INFO] [sandbox] 2026-10-14T01:31:56.296816Z Script is already running
+> [INFO] [sandbox] 2026-10-14T01:31:56.466056Z Script is already running
+> [INTERNAL] [internal] 2026-10-14T01:31:58.539942Z ort: session #1 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T01:31:58.859572Z forwardContext: running 2 chars through bge
+> [INTERNAL] [internal] 2026-10-14T01:31:58.884955Z forwardContext: 3 tokens [101, 7632, 102]
+> [INTERNAL] [internal] 2026-10-14T01:31:58.885076Z forwardContext: last_hidden_state shape [1, 3, 768]
+> [INTERNAL] [internal] 2026-10-14T01:31:58.888978Z ort: session #1 'bert:bge' cancelled
+> [INFO] [sandbox] 2026-10-14T01:35:47.072707Z Running pluginDir/main.kts
+> [INTERNAL] [internal] 2026-10-14T01:35:47.080133Z env 'default': sourcing no new imports
+> [INTERNAL] [internal] 2026-10-14T01:35:47.083796Z env 'default': sourced 0 packages, 0 in environment
+> [INFO] [sandbox] 2026-10-14T01:35:47.667923Z Script is already running
+> [INFO] [sandbox] 2026-10-14T01:35:47.817894Z Script is already running
+> [INFO] [sandbox] 2026-10-14T01:35:48.059115Z Script is already running
+> [INTERNAL] [internal] 2026-10-14T01:35:51.151158Z ort: session #1 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T01:35:55.650867Z forwardContext: running 2 chars through bge
+> [INTERNAL] [internal] 2026-10-14T01:35:55.840437Z forwardContext: 3 tokens [101, 7632, 102]
+> [INTERNAL] [internal] 2026-10-14T01:35:55.840633Z forwardContext: last_hidden_state shape [1, 3, 768]
+> [INTERNAL] [internal] 2026-10-14T01:35:55.845969Z ort: session #1 'bert:bge' cancelled
+> [INFO] [sandbox] 2026-10-14T01:46:13.858366Z Running pluginDir/main.kts
+> [INTERNAL] [internal] 2026-10-14T01:46:13.864505Z env 'default': sourcing no new imports
+> [INTERNAL] [internal] 2026-10-14T01:46:13.865718Z env 'default': sourced 0 packages, 0 in environment
+> [INTERNAL] [internal] 2026-10-14T01:46:17.055401Z ort: session #1 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T01:46:17.462393Z forwardContext: running 2 chars through bge
+> [INTERNAL] [internal] 2026-10-14T01:46:17.491534Z forwardContext: 3 tokens [101, 7632, 102]
+> [INTERNAL] [internal] 2026-10-14T01:46:17.491661Z forwardContext: last_hidden_state shape [1, 3, 768]
+> [INTERNAL] [internal] 2026-10-14T01:46:17.495909Z ort: session #1 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T02:13:56.024779Z auth: opening registration page in the browser
+> [INTERNAL] [internal] 2026-10-14T02:27:43.192099Z auth: registered '123', verification mail requested for samfuxm@gmail.com
+> [INTERNAL] [internal] 2026-10-14T02:33:46.432493Z auth: signed in as 123 (http://192.168.1.114:8080/realms/master)
+> [INTERNAL] [internal] 2026-10-14T12:33:12.642697Z auth: session of 123 expired, sign in again
+> [INTERNAL] [internal] 2026-10-14T12:36:22.957125Z auth: signed out

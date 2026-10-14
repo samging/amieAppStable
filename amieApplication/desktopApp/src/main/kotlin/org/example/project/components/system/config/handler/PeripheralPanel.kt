@@ -34,6 +34,10 @@ import org.example.project.ui.theme.AddButton
 import org.example.project.ui.theme.FontColor
 import org.example.project.ui.theme.UnifiedBorderColor
 import org.example.project.ui.theme.UnifiedBoxColor
+import org.example.project.ui.theme.DangerColor
+import org.example.project.ui.theme.MutedFontColor
+import org.example.project.ui.theme.SuccessColor
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 /**
  * A device discovery and management panel that provides an input field for querying peripheral profiles
@@ -69,9 +73,11 @@ fun PeripheralPanel(name: String,
 
     Column(modifier = modifier.padding(16.dp)) {
         Text(
-            text = "Input for: ${name}",
-            color = Color(FontColor.toArgb()),
-            fontSize = 14.sp,
+            text = name.uppercase(),
+            color = MutedFontColor,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 0.8.sp,
             fontFamily = FontFamily.SansSerif
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -88,7 +94,9 @@ fun PeripheralPanel(name: String,
                     buffer = line
                     onValueChange(line)
                 },
-                label = { Text(text = name, color = if (isFocused) Color(FontColor.toArgb()) else Color(0xFF878e9c), fontSize = 14.sp) },
+                placeholder = { Text(text = name, color = MutedFontColor.copy(alpha = 0.6f), fontSize = 14.sp) },
+                singleLine = true,
+                shape = RoundedCornerShape(10.dp),
                 modifier = Modifier.weight(1f),
                 interactionSource = interactionSource,
                 colors = OutlinedTextFieldDefaults.colors(
@@ -96,8 +104,8 @@ fun PeripheralPanel(name: String,
                     unfocusedTextColor = Color(FontColor.toArgb()),
                     focusedContainerColor = Color(UnifiedBoxColor.toArgb()),
                     unfocusedContainerColor = Color(UnifiedBoxColor.toArgb()),
-                    cursorColor = Color(0xFFc7cbd4),
-                    focusedBorderColor = Color.White,
+                    cursorColor = AddButton,
+                    focusedBorderColor = AddButton,
                     unfocusedBorderColor = Color(UnifiedBorderColor.toArgb())
                 )
             )
@@ -136,9 +144,11 @@ fun PeripheralPanel(name: String,
                             errorMessage = "Couldn't find device name"
                         }
                     },
+                    modifier = Modifier.height(56.dp).padding(top = 8.dp),
+                    shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(AddButton.toArgb()),
-                        contentColor = Color(FontColor.toArgb())
+                        containerColor = AddButton,
+                        contentColor = Color.White
                     )
                 ) {
                     Text(text = customText, fontWeight = FontWeight.Medium)
@@ -150,14 +160,14 @@ fun PeripheralPanel(name: String,
         if (selectedDevice != null) {
             Text(
                 text = "Connected safely to: $selectedDevice",
-                color = Color(0xFFc7cbd4),
+                color = SuccessColor,
                 fontSize = 13.sp
             )
 
         } else if (errorMessage.isNotEmpty()) {
             Text(
                 text = errorMessage,
-                color = Color(FontColor.toArgb()),
+                color = DangerColor,
                 fontSize = 13.sp
             )
         }

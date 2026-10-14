@@ -42,13 +42,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.channels.Channel
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.text.selection.SelectionContainer
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.io.files.Path
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.example.project.components.render.templates.Client
@@ -67,7 +64,21 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import org.example.project.components.terminal.integrations.amiePilot.InteractionModel
 import org.example.project.ui.theme.UnifiedBodyBackground
+import org.example.project.ui.theme.UnifiedBoxColor
+import org.example.project.ui.theme.UnifiedBorderColor
+import org.example.project.ui.theme.AddButton
+import org.example.project.ui.theme.LogDataColor
+import org.example.project.ui.theme.LogErrorColor
+import org.example.project.ui.theme.LogInfoColor
+import org.example.project.ui.theme.LogInternalColor
+import org.example.project.ui.theme.LogTimestampColor
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import javax.script.ScriptEngineManager
+import javax.swing.SwingUtilities
+import java.util.concurrent.Executors
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 
 object InstantSerializer : KSerializer<Instant> {
@@ -85,12 +96,18 @@ data class TerminalTask(
 )
 
 @Serializable
+enum class LogLevel { INFO, ERROR, DATA, INTERNAL }
+
+@Serializable
 data class ResponseDto(
     @Serializable(with = InstantSerializer::class)
     val time: Instant? = null,
     val status: Int? = null,
     val message: String? = null,
     val color: Long? = null,
+    val level: LogLevel = LogLevel.INFO,
+    // Who logged it, e.g. "sandbox", "sandbox/main.kts", "terminal/<deviceId>"
+    val source: String? = null,
 )
 
 @Serializable
@@ -104,65 +121,147 @@ data class GithubItemMetadata(
 val consoleData = mutableStateListOf<ResponseDto>()
 val logger = LoggerFactory.getLogger("TerminalWindow")
 
+// Single log file shared by every terminal; entries are told apart by their source tag
+val appLogFile: File get() = File(getDirectory().toString(), "logs.txt")
 
-object LogConsole {
-    private val logScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    private val logChannel = Channel<ResponseDto>(Channel.UNLIMITED)
+// One writer thread keeps appends in order and off the UI thread
+private val logWriter = Executors.newSingleThreadExecutor { Thread(it, "amie-log-writer").apply { isDaemon = true } }
 
-    var logFilePath: String = getDirectory().toString() + "logs.txt"
-
-    init {
-        logScope.launch {
-            for (dto in logChannel) {
-                withContext(Dispatchers.Main) {
-                    consoleData.add(dto)
-                }
-
-                try {
-                    val file = File(logFilePath)
-                    val logText = if (dto.message != null) {
-                        "> ${dto.message}"
-                    } else {
-                        "> ${dto.time} ${dto.status}"
-                    }
-                    file.appendText("$logText\n")
-                } catch (e: Exception) {
-                    logger.error("Error writing to log file: ${e.message}")
-                }
-            }
+// consoleData is read by composition on the UI thread, so writes from script/IO threads are hopped onto it
+fun logToConsole(dto: ResponseDto) {
+    if (SwingUtilities.isEventDispatchThread()) consoleData.add(dto)
+    else SwingUtilities.invokeLater { consoleData.add(dto) }
+    val line = dto.toLogLine()
+    logWriter.execute {
+        try {
+            appLogFile.appendText("$line\n")
+        } catch (e: Exception) {
+            logger.error("Error writing to log file: ${e.message}")
         }
-    }
-    fun clearLogFile(path: String = logFilePath) {
-        logScope.launch {
-            withContext(Dispatchers.Main) {
-                consoleData.clear()
-            }
-            try {
-                val file = File(path)
-                if (file.exists()) {
-                    file.writeText("") // Truncates the file to 0 bytes
-                } else {
-                    file.parentFile?.mkdirs()
-                    file.createNewFile()
-                }
-            } catch (e: Exception) {
-                logger.error("Error clearing log file: ${e.message}")
-            }
-        }
-    }
-    fun log(dto: ResponseDto) {
-        logChannel.trySend(dto)
     }
 }
-fun logToConsole(dto: ResponseDto) = LogConsole.log(dto)
+
+// Runtime/model internals; shown in every terminal so they also reach the logging terminal
+const val INTERNAL_SOURCE = "internal"
+fun logInternal(message: String, level: LogLevel = LogLevel.INTERNAL) = logToConsole(ResponseDto(time = Instant.now(), message = message, level = level, source = INTERNAL_SOURCE))
+
+fun logInfo(message: String, source: String) = logToConsole(ResponseDto(time = Instant.now(), message = message, level = LogLevel.INFO, source = source))
+fun logError(message: String, source: String) = logToConsole(ResponseDto(time = Instant.now(), message = message, level = LogLevel.ERROR, source = source))
+fun logData(message: String, source: String) = logToConsole(ResponseDto(time = Instant.now(), message = message, level = LogLevel.DATA, source = source))
+
+// Empties the on-screen output for a source and its children; the log file keeps everything
+fun clearConsole(source: String) {
+    consoleData.removeAll { it.belongsTo(source) }
+}
+
+// What a terminal for [source] shows, before level filtering
+fun consoleEntries(source: String): List<ResponseDto> = consoleData.filter { it.belongsTo(source) }
+
+// Untagged and internal entries (model loaders, plugins, NER) are shown in every terminal
+private fun ResponseDto.belongsTo(source: String): Boolean =
+    this.source == null || this.source == INTERNAL_SOURCE || this.source == source || this.source.startsWith("$source/")
+
+private val logTimeFormat = DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault())
+private val logLineRegex = Regex("""^> \[(INFO|ERROR|DATA|INTERNAL)] (?:\[([^\]]+)] )?(?:(\S+Z) )?(.*)$""", RegexOption.DOT_MATCHES_ALL)
+
+private fun ResponseDto.text(): String = message ?: "$time $status"
+
+// Persisted as "> [LEVEL] [source] <instant> <message>"; multi-line messages are escaped to keep one entry per line
+private fun ResponseDto.toLogLine(): String {
+    val escaped = text().replace("\\", "\\\\").replace("\n", "\\n")
+    return listOfNotNull("> [${level.name}]", source?.let { "[$it]" }, time?.toString(), escaped).joinToString(" ")
+}
+
+private fun parseLogLine(line: String): ResponseDto {
+    val match = logLineRegex.find(line) ?: return ResponseDto(message = line.removePrefix("> "))
+    val (level, source, time, message) = match.destructured
+    return ResponseDto(
+        source = source.takeIf { it.isNotEmpty() },
+        time = time.takeIf { it.isNotEmpty() }?.let { runCatching { Instant.parse(it) }.getOrNull() },
+        message = message.replace(Regex("""\\(\\|n)""")) { if (it.value == "\\n") "\n" else "\\" },
+        level = LogLevel.valueOf(level),
+    )
+}
+
+fun LogLevel.color(): Color = when (this) {
+    LogLevel.INFO -> LogInfoColor
+    LogLevel.ERROR -> LogErrorColor
+    LogLevel.DATA -> LogDataColor
+    LogLevel.INTERNAL -> LogInternalColor
+}
+
+// Fixed columns keep every entry aligned: time | level | source | message (wraps within its own column)
+private val ConsoleTimeWidth = 64.dp
+private val ConsoleLevelWidth = 72.dp
+private val ConsoleSourceWidth = 104.dp
+private val ConsoleLineHeight = 20.sp
+
+// "sandbox/main.kts" -> "main.kts"; the full source stays in the log file
+private fun ResponseDto.shortSource(): String = source?.substringAfterLast('/') ?: ""
+
+// Below this width the source column is dropped so the message keeps room to breathe
+private val ConsoleCompactWidth = 640.dp
+
+@Composable
+private fun ConsoleLine(msg: ResponseDto, compact: Boolean = false) {
+    val levelColor = msg.level.color()
+    val mono = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 12.sp, lineHeight = ConsoleLineHeight)
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Text(
+            text = msg.time?.let { logTimeFormat.format(it) } ?: "--:--:--",
+            style = mono.copy(color = LogTimestampColor),
+            modifier = Modifier.width(ConsoleTimeWidth)
+        )
+        // Same height as one text line so the badge sits centered on the first line
+        Box(modifier = Modifier.width(ConsoleLevelWidth).height(20.dp), contentAlignment = Alignment.CenterStart) {
+            Text(
+                text = msg.level.name,
+                style = mono.copy(color = levelColor, fontSize = 10.sp, lineHeight = 14.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
+                modifier = Modifier
+                    .width(ConsoleLevelWidth - 10.dp)
+                    .background(levelColor.copy(alpha = 0.14f), RoundedCornerShape(4.dp))
+                    .padding(vertical = 1.dp)
+            )
+        }
+        if (!compact) {
+            Text(
+                text = msg.shortSource(),
+                style = mono.copy(color = LogTimestampColor),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.width(ConsoleSourceWidth).padding(end = 8.dp)
+            )
+        }
+        Text(
+            text = msg.text(),
+            style = mono.copy(
+                fontSize = 13.sp,
+                color = msg.color?.let { Color(it) } ?: when (msg.level) {
+                    LogLevel.INFO -> Color(0xFFc7cbd4)
+                    else -> levelColor
+                }
+            ),
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
 
 @Composable
 fun TerminalWindow(
     title: String = "",
     deviceId: String = "",
     modifier: Modifier = Modifier,
-    logFilePath: String = "logs.txt",
-    allowCmd: Boolean? = false
+    source: String = if (deviceId.isNotEmpty()) "terminal/$deviceId" else "terminal",
+    loadHistory: Boolean = true,
+    // Levels shown; the others stay in consoleData and the log file
+    levels: Set<LogLevel> = LogLevel.entries.toSet(),
+    allowCmd: Boolean? = false,
+    containerColor: Color = UnifiedBodyBackground,
+    inputColor: Color = UnifiedBoxColor,
+    inputBorderColor: Color = UnifiedBorderColor,
 ) {
     val deviceManagerJson = remember { DeviceManagerJson() }
     var portName by remember { mutableStateOf<String?>(null) }
@@ -170,20 +269,22 @@ fun TerminalWindow(
     var messageOver by remember { mutableStateOf(TerminalTask()) }
     val loop = rememberCoroutineScope()
 
-    LaunchedEffect(logFilePath) {
-        val file = File(logFilePath)
-        if (file.exists()) {
-            file.writeText("")
-            try {
-                val lines = file.readLines()
-                consoleData.clear()
-                for (line in lines) {
-                    if (line.isBlank()) continue
-                    consoleData.add(ResponseDto(message = line.removePrefix("> ")))
-                }
-            } catch (e: Exception) {
-                logger.error("Error reading log history: ${e.message}")
+    // Tags everything this terminal logs with its source unless the caller named a more specific one
+    fun logToConsole(dto: ResponseDto) =
+        org.example.project.components.terminal.window.controller.logToConsole(dto.copy(source = dto.source ?: source))
+
+    LaunchedEffect(source, loadHistory) {
+        if (!loadHistory) return@LaunchedEffect
+        try {
+            val history = withContext(Dispatchers.IO) {
+                val file = appLogFile
+                if (!file.exists()) emptyList()
+                else file.readLines().filter { it.isNotBlank() }.map(::parseLogLine).filter { it.belongsTo(source) }
             }
+            clearConsole(source)
+            consoleData.addAll(0, history)
+        } catch (e: Exception) {
+            logger.error("Error reading log history: ${e.message}")
         }
     }
     val scope = rememberCoroutineScope()
@@ -216,33 +317,28 @@ fun TerminalWindow(
     Card(
         modifier = modifier
             .fillMaxSize()
-            .clip(RoundedCornerShape(0.dp))
-            .border(1.dp, Color.White),
-        colors = CardDefaults.cardColors(containerColor = Color(UnifiedBodyBackground.toArgb())),
+            .clip(RoundedCornerShape(0.dp)),
+        shape = RoundedCornerShape(0.dp),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
 
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .padding(12.dp)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                for (msg in consoleData) {
-                    val displayText = if (msg.message != null) {
-                        "> ${msg.message}"
-                    } else {
-                        "> ${msg.time} ${msg.status}"
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                val compact = maxWidth < ConsoleCompactWidth
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(12.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    SelectionContainer {
+                        Column {
+                            for (msg in consoleData.filter { it.belongsTo(source) && it.level in levels }) {
+                                ConsoleLine(msg, compact)
+                            }
+                        }
                     }
-                    Text(
-                        text = displayText,
-                        color = msg.color?.let { Color(it) } ?: Color(0xFFc7cbd4),
-                        fontSize = 13.sp,
-                        fontFamily = FontFamily.Monospace,
-                        modifier = Modifier.padding(vertical = 1.dp)
-                    )
                 }
             }
 
@@ -270,26 +366,25 @@ fun TerminalWindow(
                         } else {
                             files.joinToString("\n") { (if (it.isDirectory) "[DIR] " else "[FILE] ") + it.name }
                         }
-                        logToConsole(ResponseDto(time = Instant.now(), message = message))
+                        logToConsole(ResponseDto(time = Instant.now(), message = message, level = LogLevel.DATA))
                         textInput = ""
                         return
                     }
 
                     if (command.first() == "cat") {
                         if (args.isEmpty()) {
-                            logToConsole(ResponseDto(time = Instant.now(), message = "Usage: cat <filename>"))
+                            logToConsole(ResponseDto(time = Instant.now(), message = "Usage: cat <filename>", level = LogLevel.ERROR))
                         } else {
                             val ampPath = getDirectory().toString()
                             val file = File(ampPath, args)
                             if (file.exists() && file.isFile) {
-                                val contentStr = try {
-                                    file.readText()
+                                try {
+                                    logToConsole(ResponseDto(time = Instant.now(), message = file.readText(), level = LogLevel.DATA))
                                 } catch (e: Exception) {
-                                    "Error reading file: ${e.message}"
+                                    logToConsole(ResponseDto(time = Instant.now(), message = "Error reading file: ${e.message}", level = LogLevel.ERROR))
                                 }
-                                logToConsole(ResponseDto(time = Instant.now(), message = contentStr))
                             } else {
-                                logToConsole(ResponseDto(time = Instant.now(), message = "File not found: $args"))
+                                logToConsole(ResponseDto(time = Instant.now(), message = "File not found: $args", level = LogLevel.ERROR))
                             }
                         }
                         textInput = ""
@@ -304,21 +399,19 @@ fun TerminalWindow(
                             ?: error("Couldn't find Kotlin script engine")
                         
                         val loggerObj = object : ScriptLogger {
-                            override fun log(message: String) {
-                                logToConsole(ResponseDto(time = Instant.now(), message = message))
+                            override fun log(message: String, level: LogLevel) {
+                                logToConsole(ResponseDto(time = Instant.now(), message = message, level = level, source = "$source/${command.getOrElse(1) { "script" }}.kts"))
                             }
                             override fun initMod() : InteractionModel {
                                 return org.example.project.components.terminal.integrations.amiePilot.InitMod().create()
                             }
                             override fun initAmie(text: String) {
                                 val result = org.example.project.components.terminal.integrations.amiePilot.initAmie(text)
-                                logToConsole(ResponseDto(time = Instant.now(), message = result.joinToString("\n")))
+                                logToConsole(ResponseDto(time = Instant.now(), message = result.joinToString("\n"), level = LogLevel.DATA))
                             }
 
-                            override fun forwardContext(tokens: (matrix: LongArray) -> Unit) {
-                                tokens(LongArray(0))
-                                return org.example.project.components.terminal.integrations.amiePilot.initContext()
-                            }
+                            override fun forwardContext(text: String, tokens: (matrix: LongArray) -> Unit): Array<Array<FloatArray>>? =
+                                org.example.project.components.terminal.integrations.amiePilot.initContext(text, tokens)
 
                             override fun modelBuilder(modelName: String, it: (Any) -> Any): ModelCreationalInterface {
                                 it("")
@@ -347,11 +440,11 @@ fun TerminalWindow(
 //                                if (pluginPath.exists()) {
 //                                    engine.eval(pluginPath.readText(), scriptBindings)
 //                                } else {
-//                                    logToConsole(ResponseDto(time = Instant.now(), message = "Script not found: ${pluginPath.absolutePath}"))
+//                                    logToConsole(ResponseDto(time = Instant.now(), message = "Script not found: ${pluginPath.absolutePath}", level = LogLevel.ERROR))
 //                                }
 //                            } catch (e: Exception) {
 //                                logger.error("Error running script: ${pluginPath}| ${e.message}")
-//                                logToConsole(ResponseDto(time = Instant.now(), message = "Error: ${e.message}"))
+//                                logToConsole(ResponseDto(time = Instant.now(), message = "Error: ${e.message}", level = LogLevel.ERROR))
 //                            }
 //                        }
                         textInput = ""
@@ -397,10 +490,11 @@ fun TerminalWindow(
                                     }
 
 
-                                    logToConsole(ResponseDto(time = Instant.now(), message = Json.encodeToString(templateComp), color = 0xFFFF0000))
+                                    logToConsole(ResponseDto(time = Instant.now(), message = Json.encodeToString(templateComp), level = LogLevel.DATA))
                                 }
                             } catch (e: Exception) {
                                 logger.error(e.toString())
+                                logToConsole(ResponseDto(time = Instant.now(), message = "check failed: ${e.message}", level = LogLevel.ERROR))
                             }
                         }
                         textInput = ""
@@ -424,11 +518,13 @@ fun TerminalWindow(
                             response?.let {
                                 logToConsole(ResponseDto(
                                     time = Instant.now(),
-                                    status = it["status"]?.toString()?.toIntOrNull() ?: 0
+                                    status = it["status"]?.toString()?.toIntOrNull() ?: 0,
+                                    level = LogLevel.DATA
                                 ))
                             }
                         } catch (e: Exception) {
                             logger.error(e.toString())
+                            logToConsole(ResponseDto(time = Instant.now(), message = "Request failed: ${e.message}", level = LogLevel.ERROR))
                         }
                     }
                     textInput = ""
@@ -436,10 +532,12 @@ fun TerminalWindow(
 
                 Row(
                     modifier = Modifier
-                        .fillMaxWidth(),
+                        .fillMaxWidth()
+                        .padding(10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     OutlinedTextField(
+                        shape = RoundedCornerShape(10.dp),
                         value = textInput,
                         onValueChange = { textInput = it },
                         textStyle = TextStyle(
@@ -454,10 +552,10 @@ fun TerminalWindow(
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = Color(0xFFc7cbd4),
                             unfocusedTextColor = Color(0xFFc7cbd4),
-                            focusedContainerColor = Color(0xFF171b23),
-                            unfocusedContainerColor = Color(0xFF171b23),
-                            focusedBorderColor = Color(0xFF262b36),
-                            unfocusedBorderColor = Color(0xFF262b36).copy(alpha = 0.5f),
+                            focusedContainerColor = inputColor,
+                            unfocusedContainerColor = inputColor,
+                            focusedBorderColor = Color(0xFF5A5A5A),
+                            unfocusedBorderColor = inputBorderColor,
                             cursorColor = Color(0xFFc7cbd4)
                         ),
                         singleLine = true,

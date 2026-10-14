@@ -26,7 +26,7 @@ val sharedHttpClient = HttpClient(Java) {
 
 suspend fun fetchFilesList(client: HttpClient = sharedHttpClient): String {
     return try {
-        val response: HttpResponse = client.get("http://192.168.1.114:8080/list-github")
+        val response: HttpResponse = client.get(org.example.project.backend.BackendConfig.load().url("list-github"))
 
         if (response.status.value in 200..299) {
             response.bodyAsText()
@@ -37,7 +37,7 @@ suspend fun fetchFilesList(client: HttpClient = sharedHttpClient): String {
         "Network Timeout: The server took too long to respond."
     } catch (_: ConnectTimeoutException) {
         "Connection Timeout: Could not connect to the server at " +
-                "192.168.1.116."
+                org.example.project.backend.BackendConfig.load().base + "."
     } catch (e: IOException) {
         "Network Failure: Check your connection or server status. Details: ${e.localizedMessage}"
     } catch (e: Exception) {

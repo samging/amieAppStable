@@ -1,5 +1,6 @@
 package org.example.project.components.render.templates
 
+import org.example.project.components.terminal.window.controller.appLogFile
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -19,10 +20,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
 //import org.example.project.components.ui.viewport.DevicePanel
 import org.example.project.components.ui.viewport.DevicePanelK
 import org.example.project.components.ui.viewport.NavigationSidebar
 import org.example.project.components.ui.viewport.WindowHeader
+import org.example.project.components.ui.viewport.LocalAppChrome
+import androidx.compose.runtime.CompositionLocalProvider
 import org.example.project.data.remote.parser.DeviceManager
 import org.example.project.data.remote.parser.DeviceManagerFactory
 import okio.Path.Companion.toPath
@@ -48,30 +52,87 @@ fun AppBaseTemplate() {
     if (!appDir.exists()) appDir.mkdirs()
 
     val navController = rememberNavController()
-    var currentUser by remember { mutableStateOf("") }
+    // Who is signed in with Keycloak, or a guest name chosen on the login page
+    val session by org.example.project.auth.AuthState.session.collectAsState()
+    var guestUser by remember { mutableStateOf("") }
+    val currentUser = session?.username ?: guestUser
+    val scope = rememberCoroutineScope()
 
     var activePortsMap by remember { mutableStateOf<Map<Int, String>>(emptyMap()) }
     val configFile = remember { File(appDir, "componentSettings.json") }
     val configReader: DeviceManager = remember { DeviceManagerFactory.create(configFile) }
-    val logFile = remember { File(appDir, "logs.txt") }
-    if (!logFile.exists()) { logFile.writeText("System initialized\nWaiting for logs...") }
+    // Devices are stored on the backend per user: follow the Keycloak session (a guest syncs as the guest id)
+    androidx.compose.runtime.LaunchedEffect(session?.username) {
+        session?.username?.let { configReader.setSession(it) }
+    }
+    val logFile = remember { appLogFile }
+    if (!logFile.exists()) { logFile.writeText("System initialized\nWaiting for logs...\n") }
 
 
+    // Models that were listening when the app closed start listening again; the saved session signs back in
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching { org.example.project.auth.AuthState.restore() }
+            org.example.project.components.terminal.window.controller.modules.ModelServer.restore()
+        }
+    }
+
+    val windowChrome = LocalAppChrome.current
+    val chrome = windowChrome.copy(
+        user = currentUser,
+        onLogin = { navController.navigate("login") { launchSingleTop = true } },
+        onLogout = {
+            guestUser = ""
+            scope.launch { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { org.example.project.auth.AuthState.signOut() } }
+        },
+    )
+
+    CompositionLocalProvider(LocalAppChrome provides chrome) {
     Box(modifier = Modifier.fillMaxSize()) {
         NavHost(navController = navController, startDestination = "welcome") {
 
             composable("welcome") {
-                WelcomePage(navController = navController)
+                Column(modifier = Modifier.fillMaxSize()) {
+                    WindowHeader(name = "Welcome", showOnBack = false, onBack = {})
+                    WelcomePage(navController = navController)
+                }
             }
 
             composable("login") {
-                LoginPage(onLoginSuccess = { username ->
-                    currentUser = username
-                    navController.navigate("home1/") {
-                        popUpTo("login") { inclusive = true }
-                    }
-                })
+                Column(modifier = Modifier.fillMaxSize()) {
+                    WindowHeader(name = "Log in", showUser = false, onBack = { navController.popBackStack() })
+                    LoginPage(
+                        onLoginSuccess = { username ->
+                            if (session == null) guestUser = username
+                            navController.navigate("home1/") {
+                                popUpTo("login") { inclusive = true }
+                            }
+                        },
+                        onRegister = { navController.navigate("register") { launchSingleTop = true } }
+                    )
+                }
+            }
 
+            composable("register") {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    WindowHeader(name = "Create account", showUser = false, onBack = { navController.popBackStack() })
+                    RegisterPage(
+                        onRegistered = {
+                            navController.navigate("home1/") {
+                                popUpTo("welcome") { inclusive = false }
+                            }
+                        },
+                        onBackToLogin = { navController.navigate("login") { popUpTo("login") { inclusive = true } } }
+                    )
+                }
+            }
+
+            // Model statistics: resources, uptime and traffic of every model; only for a Keycloak user
+            composable(route = "models") {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    WindowHeader(name = "Models", showOnBack = true, onBack = { navController.popBackStack() })
+                    org.example.project.components.terminal.window.controller.ModelsPage(navController = navController)
+                }
             }
 
             composable(route = "home1/") {
@@ -127,7 +188,10 @@ fun AppBaseTemplate() {
             }
 
             composable(route = "codingSandbox") {
-                CodingSandbox(navController = navController)
+                Column(modifier = Modifier.fillMaxSize()) {
+                    WindowHeader(name = "Sandbox", showOnBack = false, onBack = {})
+                    CodingSandbox(navController = navController)
+                }
             }
 
             composable(route = "addDevice/{idKey}") { backStackEntry ->
@@ -372,8 +436,7 @@ fun AppBaseTemplate() {
                         deviceId = deviceId,
                         modifier = Modifier,
                         endPointNumber = 3,
-                        allowCmd = true,
-                        logFilePath = logFile.absolutePath
+                        allowCmd = true
                     )
                 }
             }
@@ -393,7 +456,6 @@ fun AppBaseTemplate() {
                         deviceId = deviceId,
                         endPoint = 3,
                         status = true,
-                        logFilePath = logFile.absolutePath,
                         connectionRedirect = { navController.navigate("changeEndpoint/$deviceId") }
                     )
                 }
@@ -408,5 +470,6 @@ fun AppBaseTemplate() {
                 }
             }
         }
+    }
     }
 }

@@ -39,7 +39,7 @@ data class PackageWrite(
 )
 class DeviceManagerJson(
     private var configFile: File = File(getDirectory().toString(), "componentSettings.json"),
-    private val deviceService: DeviceRemoteService = DeviceRemoteService(sharedHttpClient)
+    private val deviceService: DeviceRemoteService = DeviceRemoteService(sharedHttpClient, org.example.project.backend.BackendConfig.load().base)
 ) : DeviceManager {
 
     override val configuredDevicesStatic: Map<String, Device>
@@ -104,11 +104,17 @@ class DeviceManagerJson(
 
                 //var initialMap2 = client.rest<sendDeviceStatusDto>("get-device-status", restType = RestType.POST, body = initialBody)
                 var initialMap3 = client.rest<DeviceDto>("get-device-status", restType = RestType.POST, body = initialBody)
-                println("[=]_[=]_[=]_[=]_[=]_[=]_[=]_[=]_[=]_[=]_[=]_[=]")
-                println("[=]_[=]_[=]_[=]_[=]_[=]_[=]_[=]_[=]_[=]_[=]_[=]")
-                println("[=]_[=]_[=]_[=]_[=]_[=]_[=]_[=]_[=]_[=]_[=]_[=]")
-                println("[=]_[=]_[=]_[=]_[=]_[=]_[=]_[=]_[=]_[=]_[=]_[=]")
-                println("INITAL MAP3: $initialMap3")
+                if (client.lastErrorMessage != null) {
+                    // The backend didn't answer: keep what is on disk instead of replacing it with nothing
+                    logger.warn("device sync for '{}' skipped: {}", effectiveUsername, client.lastErrorMessage)
+                    val local = runCatching {
+                        File(getDirectory().toString(), "componentSettings.json").readText().takeIf { it.isNotBlank() }
+                            ?.let { Json.decodeFromString<Map<String, DeviceDto>>(it) }
+                    }.getOrNull() ?: emptyMap()
+                    _deviceMapState.value = local
+                    return@launch
+                }
+                logger.debug("device sync for '{}': {} device(s) from the backend", effectiveUsername, initialMap3?.size ?: 0)
                 initialMap3 = initialMap3 ?: emptyMap()
                 initialMap3 = initialMap3.mapNotNull { (key, value) ->
                     if (value != null) {
@@ -185,6 +191,7 @@ class DeviceManagerJson(
     }
 
     override fun setSession(username: String) {
+        if (username == currentUsername) return
         currentUsername = username
         syncGet()
     }
