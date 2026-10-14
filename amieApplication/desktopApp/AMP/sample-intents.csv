@@ -1,0 +1,46 @@
+text,label
+"hello there",greeting
+"hi, how are you",greeting
+"good morning",greeting
+"hey amie",greeting
+"good evening to you",greeting
+"hi there, nice to see you",greeting
+"hello, anyone home",greeting
+"greetings",greeting
+"hey, what's up",greeting
+"morning",greeting
+"hello again",greeting
+"hi amie, you awake",greeting
+"good afternoon",greeting
+"howdy",greeting
+"nice to meet you",greeting
+"turn the lights on",lights
+"switch off the kitchen light",lights
+"dim the living room lights",lights
+"lights off please",lights
+"make the bedroom brighter",lights
+"turn on the lamp",lights
+"set the lights to 50 percent",lights
+"kill the lights in the hall",lights
+"can you turn the light on in the office",lights
+"switch the garden lights on",lights
+"lights on",lights
+"turn off every light",lights
+"brighten the desk lamp",lights
+"lower the lights a bit",lights
+"turn the hallway light off",lights
+"what's the weather like today",weather
+"will it rain tomorrow",weather
+"is it cold outside",weather
+"how hot is it right now",weather
+"do i need an umbrella",weather
+"what's the forecast for the weekend",weather
+"is it going to snow",weather
+"how windy is it",weather
+"temperature outside please",weather
+"weather for tomorrow morning",weather
+"is it sunny",weather
+"any storms coming",weather
+"what's the humidity today",weather
+"will it be warm this afternoon",weather
+"forecast for tonight",weather

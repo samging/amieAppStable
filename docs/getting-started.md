@@ -26,8 +26,8 @@ In IntelliJ or Android Studio open the repository root and use the run configura
 
 ## First start
 
-1. The window opens on **Welcome**. The button reads *Restoring session…* for a moment while the app checks
-   `AMP/session.json`, then **Continue** (or **Continue as &lt;you&gt;** when a session came back).
+1. The window stays blank for a moment while the app checks `AMP/session.json`. When a valid session comes back
+   you land on the **dashboard** straight away; otherwise the **Welcome** screen opens with **Continue**.
 2. With no session you land on the **login page**: sign in with a Keycloak username and password, use
    **Sign in with browser (SSO)**, **Create account**, or **Continue as guest**. See [Signing in](sign-in.md).
 3. You arrive in the **sandbox** with `main.kts` open. Everything the app writes goes into `AMP/` next to its working

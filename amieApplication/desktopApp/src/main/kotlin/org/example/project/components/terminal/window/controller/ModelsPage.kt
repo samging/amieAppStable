@@ -9,8 +9,7 @@ import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -28,8 +27,12 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.LinearProgressIndicator
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -44,6 +47,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -57,130 +62,238 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.example.project.auth.AuthState
 import org.example.project.backend.AmieBackend
-import org.example.project.backend.BackendStatus
 import org.example.project.components.terminal.window.controller.envBuilder.DEFAULT_ENV
 import org.example.project.components.terminal.window.controller.envBuilder.ScriptEnvironments
 import org.example.project.components.terminal.window.controller.jetbrainDLBuilder.ModelBuild
 import org.example.project.components.terminal.window.controller.jetbrainDLBuilder.ModelBuildProgress
-import org.example.project.components.terminal.window.controller.jetbrainDLBuilder.short
+import org.example.project.components.terminal.window.controller.jetbrainDLBuilder.buildClassifier
 import org.example.project.components.terminal.window.controller.modelLoaders.OrtSessions
+import org.example.project.components.terminal.window.controller.modules.MetricsRun
+import org.example.project.components.terminal.window.controller.modules.ModelCollection
+import org.example.project.components.terminal.window.controller.modules.ModelCollections
 import org.example.project.components.terminal.window.controller.modules.ModelServer
+import org.example.project.components.terminal.window.controller.modules.ModelSessions
+import org.example.project.components.terminal.window.controller.modules.ModelValidation
+import org.example.project.components.terminal.window.controller.modules.ValidationProgress
 import org.example.project.components.terminal.window.controller.modules.ModuleManifest
 import org.example.project.components.terminal.window.controller.modules.ServingSettings
-import org.example.project.components.terminal.window.controller.modules.SystemStats
-import org.example.project.components.terminal.window.controller.modules.bytes
+import org.example.project.components.terminal.window.controller.modules.SessionLogEntry
+import org.example.project.components.terminal.window.controller.modules.ensureDummyModule
+import org.example.project.components.terminal.window.controller.modules.ensureSampleData
 import org.example.project.components.terminal.window.controller.modules.modulesDir
-import org.example.project.components.terminal.window.controller.modules.ms
-import org.example.project.components.terminal.window.controller.modules.percent
 import org.example.project.components.terminal.window.controller.modules.readMetricsHistory
 import org.example.project.components.terminal.window.controller.modules.readModule
 import org.example.project.components.terminal.window.controller.modules.readRegistry
 import org.example.project.components.terminal.window.controller.modules.readServing
 import org.example.project.components.terminal.window.controller.modules.uptime
 import org.example.project.components.terminal.window.controller.modules.writeServing
-import org.example.project.components.terminal.window.controller.pluginEngine.JarInterpreter
+import org.example.project.components.terminal.window.controller.pluginEngine.JarContents
+import org.example.project.components.terminal.window.controller.pluginEngine.JarInspector
+import org.example.project.components.terminal.window.controller.pluginEngine.JarOrigin
+import org.example.project.components.terminal.window.controller.pluginEngine.JarPackages
+import org.example.project.components.terminal.window.controller.pluginEngine.ServerJar
+import org.example.project.components.terminal.window.controller.sourceFile.DataSource
 import org.example.project.components.ui.viewport.NavigationSidebar
 import org.example.project.getDirectory
+import org.example.project.ui.theme.AccentButtonHover
+import org.example.project.ui.theme.AccentSoft
+import org.example.project.ui.theme.ActiveColor
 import org.example.project.ui.theme.AddButton
-import org.example.project.ui.theme.ConsoleBackground
-import org.example.project.ui.theme.DangerColor
+import org.example.project.ui.theme.ChipBackground
+import org.example.project.ui.theme.ChipBorderColor
+import org.example.project.ui.theme.ChipHoverBackground
+import org.example.project.ui.theme.CodeBackground
+import org.example.project.ui.theme.ConsoleBorderColor
 import org.example.project.ui.theme.EditorBackground
 import org.example.project.ui.theme.FontColor
+import org.example.project.ui.theme.IdleColor
+import org.example.project.ui.theme.LogMessageColor
+import org.example.project.ui.theme.LogTimestampColor
 import org.example.project.ui.theme.MutedFontColor
-import org.example.project.ui.theme.SuccessColor
-import org.example.project.ui.theme.SurfaceHover
+import org.example.project.ui.theme.PanelBorder
+import org.example.project.ui.theme.PanelBorderSelected
+import org.example.project.ui.theme.PanelSurface
+import org.example.project.ui.theme.PanelSurfaceSelected
+import org.example.project.ui.theme.TabActiveBackground
+import org.example.project.ui.theme.TabActiveIndicator
+import org.example.project.ui.theme.TabBarBackground
 import org.example.project.ui.theme.UnifiedBorderColor
-import org.example.project.ui.theme.UnifiedBoxColor
 import java.awt.FileDialog
 import java.awt.Frame
 import java.io.File
 import java.time.Duration
 import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /* ---------- what the page shows, read off the UI thread ---------- */
 
+private enum class PageTab(val title: String) { MODELS("Models"), PACKAGES("Packages"), SESSIONS("Sessions") }
+
+/** Any open session on this page, named after its owner: an intent model, a package jar or a bare ONNX file */
+private data class SessionInfo(
+    val key: String,
+    val owner: String,
+    val id: Int,
+    val kind: String,
+    val running: Boolean,
+    val runs: Int,
+    val openedAt: Instant,
+    /** What the session was asked and answered; empty with hasLog = false for a bare ONNX session */
+    val log: List<SessionLogEntry>,
+    val hasLog: Boolean,
+    val terminate: () -> Unit,
+)
+
+/** An intent model as a component: its manifest, metrics, how it is served, whether it listens and its sessions */
 private data class ModelInfo(
     val name: String,
     val manifest: ModuleManifest,
-    val modelBytes: Long,
-    val macroF1: Double?,
-    val accuracy: Double?,
-    val validation: String?,
-    val validatedAt: String?,
-    val builds: Int,
-    val sessions: Int,
-    val sessionRuns: Int,
-    val sessionRunTimeMs: Long,
-    val sessionAverageMs: Double,
-    val incoming: Int,
     val serving: ServingSettings,
     val stats: ModelServer.ServingStats?,
+    val metrics: List<MetricsRun>,
+    val sessions: List<SessionInfo>,
+    /** The collections this model is in */
+    val collections: List<String>,
 ) {
+    val url: String? get() = stats?.url
     val listening: Boolean get() = stats != null
+    val busy: Boolean get() = sessions.any { it.running }
+    /** Running when it serves or has a session open; stopped otherwise */
+    val running: Boolean get() = listening || sessions.isNotEmpty()
+    val status: String get() = when {
+        busy -> "inferring"
+        running -> "running"
+        else -> "stopped"
+    }
+    val lastRun: MetricsRun? get() = metrics.lastOrNull()
+
+    /** The group of the list: what the model is doing */
+    val group: String get() = if (running) "Running" else "Stopped"
+
+    /** Name, labels, status, encoder or what it was validated on contain the query */
+    fun matches(query: String): Boolean {
+        val q = query.trim().lowercase()
+        return q.isEmpty() || name.lowercase().contains(q) || manifest.labels.any { it.lowercase().contains(q) } ||
+            status.lowercase().contains(q) || File(manifest.encoder).name.lowercase().contains(q) ||
+            metrics.any { it.validation.lowercase().contains(q) } || collections.any { it.lowercase().contains(q) }
+    }
 }
 
-private data class JarInfo(val name: String, val file: File, val bytes: Long, val running: Boolean, val inEnv: Boolean)
+/**
+ * A package jar the sandbox can open with initMod("name.jar"): local (env or AMP/pluginDir) or offered by the
+ * server, with where it came from, what it contains and the sessions open on it.
+ */
+private data class JarInfo(
+    val name: String,
+    val source: String,
+    val origin: JarOrigin?,
+    val url: String?,
+    val page: String,
+    val version: String?,
+    val file: File?,
+    val contents: JarContents?,
+    val sessions: List<SessionInfo>,
+) {
+    val local: Boolean get() = file != null
+    val open: Int get() = sessions.size
 
-private data class SessionInfo(val id: Int, val name: String, val running: Int, val runs: Int, val runTimeMs: Long, val averageMs: Double, val openedAt: Instant)
+    /** Where the jar lives, as a group of the list */
+    val location: String get() = when (source) { "server" -> "On the server"; "env" -> "In the env"; else -> "In AMP/pluginDir" }
+
+    /** Name, version, Java, entry class, a class or a resource name contain the query */
+    fun matches(query: String): Boolean {
+        val q = query.trim().lowercase()
+        if (q.isEmpty()) return true
+        if (name.lowercase().contains(q) || version?.lowercase()?.contains(q) == true || status.lowercase().contains(q)) return true
+        val c = contents ?: return false
+        return c.javaSupport.lowercase().contains(q) || c.entryClass?.lowercase()?.contains(q) == true ||
+            c.classes.any { it.lowercase().contains(q) } || c.resources.any { it.lowercase().contains(q) }
+    }
+    val status: String get() = when {
+        sessions.any { it.running } -> "inferring"
+        open > 0 -> "${open} open"
+        local -> "idle"
+        else -> "on server"
+    }
+}
 
 private data class ModelsSnapshot(
-    val system: SystemStats? = null,
     val models: List<ModelInfo> = emptyList(),
     val jars: List<JarInfo> = emptyList(),
     val sessions: List<SessionInfo> = emptyList(),
+    val collections: List<ModelCollection> = emptyList(),
 )
 
-private fun readSnapshot(): ModelsSnapshot {
-    val names = (readRegistry().modules.keys + (modulesDir.listFiles()?.filter { File(it, "module.json").isFile }?.map { it.name } ?: emptyList())).distinct().sorted()
-    val ortSessions = OrtSessions.all
+/**
+ * What the page showed last, kept for the life of the app so the page opens on it at once instead of on an empty
+ * list, plus the server's jar listing, which is the one slow read and is fetched after the local state is shown.
+ */
+private object ModelsCache {
+    @Volatile var snapshot = ModelsSnapshot()
+    @Volatile var remoteJars: List<ServerJar> = emptyList()
+    @Volatile var remoteLoaded = false
+    @Volatile var groupByCollection = true
+}
+
+private const val KIND_MODEL = "intent model"
+private const val KIND_COLLECTION = "collection"
+private const val KIND_PACKAGE = "package"
+private const val KIND_ONNX = "ONNX session"
+
+/** Reads the local state; with [remote] the server's jar listing too (cached a minute by JarPackages) */
+private fun readSnapshot(remote: Boolean): ModelsSnapshot {
+    // ORT sessions named module:<name> belong to a model session and are terminated through it
+    val sessions = ModelSessions.all.map { s ->
+        SessionInfo("model:${s.id}", s.name, s.id, if (s.kind == KIND_COLLECTION) KIND_COLLECTION else KIND_MODEL, s.running > 0, s.runs, s.openedAt, s.log.lines, true) { ModelSessions.close(s.id) }
+    } + JarPackages.open.map { s ->
+        SessionInfo("package:${s.id}", s.jarName, s.id, KIND_PACKAGE, s.running > 0, s.runs, s.openedAt, s.log.lines, true) { JarPackages.close(s.id) }
+    } + OrtSessions.all.filter { !it.name.startsWith("module:") }.map { s ->
+        SessionInfo("ort:${s.id}", s.name, s.id, KIND_ONNX, s.running > 0, s.runs, s.openedAt, emptyList(), false) { OrtSessions.cancel(s.id.toString()) }
+    }
+
+    val found = (readRegistry().modules.keys + (modulesDir.listFiles()?.filter { File(it, "module.json").isFile }?.map { it.name } ?: emptyList())).distinct()
+    // A fresh checkout gets the dummy model so there is a component to configure right away
+    val names = (if (found.isEmpty()) listOfNotNull(ensureDummyModule()?.name) else found).sorted()
+    ensureSampleData()
+    val collections = ModelCollections.all()
     val models = names.mapNotNull { name ->
         val (dir, manifest) = readModule(name) ?: return@mapNotNull null
-        val history = readMetricsHistory(dir).runs
-        val last = history.lastOrNull()
-        val own = ortSessions.filter { it.name == "module:$name" }
-        val runs = own.sumOf { it.runs }
-        val runTime = own.sumOf { it.runTimeMs }
         ModelInfo(
-            name = name,
-            manifest = manifest,
-            modelBytes = File(dir, manifest.model).length(),
-            macroF1 = last?.macroF1,
-            accuracy = last?.accuracy,
-            validation = last?.validation,
-            validatedAt = last?.createdAt,
-            builds = history.size,
-            sessions = own.size,
-            sessionRuns = runs,
-            sessionRunTimeMs = runTime,
-            sessionAverageMs = if (runs == 0) 0.0 else runTime.toDouble() / runs,
-            incoming = File(dir, "incoming.jsonl").takeIf { it.isFile }?.useLines { it.count() } ?: 0,
-            serving = readServing(name),
-            stats = ModelServer.stats(name),
+            name, manifest, readServing(name), ModelServer.stats(name), readMetricsHistory(dir).runs,
+            sessions.filter { it.kind == KIND_MODEL && it.owner == name },
+            collections.filter { name in it.models }.map { it.name },
         )
     }
 
     val env = ScriptEnvironments.current
     val envJars = env?.libsDir?.listFiles { f -> f.extension == "jar" }?.toList() ?: emptyList()
     val pluginJars = File(getDirectory().toString(), "pluginDir").listFiles { f -> f.extension == "jar" }?.toList() ?: emptyList()
-    val running = JarInterpreter.shared.running.toSet()
-    val jars = (envJars + pluginJars).distinctBy { it.name }.sortedBy { it.name }.map {
-        JarInfo(it.name, it, it.length(), it.name in running, envJars.any { e -> e.name == it.name })
+    val local = (envJars.map { it to "env" } + pluginJars.map { it to "pluginDir" }).distinctBy { it.first.name }
+    if (remote) {
+        ModelsCache.remoteJars = JarPackages.available()
+        ModelsCache.remoteLoaded = true
     }
+    val remote = ModelsCache.remoteJars.filter { r -> local.none { it.first.name == r.name } }
+    val page = JarPackages.downloadsPage()
+    val jars = (local.map { (file, source) ->
+        val origin = JarPackages.origin(file.name)
+        val contents = JarInspector.inspect(file)
+        JarInfo(file.name, source, origin, origin?.url, origin?.page ?: page, origin?.version ?: contents?.implementationVersion, file, contents, sessions.filter { it.kind == KIND_PACKAGE && it.owner == file.name })
+    } + remote.map {
+        JarInfo(it.name, "server", null, JarPackages.downloadUrl(it.name), page, it.version, null, null, sessions.filter { s -> s.kind == KIND_PACKAGE && s.owner == it.name })
+    }).sortedBy { it.name }
 
-    val sessions = ortSessions.map { SessionInfo(it.id, it.name, it.running, it.runs, it.runTimeMs, it.averageRunMs, it.openedAt) }
-    return ModelsSnapshot(SystemStats.read(), models, jars, sessions)
+    return ModelsSnapshot(models, jars, sessions, collections)
 }
 
 /* ---------- page ---------- */
 
 /**
- * The models route: what the app process uses, every intent model with its uptime, traffic, latency and
- * validation, the model being built, plugin jars and open ORT sessions. Everything comes from local files under
- * AMP/ (modules/<name>/metrics.json, serving.json, pluginDir), so a guest sees it too; only the Amie backend card
- * and Publish need a Keycloak sign-in.
+ * The models route: three tabs in a strip like the sandbox's. MODELS: every intent model as a component with its
+ * metrics, configured (serving address, methods, listening), opened as a session and published to the Amie
+ * backend when signed in with Keycloak; a new one is built from a data file with the form. PACKAGES: the package
+ * jars a script can open, each with what it contains and the Java it needs. SESSIONS: every open session with
+ * its own log, each of which can be terminated here.
  */
 @Composable
 fun ModelsPage(navController: NavController) {
@@ -200,160 +313,389 @@ fun ModelsPage(navController: NavController) {
 
 @Composable
 private fun ModelsContent(user: String?, onLogin: () -> Unit) {
-    var snapshot by remember { mutableStateOf(ModelsSnapshot()) }
+    var snapshot by remember { mutableStateOf(ModelsCache.snapshot) }
     var refresh by remember { mutableStateOf(0) }
+    var notice by remember { mutableStateOf<String?>(null) }
+    var tab by remember { mutableStateOf(PageTab.MODELS) }
+    var selectedModel by remember { mutableStateOf<String?>(null) }
+    var selectedJar by remember { mutableStateOf<String?>(null) }
+    var creating by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val build by ModelBuildProgress.current.collectAsState()
-    val buildHistory by ModelBuildProgress.history.collectAsState()
+    val validating by ModelValidation.current.collectAsState()
 
-    // Files, sessions and servers change underneath, so the page re-reads them while it is open
+    // Files, sessions and servers change underneath, so the page re-reads them while it is open. The first read
+    // after start-up is local only, so the models show at once; the server's jar listing follows right after.
     LaunchedEffect(refresh) {
+        var withRemote = ModelsCache.remoteLoaded
         while (true) {
-            snapshot = withContext(Dispatchers.IO) { runCatching { readSnapshot() }.getOrDefault(snapshot) }
+            snapshot = withContext(Dispatchers.IO) { runCatching { readSnapshot(withRemote) }.getOrDefault(snapshot) }
+            ModelsCache.snapshot = snapshot
+            if (!withRemote) { withRemote = true; continue }
             delay(1500)
         }
     }
 
     fun background(block: suspend () -> Unit) = scope.launch {
-        withContext(Dispatchers.IO) { runCatching { block() }.onFailure { logInternal("models: ${it.message}", LogLevel.ERROR) } }
+        withContext(Dispatchers.IO) {
+            runCatching { block() }.onFailure {
+                logInternal("models: ${it.message}", LogLevel.ERROR)
+                notice = it.message
+            }
+        }
         refresh++
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 24.dp, vertical = 18.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Models", color = FontColor, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.SansSerif)
-            Spacer(Modifier.weight(1f))
-            Meta(if (user != null) "signed in as $user · refreshes every 1.5s" else "guest · read from AMP/modules · refreshes every 1.5s")
-        }
-        Spacer(Modifier.height(14.dp))
+    Column(modifier = Modifier.fillMaxSize()) {
+        PageTabs(
+            tab = tab,
+            counts = mapOf(PageTab.MODELS to snapshot.models.size, PageTab.PACKAGES to snapshot.jars.size, PageTab.SESSIONS to snapshot.sessions.size),
+            building = build?.modelName ?: validating?.let { "validating ${it.model} ${it.done}/${it.total}" },
+            user = user,
+            onTab = { tab = it },
+            onLogin = onLogin,
+            onWebsite = { openInBrowser(AmieBackend.config.siteDashboardUrl) },
+        )
 
-        snapshot.system?.let { SystemOverview(it, models = snapshot.models) }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 10.dp)
+        ) {
+            notice?.let {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
+                    Meta(it)
+                    Spacer(Modifier.width(8.dp))
+                    SmallButton("Dismiss") { notice = null }
+                }
+            }
 
-        if (user != null) {
-            BackendCard(user = user, publishedNames = snapshot.models.map { it.name })
-        } else {
-            SectionTitle("AMIE BACKEND", 0) { SmallButton("Sign in", AddButton, onClick = onLogin) }
-            Hint("Sign in with Keycloak to publish models to the Amie backend. Statistics and metrics stay local and need no account.")
-        }
-
-        build?.let {
-            SectionTitle("BUILDING", 1)
-            BuildCard(it)
-        }
-
-        SectionTitle("INTENT MODELS", snapshot.models.size)
-        if (snapshot.models.isEmpty() && build == null) Hint("No models yet. Build one in the sandbox with amie.modelBuilder(\"name\", data).")
-        snapshot.models.forEach { model ->
-            ModelCard(
-                model = model,
-                lastBuild = buildHistory.firstOrNull { it.modelName == model.name },
-                onSave = { settings -> background { writeServing(model.name, settings.copy(enabled = model.listening)) } },
-                onListen = { on, settings ->
-                    background { if (on) ModelServer.start(model.name, settings) else ModelServer.stop(model.name) }
-                },
-                onPublish = user?.let { signedIn ->
-                    {
-                        background {
+            when (tab) {
+                PageTab.MODELS -> ModelsTab(
+                    snapshot = snapshot,
+                    build = build,
+                    validating = validating,
+                    selectedName = selectedModel,
+                    signedIn = user != null,
+                    creating = creating || (snapshot.models.isEmpty() && build == null),
+                    onCreating = { creating = it },
+                    onSelect = { selectedModel = it },
+                    onBuild = { name, data, test ->
+                        if (build != null) notice = "a build is already running: ${build?.modelName}"
+                        else background {
+                            val source = DataSource.read(data.absolutePath) ?: error("${data.name} has no text and label columns the builder can use")
+                            test?.let { source.relate(it.absolutePath) }
+                            buildClassifier(source.samples(), name, validation = source.related?.samples(), validationName = source.related?.name)
+                                ?: error("model '$name' was not built; the console says why")
+                            selectedModel = name
+                            creating = false
+                        }
+                    },
+                    onValidate = { models, data ->
+                        if (validating != null) notice = "a validation is already running: ${validating?.model}"
+                        else background {
+                            val failed = models.mapNotNull { m -> runCatching { ModelValidation.validate(m.name, data) }.exceptionOrNull()?.let { "${m.name}: ${it.message}" } }
+                            if (failed.isNotEmpty()) error(failed.joinToString("; "))
+                        }
+                    },
+                    onSave = { model, settings -> background { writeServing(model.name, settings.copy(enabled = model.listening)) } },
+                    onListen = { model, on, settings -> background { if (on) ModelServer.start(model.name, settings) else ModelServer.stop(model.name) } },
+                    onCollection = { action -> background { action() } },
+                    onOpen = { model -> background { ModelSessions.open(model.name) } },
+                    onTerminate = { session -> background { session.terminate() } },
+                    onPublish = { model ->
+                        val signedIn = user
+                        if (signedIn == null) onLogin()
+                        else background {
                             val (dir, _) = readModule(model.name) ?: error("module '${model.name}' not found")
                             AmieBackend.publishModule(model.name, dir, signedIn)
-                            BackendCardState.refresh()
+                            notice = "${model.name} published to ${AmieBackend.config.base}"
                         }
-                    }
-                },
-            )
-        }
-
-        SectionTitle("JAR PLUGINS", snapshot.jars.size) {
-            SmallButton("+ Add jar", AddButton) {
-                val chosen = chooseJar() ?: return@SmallButton
-                background { addJar(chosen) }
+                    },
+                )
+                PageTab.PACKAGES -> PackagesTab(
+                    snapshot = snapshot,
+                    selectedName = selectedJar,
+                    onSelect = { selectedJar = it },
+                    onAdd = {
+                        val chosen = chooseFile("Add jar", listOf("jar")) ?: return@PackagesTab
+                        background { addJar(chosen); selectedJar = chosen.name }
+                    },
+                    onFetch = { jar -> background { JarPackages.fetch(jar.name) ?: error("${jar.name} is not on the server") } },
+                    onTerminate = { session -> background { session.terminate() } },
+                )
+                PageTab.SESSIONS -> SessionsTab(
+                    sessions = snapshot.sessions,
+                    onTerminate = { session -> background { session.terminate() } },
+                    onTerminateAll = { background { ModelSessions.closeAll(); JarPackages.closeAll(); OrtSessions.cancelAll() } },
+                )
             }
+            Spacer(Modifier.height(20.dp))
         }
-        if (snapshot.jars.isEmpty()) Hint("Add a jar, or put one in AMP/pluginDir.")
-        snapshot.jars.forEach { jar ->
-            JarRow(
-                jar = jar,
-                onRun = { background { JarInterpreter.shared.run(jar.name) } },
-                onQuit = { background { JarInterpreter.shared.quit(jar.name) } },
-            )
-        }
-
-        SectionTitle("ORT SESSIONS", snapshot.sessions.size) {
-            if (snapshot.sessions.isNotEmpty()) SmallButton("Cancel all", DangerColor) { background { OrtSessions.cancelAll() } }
-        }
-        if (snapshot.sessions.isEmpty()) Hint("No open sessions.")
-        snapshot.sessions.forEach { s ->
-            SessionRow(s, onCancel = { background { OrtSessions.cancel(s.id.toString()) } })
-        }
-        Spacer(Modifier.height(24.dp))
     }
 }
 
-/* ---------- overview ---------- */
-
-@OptIn(ExperimentalLayoutApi::class)
+/** The strip under the window header: one tab per section with its count, the build in progress and the account */
 @Composable
-private fun SystemOverview(system: SystemStats, models: List<ModelInfo>) {
-    val requests = models.sumOf { it.stats?.requests ?: 0 }
-    val errors = models.sumOf { it.stats?.errors ?: 0 }
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        StatTile("APP UPTIME", uptime(system.uptime))
-        StatTile("MODELS", "${models.size}", "${system.listening} listening")
-        StatTile("REQUESTS", "$requests", if (errors > 0) "$errors errors" else "no errors", if (errors > 0) DangerColor else null)
-        StatTile("ORT SESSIONS", "${system.ortSessions}", "${system.ortRuns} runs · ${ms(system.ortRunTimeMs.toDouble())} in native")
-        StatTile("HEAP", bytes(system.heapUsedBytes), "of ${bytes(system.heapMaxBytes)}", fraction = system.heapUsedBytes.toFloat() / system.heapMaxBytes)
-        StatTile("CPU", percent(system.processCpu), "process · system ${percent(system.systemCpu)} · ${system.processors} cores", fraction = system.processCpu.toFloat().takeIf { it >= 0 })
-        StatTile("THREADS", "${system.threads}", "non-heap ${bytes(system.nonHeapUsedBytes)}")
+private fun PageTabs(
+    tab: PageTab,
+    counts: Map<PageTab, Int>,
+    building: String?,
+    user: String?,
+    onTab: (PageTab) -> Unit,
+    onLogin: () -> Unit,
+    onWebsite: () -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxWidth().background(TabBarBackground)) {
+        Row(modifier = Modifier.fillMaxWidth().height(32.dp), verticalAlignment = Alignment.CenterVertically) {
+            PageTab.entries.forEach { t -> TabCell(t.title, counts[t] ?: 0, selected = t == tab) { onTab(t) } }
+            Spacer(Modifier.weight(1f))
+            building?.let {
+                StatusDot(true)
+                Spacer(Modifier.width(6.dp))
+                Meta(if (it.startsWith("validating")) it else "building $it")
+                Spacer(Modifier.width(14.dp))
+            }
+            if (user != null) {
+                Meta(user)
+                Spacer(Modifier.width(8.dp))
+                SmallButton("Open website", onClick = onWebsite)
+            } else {
+                AccentButton("Sign in", onClick = onLogin)
+            }
+            Spacer(Modifier.width(10.dp))
+        }
+        Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(UnifiedBorderColor))
     }
 }
 
 @Composable
-private fun StatTile(label: String, value: String, detail: String? = null, accent: Color? = null, fraction: Float? = null) {
+private fun TabCell(title: String, count: Int, selected: Boolean, onClick: () -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
     Column(
         modifier = Modifier
-            .widthIn(min = 150.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(UnifiedBoxColor)
-            .border(1.dp, UnifiedBorderColor, RoundedCornerShape(8.dp))
-            .padding(12.dp)
+            .fillMaxHeight()
+            .width(IntrinsicSize.Max)
+            .background(if (selected) TabActiveBackground else Color.Transparent)
+            .hoverable(interactionSource)
+            .clickable(interactionSource = interactionSource, indication = null) { onClick() }
     ) {
-        Text(label, color = MutedFontColor, fontSize = 10.sp, letterSpacing = 1.sp, fontFamily = FontFamily.SansSerif)
-        Spacer(Modifier.height(4.dp))
-        Text(value, color = accent ?: FontColor, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.Monospace)
-        if (detail != null) Meta(detail)
-        if (fraction != null) {
-            Spacer(Modifier.height(6.dp))
-            LinearProgressIndicator(
-                progress = fraction.coerceIn(0f, 1f),
-                modifier = Modifier.fillMaxWidth().height(3.dp),
-                color = if (fraction > 0.85f) DangerColor else AddButton,
-                backgroundColor = UnifiedBorderColor,
-            )
+        Box(modifier = Modifier.fillMaxWidth().height(2.dp).background(if (selected) TabActiveIndicator else Color.Transparent))
+        Row(modifier = Modifier.weight(1f).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(title, color = if (selected || hovered) FontColor else MutedFontColor, fontSize = 12.sp, fontFamily = FontFamily.SansSerif)
+            Spacer(Modifier.width(8.dp))
+            Text(count.toString(), color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.SansSerif)
         }
     }
 }
 
-/* ---------- cards ---------- */
+/* ---------- MODELS ---------- */
 
-private val timeFormat = DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault())
-private val dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.systemDefault())
-
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ModelCard(
+private fun ModelsTab(
+    snapshot: ModelsSnapshot,
+    build: ModelBuild?,
+    validating: ValidationProgress?,
+    selectedName: String?,
+    signedIn: Boolean,
+    creating: Boolean,
+    onCreating: (Boolean) -> Unit,
+    onSelect: (String) -> Unit,
+    onBuild: (String, File, File?) -> Unit,
+    onValidate: (List<ModelInfo>, File) -> Unit,
+    /** Runs a change to the collections (or a collection-wide action) in the background */
+    onCollection: (suspend () -> Unit) -> Unit,
+    onSave: (ModelInfo, ServingSettings) -> Unit,
+    onListen: (ModelInfo, Boolean, ServingSettings) -> Unit,
+    onOpen: (ModelInfo) -> Unit,
+    onTerminate: (SessionInfo) -> Unit,
+    onPublish: (ModelInfo) -> Unit,
+) {
+    SectionTitle("INTENT MODELS", snapshot.models.size) {
+        if (snapshot.models.size > 1 && validating == null) {
+            AccentButton("Validate all") { chooseFile("Validation data", listOf("csv"))?.let { onValidate(snapshot.models, it) } }
+            Spacer(Modifier.width(6.dp))
+        }
+        if (build == null) AccentButton(if (creating) "Close" else "+ New model") { onCreating(!creating) }
+    }
+    build?.let { BuildCard(it); Spacer(Modifier.height(8.dp)) }
+    if (creating && build == null) {
+        NewModelForm(onBuild = onBuild)
+        Spacer(Modifier.height(8.dp))
+    }
+
+    // One model is selected at a time; its actions, metrics and sessions live in the detail panel so the list stays short
+    // The list is searched by name, label, status, encoder, validation file or collection, and grouped either by
+    // collection (a model can be in several; the rest under "Not in a collection") or by what the model is doing
+    var query by remember { mutableStateOf("") }
+    var byCollection by remember { mutableStateOf(ModelsCache.groupByCollection) }
+    val shown = snapshot.models.filter { it.matches(query) }
+    val selected = snapshot.models.firstOrNull { it.name == selectedName } ?: shown.firstOrNull()
+    if (snapshot.models.isNotEmpty()) Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(modifier = Modifier.width(260.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            SearchField(query, { query = it }, "find a model, label, file or collection")
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Meta("group by")
+                Spacer(Modifier.width(6.dp))
+                Toggle("collection", byCollection) { byCollection = true; ModelsCache.groupByCollection = true }
+                Spacer(Modifier.width(4.dp))
+                Toggle("status", !byCollection) { byCollection = false; ModelsCache.groupByCollection = false }
+            }
+            if (shown.isEmpty()) Hint("no matches")
+
+            @Composable
+            fun rows(models: List<ModelInfo>) = Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                models.forEach { model ->
+                    ListRow(
+                        name = model.name,
+                        active = model.running,
+                        selected = model.name == selected?.name,
+                        meta = listOfNotNull(
+                            model.lastRun?.let { pct(it.accuracy) } ?: "not validated",
+                            if (model.listening) ":${model.serving.port}" else null,
+                            when (model.sessions.size) { 0 -> null; 1 -> "1 session"; else -> "${model.sessions.size} sessions" },
+                        ).joinToString(" · "),
+                        status = model.status,
+                    ) { onSelect(model.name) }
+                }
+            }
+
+            if (byCollection) {
+                snapshot.collections.forEach { collection ->
+                    val members = shown.filter { it.name in collection.models }
+                    if (members.isEmpty() && query.isNotBlank()) return@forEach
+                    val sessions = snapshot.sessions.filter { it.kind == KIND_COLLECTION && it.owner == collection.name }
+                    Fold(collection.name, collection.models.size, open = true, key = "collection:${collection.name}") {
+                        CollectionActions(collection, members, sessions, validating, onValidate, onCollection)
+                        rows(members)
+                    }
+                }
+                val loose = shown.filter { it.collections.isEmpty() }
+                if (loose.isNotEmpty()) Fold(if (snapshot.collections.isEmpty()) "Models" else "Not in a collection", loose.size, open = true, key = "models:loose") { rows(loose) }
+            } else {
+                val groups = shown.groupBy { it.group }
+                listOf("Running", "Stopped").forEach { group ->
+                    val models = groups[group] ?: return@forEach
+                    Fold(group, models.size, open = true, key = "models:$group") { rows(models) }
+                }
+            }
+        }
+        if (selected != null) ModelDetail(
+            model = selected,
+            signedIn = signedIn,
+            validating = validating?.takeIf { it.model == selected.name },
+            modifier = Modifier.weight(1f),
+            collections = snapshot.collections,
+            onValidate = { data -> onValidate(listOf(selected), data) },
+            onCollection = onCollection,
+            onSave = { onSave(selected, it) },
+            onListen = { on, settings -> onListen(selected, on, settings) },
+            onOpen = { onOpen(selected) },
+            onTerminate = onTerminate,
+            onPublish = { onPublish(selected) },
+        )
+    }
+}
+
+/**
+ * What a collection does as one: open one session over every member (`initMod("name")` does the same), listen or
+ * stop every member, validate every member on one file, terminate the collection's sessions, delete the collection.
+ */
+@Composable
+private fun CollectionActions(
+    collection: ModelCollection,
+    members: List<ModelInfo>,
+    sessions: List<SessionInfo>,
+    validating: ValidationProgress?,
+    onValidate: (List<ModelInfo>, File) -> Unit,
+    onCollection: (suspend () -> Unit) -> Unit,
+) {
+    Column(modifier = Modifier.padding(bottom = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Meta(listOfNotNull(
+            when (sessions.size) { 0 -> "no session"; 1 -> "1 session"; else -> "${sessions.size} sessions" },
+            "${members.count { it.listening }} listening",
+        ).joinToString(" · "))
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            AccentButton("Open as one") { onCollection { ModelSessions.open(collection.name) } }
+            if (members.any { !it.listening }) SmallButton("Listen all") { onCollection { members.filter { !it.listening }.forEach { ModelServer.start(it.name, it.serving) } } }
+            if (members.any { it.listening }) SmallButton("Stop all") { onCollection { members.filter { it.listening }.forEach { ModelServer.stop(it.name) } } }
+            if (validating == null) AccentButton("Validate all") { chooseFile("Validation data", listOf("csv"))?.let { onValidate(members, it) } }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            if (sessions.isNotEmpty()) SmallButton("Terminate") { onCollection { sessions.forEach { it.terminate() } } }
+            SmallButton("Delete collection") { onCollection { ModelCollections.delete(collection.name) } }
+        }
+    }
+}
+
+/**
+ * Builds a model from a data file: name, the csv with text and label columns, an optional test file. What the
+ * file holds is read as soon as it is chosen so the labels are visible before Build; the build itself is the same
+ * `buildClassifier` the sandbox's modelBuilder runs, and the BUILDING card follows it.
+ */
+@Composable
+private fun NewModelForm(onBuild: (String, File, File?) -> Unit) {
+    var name by remember { mutableStateOf("") }
+    var data by remember { mutableStateOf<File?>(null) }
+    var test by remember { mutableStateOf<File?>(null) }
+    var preview by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(data) {
+        preview = data?.let { f ->
+            withContext(Dispatchers.IO) {
+                runCatching { DataSource.read(f.absolutePath) }.getOrNull()?.let { s ->
+                    val samples = s.samples()
+                    "${samples.size} samples · ${s.labels.size} labels: ${s.labels.joinToString()}"
+                } ?: "no text and label columns in ${f.name}"
+            }
+        }
+    }
+    val ready = name.isNotBlank() && data != null && preview?.startsWith("no ") == false
+
+    Card {
+        SubTitle("NEW MODEL")
+        Spacer(Modifier.height(6.dp))
+        SettingField("Name", name) { name = it.filter { c -> c.isLetterOrDigit() || c in "._-" } }
+        fun pick(f: File) {
+            data = f
+            if (name.isBlank()) name = f.nameWithoutExtension.filter { c -> c.isLetterOrDigit() || c in "._-" }
+        }
+        FileField("Data", data, "csv with text and label columns", sample = { pick(ensureSampleData()) }) {
+            chooseFile("Training data", listOf("csv"))?.let { pick(it) }
+        }
+        FileField("Test", test, "optional, else a 20% split", onClear = { test = null }) {
+            chooseFile("Test data", listOf("csv"))?.let { test = it }
+        }
+        Spacer(Modifier.height(4.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Meta(preview ?: "")
+            Spacer(Modifier.weight(1f))
+            AccentButton("Build", enabled = ready) { onBuild(name.trim(), data!!, test) }
+        }
+    }
+}
+
+/**
+ * The selected model: name and status in the header, one row of actions (Configure, Listen/Stop, Open session,
+ * Publish), the serving settings when Configure is on, its metrics, and the sessions it owns with their logs.
+ */
+@Composable
+private fun ModelDetail(
     model: ModelInfo,
-    lastBuild: ModelBuild?,
+    signedIn: Boolean,
+    validating: ValidationProgress?,
+    modifier: Modifier = Modifier,
+    collections: List<ModelCollection>,
+    onValidate: (File) -> Unit,
+    onCollection: (suspend () -> Unit) -> Unit,
     onSave: (ServingSettings) -> Unit,
     onListen: (Boolean, ServingSettings) -> Unit,
-    // Null for a guest: publishing needs the Keycloak session
-    onPublish: (() -> Unit)? = null,
+    onOpen: () -> Unit,
+    onTerminate: (SessionInfo) -> Unit,
+    onPublish: () -> Unit,
 ) {
-    var expanded by remember(model.name) { mutableStateOf(false) }
+    var configuring by remember(model.name) { mutableStateOf(false) }
     var host by remember(model.name) { mutableStateOf(model.serving.host) }
     var port by remember(model.name) { mutableStateOf(model.serving.port.toString()) }
     var path by remember(model.name) { mutableStateOf(model.serving.path.ifBlank { "/models/${model.name}" }) }
@@ -366,242 +708,391 @@ private fun ModelCard(
         path = path.trim(),
         methods = listOfNotNull("POST".takeIf { allowPost }, "GET".takeIf { allowGet }).ifEmpty { listOf("POST") },
     )
-    val stats = model.stats
 
-    Card {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { expanded = !expanded }) {
-            Text(if (expanded) "▾" else "▸", color = MutedFontColor, fontSize = 11.sp, modifier = Modifier.width(14.dp))
-            Text(model.name, color = FontColor, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-            StatusDot(if (model.listening) SuccessColor else MutedFontColor.copy(alpha = 0.5f))
-            Spacer(Modifier.width(6.dp))
-            Text(
-                if (stats != null) "listening · up ${uptime(stats.uptime)}" else "off",
-                color = if (model.listening) SuccessColor else MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace
-            )
-        }
-        Spacer(Modifier.height(10.dp))
-
-        // Resource and traffic figures; serving ones only while it listens
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Figure("uptime", stats?.let { uptime(it.uptime) } ?: "—")
-            Figure("requests", stats?.requests?.toString() ?: "—")
-            Figure("errors", stats?.errors?.toString() ?: "—", if ((stats?.errors ?: 0) > 0) DangerColor else null)
-            Figure("avg latency", stats?.takeIf { it.requests > 0 }?.let { ms(it.averageLatencyMs) } ?: "—")
-            Figure("max latency", stats?.takeIf { it.requests > 0 }?.let { ms(it.maxLatencyMs.toDouble()) } ?: "—")
-            Figure("last request", stats?.lastRequestAt?.let { timeFormat.format(it) } ?: "—")
-            Figure("sessions", "${model.sessions}")
-            Figure("session runs", "${model.sessionRuns}")
-            Figure("native time", ms(model.sessionRunTimeMs.toDouble()))
-            Figure("avg run", if (model.sessionRuns > 0) ms(model.sessionAverageMs) else "—")
-            Figure("incoming rows", "${model.incoming}")
-            Figure("size", bytes(model.modelBytes))
-            Figure("accuracy", model.accuracy?.let { "%.3f".format(Locale.US, it) } ?: "—")
-            Figure("macro F1", model.macroF1?.let { "%.3f".format(Locale.US, it) } ?: "—")
-            Figure("builds", "${model.builds}")
+    DetailPanel(modifier) {
+        DetailHeader(
+            name = model.name,
+            active = model.running,
+            status = listOfNotNull(
+                model.status,
+                if (model.listening) "listening ${model.serving.host}:${model.serving.port}" else "not serving",
+                "${model.manifest.labels.size} labels",
+            ).joinToString(" · "),
+        ) {
+            SmallButton("Configure") { configuring = !configuring }
+            SmallButton(if (model.listening) "Stop" else "Listen") { onListen(!model.listening, settings) }
+            AccentButton("Open session", onClick = onOpen)
+            SmallButton(if (signedIn) "Publish" else "Publish (sign in)", onClick = onPublish)
         }
 
-        if (expanded) {
-            Spacer(Modifier.height(10.dp))
-            Meta("labels     ${model.manifest.labels.joinToString().ifEmpty { "—" }}")
-            Meta("encoder    ${File(model.manifest.encoder).name} · input ${model.manifest.inputDim} → ${model.manifest.outputDim} (${model.manifest.pooling} pooling)")
-            Meta("validated  on ${model.validation ?: "—"}${model.validatedAt?.let { " at ${fmtInstant(it)}" } ?: ""}")
-            Meta("created    ${fmtInstant(model.manifest.createdAt)} · format ${model.manifest.format}")
-            lastBuild?.let { Meta("last build ${it.phase.label} in ${it.elapsed.short()}${it.detail.takeIf { d -> d.isNotBlank() }?.let { d -> " · $d" } ?: ""}") }
-            stats?.let { Meta("serving    ${it.methods.joinToString("/")} ${it.url} since ${timeFormat.format(it.startedAt)}") }
-            Spacer(Modifier.height(10.dp))
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp).padding(bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
 
-            SettingField("Host", host) { host = it }
-            SettingField("Port", port) { port = it.filter(Char::isDigit).take(5) }
-            SettingField("Path", path) { path = it }
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
-                Text("Methods", color = MutedFontColor, fontSize = 11.sp, modifier = Modifier.width(48.dp))
-                Toggle("POST", allowPost) { allowPost = it }
-                Spacer(Modifier.width(6.dp))
-                Toggle("GET", allowGet) { allowGet = it }
-                Spacer(Modifier.weight(1f))
-                SmallButton("Save", AddButton) { onSave(settings) }
-            }
-
-            Spacer(Modifier.height(10.dp))
-            SelectionContainer {
-                Column {
-                    if (allowPost) UrlLine("POST", settings.url(model.name))
-                    if (allowGet) UrlLine("GET", settings.url(model.name) + "?text=…")
+            if (configuring) {
+                SettingField("Host", host) { host = it }
+                SettingField("Port", port) { port = it.filter(Char::isDigit).take(5) }
+                SettingField("Path", path) { path = it }
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
+                    Text("Methods", color = MutedFontColor, fontSize = 11.sp, modifier = Modifier.width(56.dp))
+                    Toggle("POST", allowPost) { allowPost = it }
+                    Spacer(Modifier.width(6.dp))
+                    Toggle("GET", allowGet) { allowGet = it }
+                    Spacer(Modifier.weight(1f))
+                    SmallButton("Save") { onSave(settings) }
                 }
-            }
-
-            Spacer(Modifier.height(8.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Listen for incoming data", color = FontColor, fontSize = 12.sp, modifier = Modifier.weight(1f))
-                Switch(
-                    checked = model.listening,
-                    onCheckedChange = { onListen(it, settings) },
-                    colors = SwitchDefaults.colors(checkedTrackColor = SuccessColor, uncheckedTrackColor = UnifiedBoxColor),
+                KeyValues(
+                    *listOfNotNull(
+                        if (allowPost) "POST" to settings.url(model.name) else null,
+                        if (allowGet) "GET" to "${settings.url(model.name)}?text=…" else null,
+                    ).toTypedArray()
                 )
+                if (model.listening) Hint("applies after Stop and Listen")
             }
-            if (model.listening) Meta("changes to host, port or path apply after switching off and on")
 
-            Spacer(Modifier.height(10.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Publish to Amie", color = FontColor, fontSize = 12.sp)
-                    Meta(
-                        if (onPublish != null) "uploads model.onnx and module.json to your package folder; the website's dashboard lists them"
-                        else "sign in with Keycloak to upload this model to the Amie backend"
-                    )
-                }
-                if (onPublish != null) SmallButton("Publish", AddButton, onClick = onPublish)
-            }
+            KeyValues(
+                "labels" to model.manifest.labels.joinToString().ifEmpty { "—" },
+                "encoder" to File(model.manifest.encoder).name,
+                "built" to model.manifest.createdAt.take(19).replace('T', ' '),
+                *listOfNotNull(model.stats?.let { s ->
+                    "serving" to "${s.methods.joinToString("/")} ${s.url} · ${s.requests} requests, ${s.errors} errors, avg ${"%.0f".format(Locale.US, s.averageLatencyMs)} ms, up ${uptime(s.uptime)}"
+                }).toTypedArray(),
+            )
+
+            MetricsBlock(model.metrics, validating, onValidate)
+
+            CollectionsOf(model, collections, onCollection)
+
+            SessionsOf(model.sessions, onTerminate)
         }
     }
 }
 
-/* ---------- Amie backend ---------- */
-
-/** The last backend check, shared so a publish can refresh the card */
-private object BackendCardState {
-    val status = kotlinx.coroutines.flow.MutableStateFlow<BackendStatus?>(null)
-    val busy = kotlinx.coroutines.flow.MutableStateFlow(false)
-    private val scope = kotlinx.coroutines.CoroutineScope(Dispatchers.IO)
-    fun refresh() {
-        if (busy.value) return
-        busy.value = true
-        scope.launch {
-            status.value = runCatching { AmieBackend.status() }.getOrElse {
-                BackendStatus(java.time.Instant.now(), reachable = false, problem = it.message)
+/** The collections a model is in, each removable, and a way into an existing or a new one */
+@Composable
+private fun CollectionsOf(model: ModelInfo, collections: List<ModelCollection>, onCollection: (suspend () -> Unit) -> Unit) {
+    var adding by remember(model.name) { mutableStateOf(false) }
+    var newName by remember(model.name) { mutableStateOf("") }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        SubTitle("COLLECTIONS")
+        Spacer(Modifier.weight(1f))
+        AccentButton(if (adding) "Close" else "Add to…") { adding = !adding }
+    }
+    if (model.collections.isEmpty() && !adding) Hint("in none")
+    if (model.collections.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        model.collections.forEach { c -> SmallButton("$c  ×") { onCollection { ModelCollections.remove(c, model.name) } } }
+    }
+    if (adding) {
+        val others = collections.filter { model.name !in it.models }
+        if (others.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            others.forEach { c -> SmallButton("+ ${c.name}") { onCollection { ModelCollections.add(c.name, model.name) }; adding = false } }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("New", color = MutedFontColor, fontSize = 11.sp, modifier = Modifier.width(56.dp))
+            BasicTextField(
+                value = newName,
+                onValueChange = { newName = it },
+                singleLine = true,
+                textStyle = TextStyle(color = FontColor, fontSize = 12.sp, fontFamily = FontFamily.Monospace),
+                cursorBrush = SolidColor(FontColor),
+                modifier = Modifier
+                    .width(220.dp)
+                    .background(CodeBackground, RoundedCornerShape(6.dp))
+                    .border(1.dp, ConsoleBorderColor, RoundedCornerShape(6.dp))
+                    .padding(horizontal = 8.dp, vertical = 5.dp)
+            )
+            Spacer(Modifier.width(6.dp))
+            AccentButton("Create", enabled = newName.isNotBlank()) {
+                val name = newName.trim()
+                onCollection { ModelCollections.add(name, model.name) }
+                newName = ""
+                adding = false
             }
-            busy.value = false
         }
     }
 }
 
 /**
- * Whether the Amie backend accepts this Keycloak session, how it names the user, what the user has
- * published, and a link to the website's dashboard that lists the same files.
+ * Accuracy and macro F1 of the last run, F1 of every label with precision, recall and support, and every run so
+ * far. Validate runs the model on a chosen csv (or the sample data) and stores one more run; the builder stores
+ * one at every build.
  */
 @Composable
-private fun BackendCard(user: String, publishedNames: List<String>) {
-    val status by BackendCardState.status.collectAsState()
-    val busy by BackendCardState.busy.collectAsState()
-    val config = AmieBackend.config
-    LaunchedEffect(user) { BackendCardState.refresh() }
-
-    SectionTitle("AMIE BACKEND", status?.packages?.size ?: 0) {
-        SmallButton(if (busy) "Checking…" else "Check again", AddButton) { BackendCardState.refresh() }
-        Spacer(Modifier.width(6.dp))
-        SmallButton("Open website", AddButton) {
-            runCatching { java.awt.Desktop.getDesktop().browse(java.net.URI(config.siteDashboardUrl)) }
-                .onFailure { logInternal("models: couldn't open ${config.siteDashboardUrl}: ${it.message}", LogLevel.ERROR) }
+private fun MetricsBlock(runs: List<MetricsRun>, validating: ValidationProgress?, onValidate: (File) -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        SubTitle("METRICS")
+        Spacer(Modifier.weight(1f))
+        if (validating != null) Meta("validating ${validating.done}/${validating.total}")
+        else {
+            AccentButton("Validate on sample data") { onValidate(ensureSampleData()) }
+            Spacer(Modifier.width(6.dp))
+            AccentButton("Validate on file") { chooseFile("Validation data", listOf("csv"))?.let(onValidate) }
         }
     }
-    Card {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            StatusDot(
-                when {
-                    status == null -> MutedFontColor.copy(alpha = 0.5f)
-                    status!!.profile != null -> SuccessColor
-                    status!!.reachable -> DangerColor
-                    else -> DangerColor
-                }
-            )
-            Spacer(Modifier.width(8.dp))
-            Text(
-                when {
-                    status == null -> "checking ${config.base}"
-                    status!!.profile != null -> "${config.base} · signed in as ${status!!.profile!!.username}"
-                    status!!.reachable -> "${config.base} · answered but refused the session"
-                    else -> "${config.base} · unreachable"
-                },
-                color = FontColor, fontSize = 12.sp, fontFamily = FontFamily.Monospace
-            )
-        }
-        status?.problem?.let {
-            Spacer(Modifier.height(6.dp))
-            Text(it, color = DangerColor, fontSize = 11.sp)
-        }
-        status?.profile?.let { p ->
-            Spacer(Modifier.height(6.dp))
-            Meta("profile    ${listOf(p.fullName, p.email).filter { it.isNotBlank() }.joinToString(" · ").ifEmpty { "no name or email on the backend yet" }} · edit at ${config.siteProfileUrl}")
-        }
-        status?.let { st ->
-            if (st.profile != null) {
-                Spacer(Modifier.height(6.dp))
-                if (st.packages.isEmpty()) Meta("no packages on the backend yet; expand a model and press Publish")
-                st.packages.take(12).forEach { pkg ->
-                    val isModel = publishedNames.any { pkg.path.contains("/onnx/") }
-                    Meta("${if (isModel) "model  " else "file   "} ${pkg.path.substringAfter("uploads/").ifEmpty { pkg.name }} · ${bytes(pkg.size)}")
-                }
-                if (st.packages.size > 12) Meta("… ${st.packages.size - 12} more on the website")
-            }
-        }
-        Spacer(Modifier.height(6.dp))
-        Meta("backend and website addresses live in AMP/backend.json (AMIE_BACKEND_URL / AMIE_SITE_URL override)")
+    val run = runs.lastOrNull()
+    if (run == null) {
+        Hint("no validation yet")
+        return
     }
-    Spacer(Modifier.height(10.dp))
+    Meta(
+        listOfNotNull(
+            "run ${runs.size}",
+            run.createdAt.take(19).replace('T', ' '),
+            if (run.trainSize > 0) "${run.samples} samples, ${run.trainSize} train / ${run.validationSize} validation on ${run.validation}"
+            else "${run.validationSize} rows of ${run.validation}",
+        ).joinToString(" · ")
+    )
+    Spacer(Modifier.height(4.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        StatTile("accuracy", fmt(run.accuracy), Modifier.width(120.dp))
+        StatTile("macro F1", fmt(run.macroF1), Modifier.width(120.dp))
+        StatTile("rows validated", run.validationSize.toString(), Modifier.width(120.dp))
+    }
+    Spacer(Modifier.height(8.dp))
+    Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.Top) {
+        LabelF1Chart(run, Modifier.weight(1f))
+        ConfusionHeatmap(run)
+    }
+    if (runs.size > 1) {
+        Spacer(Modifier.height(8.dp))
+        RunsHistoryChart(runs, Modifier.fillMaxWidth())
+        Fold("RUNS", runs.size, open = false, key = "runs") {
+            KeyValues(*runs.mapIndexed { i, r -> "${i + 1}" to "${r.createdAt.take(19).replace('T', ' ')}  acc ${fmt(r.accuracy)}  F1 ${fmt(r.macroF1)}  ${r.validation}" }.toTypedArray())
+        }
+    }
+    run.warnings.forEach { Hint("warning: $it") }
 }
-
-private fun fmtInstant(iso: String): String = runCatching { dateFormat.format(Instant.parse(iso)) }.getOrDefault(iso)
 
 /** A model while modelBuilder builds it: phase, step and a progress bar */
 @Composable
 private fun BuildCard(build: ModelBuild) {
     Card {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            StatusDot(SuccessColor)
+            StatusDot(true)
             Spacer(Modifier.width(8.dp))
-            Text(build.modelName, color = FontColor, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-            Text("building ${(build.fraction * 100).toInt()}%", color = SuccessColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+            Text("building ${build.modelName}", color = FontColor, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+            Meta("${(build.fraction * 100).toInt()}%")
         }
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(4.dp))
         Meta(build.describe())
-        Meta("started ${build.elapsed.short()} ago")
         Spacer(Modifier.height(6.dp))
         LinearProgressIndicator(
             progress = build.fraction,
             modifier = Modifier.fillMaxWidth().height(3.dp),
-            color = SuccessColor,
-            backgroundColor = SuccessColor.copy(alpha = 0.15f),
+            color = ActiveColor,
+            backgroundColor = PanelBorder,
         )
     }
 }
 
+/* ---------- PACKAGES ---------- */
+
 @Composable
-private fun JarRow(jar: JarInfo, onRun: () -> Unit, onQuit: () -> Unit) {
-    Card {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            StatusDot(if (jar.running) SuccessColor else MutedFontColor.copy(alpha = 0.5f))
-            Spacer(Modifier.width(8.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(jar.name, color = FontColor, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Meta("${bytes(jar.bytes)}${if (jar.inEnv) " · in env" else ""}${if (jar.running) " · running" else ""}")
+private fun PackagesTab(
+    snapshot: ModelsSnapshot,
+    selectedName: String?,
+    onSelect: (String) -> Unit,
+    onAdd: () -> Unit,
+    onFetch: (JarInfo) -> Unit,
+    onTerminate: (SessionInfo) -> Unit,
+) {
+    SectionTitle("PACKAGES", snapshot.jars.size) { AccentButton("+ Add jar", onClick = onAdd) }
+    if (snapshot.jars.isEmpty()) {
+        Hint("no packages: add a jar, put one in AMP/pluginDir, or upload one on the website")
+        return
+    }
+    // The list is searched by name, Java, class or resource, and grouped by where the jar lives; groups fold
+    var query by remember { mutableStateOf("") }
+    val shown = snapshot.jars.filter { it.matches(query) }
+    val selected = snapshot.jars.firstOrNull { it.name == selectedName } ?: shown.firstOrNull()
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(modifier = Modifier.width(240.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            SearchField(query, { query = it }, "find a jar, class or resource")
+            if (shown.isEmpty()) Hint("no matches")
+            val groups = shown.groupBy { it.location }
+            listOf("In AMP/pluginDir", "In the env", "On the server").forEach { location ->
+                val jars = groups[location] ?: return@forEach
+                Fold(location, jars.size, open = location != "On the server" || query.isNotBlank() || jars.any { it.name == selected?.name }, key = location) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        jars.forEach { jar ->
+                            ListRow(
+                                name = jar.name,
+                                active = jar.open > 0,
+                                selected = jar.name == selected?.name,
+                                meta = listOfNotNull(jar.contents?.minJava?.let { "java $it+" }, jar.version?.let { "v$it" }).joinToString(" · "),
+                                status = jar.status,
+                            ) { onSelect(jar.name) }
+                        }
+                    }
+                }
             }
-            SmallButton("Run", SuccessColor, onClick = onRun)
-            Spacer(Modifier.width(6.dp))
-            SmallButton("Quit", DangerColor, enabled = jar.running, onClick = onQuit)
+        }
+        if (selected != null) JarDetail(selected, Modifier.weight(1f), onFetch = { onFetch(selected) }, onTerminate = onTerminate)
+    }
+}
+
+/**
+ * The selected package: what it is (status, Java it needs, language), where it came from, what built it, what it
+ * contains, and its sessions. A script opens it with initMod("name.jar").
+ */
+@Composable
+private fun JarDetail(jar: JarInfo, modifier: Modifier = Modifier, onFetch: () -> Unit, onTerminate: (SessionInfo) -> Unit) {
+    val contents = jar.contents
+    DetailPanel(modifier) {
+        DetailHeader(
+            name = jar.name,
+            active = jar.open > 0,
+            status = listOfNotNull(
+                jar.status,
+                contents?.let { it.minJava?.let { v -> "java $v+" } ?: "any java" },
+                contents?.let { if (it.kotlin) "kotlin" else "java" },
+                jar.version?.let { "v$it" },
+            ).joinToString(" · "),
+        ) {
+            SmallButton("Open page") { openInBrowser(jar.page) }
+            if (!jar.local) AccentButton("Fetch", onClick = onFetch)
+            jar.file?.let { f -> SmallButton("Reveal file") { openInBrowser(f.parentFile.toURI().toString()) } }
+        }
+
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp).padding(bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            KeyValues("opens with" to "initMod(\"${jar.name}\"), a fresh instance per call")
+
+            Fold("SOURCE", null, open = false, key = "${jar.name}:source") { KeyValues(
+                "where" to when (jar.source) {
+                    "server" -> "on the server; fetched into AMP/pluginDir on the first open"
+                    else -> if (jar.origin != null) "AMP/${if (jar.source == "env") "env/<env>/libs" else "pluginDir"}, downloaded from the server" else "AMP/${if (jar.source == "env") "env/<env>/libs" else "pluginDir"}, added on this machine"
+                },
+                "page" to jar.page,
+                "download" to (jar.url ?: "none, this jar was added on this machine"),
+                *listOfNotNull(
+                    jar.origin?.let { o -> "fetched" to "${o.fetchedAt.take(19).replace('T', ' ')}${o.lastModified?.let { " · published $it" } ?: ""}" },
+                    jar.file?.let { "file" to it.absolutePath },
+                ).toTypedArray(),
+            ) }
+
+            if (contents == null) {
+                Fold("CONTENTS", null, open = true, key = "${jar.name}:none") {
+                    Hint(if (jar.local) "not readable as a jar" else "not fetched yet")
+                }
+            } else {
+                Fold("BUILD", null, open = false, key = "${jar.name}:build") { KeyValues(
+                    "built by" to (contents.createdBy ?: "unknown (no Created-By in the manifest)"),
+                    *listOfNotNull(contents.buildJdk?.let { "build jdk" to it }).toTypedArray(),
+                    "needs" to (contents.classVersion?.let { "${contents.javaSupport} (class files version $it)" } ?: "any Java (no class files)"),
+                    "this app" to "Java ${contents.hostJava}, ${if (contents.runsHere) "can load it" else "too old for it"}",
+                    "language" to if (contents.kotlin) "Kotlin" else "Java",
+                    "size" to "${contents.size / 1024} KB, ${contents.entries} entries",
+                    *listOfNotNull(contents.implementationTitle?.let { "title" to it }).toTypedArray(),
+                ) }
+
+                Fold("CONTENTS", contents.classes.size + contents.resources.size, open = false, key = "${jar.name}:contents") {
+                    ContentsBrowser(contents)
+                }
+            }
+
+            SessionsOf(jar.sessions, onTerminate)
         }
     }
 }
 
+/* ---------- SESSIONS ---------- */
+
 @Composable
-private fun SessionRow(session: SessionInfo, onCancel: () -> Unit) {
-    Card {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            StatusDot(if (session.running > 0) SuccessColor else MutedFontColor.copy(alpha = 0.5f))
-            Spacer(Modifier.width(8.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text("#${session.id} ${session.name}", color = FontColor, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Meta(
-                    "${if (session.running > 0) "running ${session.running}" else "idle"} · runs ${session.runs} · " +
-                        "native ${ms(session.runTimeMs.toDouble())}${if (session.runs > 0) " · avg ${ms(session.averageMs)}" else ""} · " +
-                        "open ${uptime(Duration.between(session.openedAt, Instant.now()))}"
-                )
-            }
-            SmallButton("Cancel", DangerColor, onClick = onCancel)
+private fun SessionsTab(sessions: List<SessionInfo>, onTerminate: (SessionInfo) -> Unit, onTerminateAll: () -> Unit) {
+    SectionTitle("SESSIONS", sessions.size) { if (sessions.isNotEmpty()) SmallButton("Terminate all", onClick = onTerminateAll) }
+    if (sessions.isEmpty()) {
+        Hint("no open sessions")
+        return
+    }
+    var query by remember { mutableStateOf("") }
+    val q = query.trim().lowercase()
+    val shown = sessions.filter { q.isEmpty() || it.owner.lowercase().contains(q) || it.kind.lowercase().contains(q) || "#${it.id}".contains(q) }
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (sessions.size > 4) SearchField(query, { query = it }, "find a session by owner, kind or #id")
+        if (shown.isEmpty()) Hint("no matches")
+        SessionList(shown, showOwner = true, onTerminate)
+    }
+}
+
+/** The sessions one owner has open, inside its detail panel */
+@Composable
+private fun SessionsOf(sessions: List<SessionInfo>, onTerminate: (SessionInfo) -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
+        SubTitle("SESSIONS  ${sessions.size}")
+        Spacer(Modifier.weight(1f))
+        if (sessions.size > 1) SmallButton("Terminate all") { sessions.forEach(onTerminate) }
+    }
+    if (sessions.isEmpty()) Hint("none open")
+    else SessionList(sessions, showOwner = false, onTerminate)
+}
+
+/** Sessions as flat rows with a divider between them, each with its Log toggle and Terminate */
+@Composable
+private fun SessionList(sessions: List<SessionInfo>, showOwner: Boolean, onTerminate: (SessionInfo) -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        sessions.forEachIndexed { i, s ->
+            if (i > 0) Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(PanelBorder))
+            SessionRow(s, showOwner, onTerminate = { onTerminate(s) })
         }
     }
 }
 
-// Copies the jar into AMP/pluginDir and imports it into the env so scripts and the page can run it
+/** One open session: owner and id, what it is doing, a Log toggle that shows what it was asked, and Terminate */
+@Composable
+private fun SessionRow(session: SessionInfo, showOwner: Boolean, onTerminate: () -> Unit) {
+    var showLog by remember(session.key) { mutableStateOf(false) }
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            StatusDot(session.running)
+            Spacer(Modifier.width(8.dp))
+            Text(if (showOwner) "${session.owner}  #${session.id}" else "#${session.id}", color = FontColor, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Spacer(Modifier.width(10.dp))
+            Meta(listOfNotNull(if (showOwner) session.kind else null, if (session.running) "inferring" else "idle", "${session.runs} runs", uptime(Duration.between(session.openedAt, Instant.now()))).joinToString(" · "))
+            Spacer(Modifier.weight(1f))
+            if (session.hasLog) {
+                SmallButton(if (showLog) "Hide log" else "Log ${session.log.size}") { showLog = !showLog }
+                Spacer(Modifier.width(6.dp))
+            }
+            SmallButton("Terminate", onClick = onTerminate)
+        }
+        if (showLog) {
+            Spacer(Modifier.height(6.dp))
+            LogBox(session.log)
+        }
+    }
+}
+
+/** The last lines of a session's log, console style: time, kind and text */
+@Composable
+private fun LogBox(entries: List<SessionLogEntry>) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(6.dp))
+            .background(CodeBackground)
+            .border(1.dp, ConsoleBorderColor, RoundedCornerShape(6.dp))
+            .padding(horizontal = 10.dp, vertical = 6.dp)
+    ) {
+        if (entries.isEmpty()) Meta("nothing yet")
+        val shown = entries.takeLast(60)
+        if (shown.size < entries.size) Meta("… ${entries.size - shown.size} earlier lines in the sessions.log file")
+        SelectionContainer {
+            Column {
+                shown.forEach { e ->
+                    Row {
+                        Text(e.time, color = LogTimestampColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp)
+                        Spacer(Modifier.width(8.dp))
+                        Text(e.kind.padEnd(5), color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp)
+                        Spacer(Modifier.width(8.dp))
+                        Text(e.text, color = LogMessageColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/* ---------- actions ---------- */
+
+// Copies the jar into AMP/pluginDir and imports it into the env so a script can open it with initMod("name.jar")
 private fun addJar(file: File) {
     val pluginDir = File(getDirectory().toString(), "pluginDir").apply { mkdirs() }
     val target = File(pluginDir, file.name)
@@ -610,33 +1101,294 @@ private fun addJar(file: File) {
     env.import(file.name)
 }
 
-private fun chooseJar(): File? {
-    val dialog = FileDialog(null as Frame?, "Add jar", FileDialog.LOAD).apply {
-        setFilenameFilter { _, name -> name.endsWith(".jar") }
+private fun chooseFile(title: String, extensions: List<String>): File? {
+    val dialog = FileDialog(null as Frame?, title, FileDialog.LOAD).apply {
+        setFilenameFilter { _, name -> extensions.any { name.endsWith(".$it", ignoreCase = true) } }
         isVisible = true
     }
-    return dialog.file?.let { File(dialog.directory, it) }?.takeIf { it.extension == "jar" }
+    return dialog.file?.let { File(dialog.directory, it) }?.takeIf { f -> extensions.any { f.extension.equals(it, ignoreCase = true) } }
 }
+
+private fun openInBrowser(url: String) {
+    runCatching { java.awt.Desktop.getDesktop().browse(java.net.URI(url)) }
+        .onFailure { logInternal("models: couldn't open $url: ${it.message}", LogLevel.ERROR) }
+}
+
+private fun fmt(value: Double) = String.format(Locale.US, "%.3f", value)
+private fun pct(value: Double) = "${(value * 100).toInt()}%"
 
 /* ---------- pieces ---------- */
 
+/** One line of a list: status dot, name, a short meta line and the status at the right; click to select */
 @Composable
-private fun SectionTitle(title: String, count: Int, action: @Composable () -> Unit = {}) {
+private fun ListRow(name: String, active: Boolean, selected: Boolean, meta: String, status: String, onSelect: () -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
     Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(6.dp))
+            .background(when { selected -> PanelSurfaceSelected; hovered -> PanelSurface; else -> Color.Transparent })
+            .hoverable(interactionSource)
+            .clickable(interactionSource = interactionSource, indication = null) { onSelect() }
+            .padding(horizontal = 10.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("$title  $count", color = FontColor, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.6.sp, modifier = Modifier.weight(1f))
+        StatusDot(active)
+        Spacer(Modifier.width(8.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(name, color = FontColor, fontSize = 12.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal, fontFamily = FontFamily.SansSerif, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (meta.isNotEmpty()) Meta(meta)
+        }
+        Spacer(Modifier.width(6.dp))
+        Text(status, color = if (active) FontColor else MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, maxLines = 1)
+    }
+}
+
+/** The bordered panel of the selected item */
+@Composable
+private fun DetailPanel(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(PanelSurface)
+            .border(1.dp, PanelBorder, RoundedCornerShape(8.dp))
+    ) { content() }
+}
+
+/** Name and one status line on the left of a detail panel's header, the actions on the right */
+@Composable
+private fun DetailHeader(name: String, active: Boolean, status: String, actions: @Composable () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        StatusDot(active)
+        Spacer(Modifier.width(2.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(name, color = FontColor, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.SansSerif, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Meta(status)
+        }
+        actions()
+    }
+    Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(PanelBorder))
+    Spacer(Modifier.height(4.dp))
+}
+
+/** A small bordered label; strong is white text, the rest gray */
+@Composable
+private fun BadgeLabel(text: String, strong: Boolean = false) {
+    Text(
+        text = text,
+        color = if (strong) FontColor else MutedFontColor,
+        fontSize = 10.sp,
+        fontFamily = FontFamily.Monospace,
+        maxLines = 1,
+        modifier = Modifier
+            .clip(RoundedCornerShape(4.dp))
+            .border(1.dp, if (strong) PanelBorderSelected else PanelBorder, RoundedCornerShape(4.dp))
+            .padding(horizontal = 5.dp, vertical = 1.dp)
+    )
+}
+
+/** Aligned key: value lines in monospace */
+@Composable
+private fun KeyValues(vararg pairs: Pair<String, String>) {
+    if (pairs.isEmpty()) return
+    val width = pairs.maxOf { it.first.length }
+    SelectionContainer {
+        Column {
+            pairs.forEach { (key, value) ->
+                Row {
+                    Text(key.padEnd(width), color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp)
+                    Spacer(Modifier.width(12.dp))
+                    Text(value, color = LogMessageColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp)
+                }
+            }
+        }
+    }
+}
+
+/** A section that opens on click: chevron, title and count in the header, the content under it */
+@Composable
+private fun Fold(title: String, count: Int?, open: Boolean, key: Any, content: @Composable () -> Unit) {
+    var expanded by remember(key) { mutableStateOf(open) }
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(4.dp)).clickable { expanded = !expanded }.padding(vertical = 3.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = if (expanded) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MutedFontColor,
+                modifier = Modifier.size(14.dp)
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(title, color = FontColor, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.6.sp)
+            if (count != null) {
+                Spacer(Modifier.width(8.dp))
+                Text(count.toString(), color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+            }
+        }
+        if (expanded) Column(modifier = Modifier.fillMaxWidth().padding(start = 18.dp, top = 2.dp, bottom = 4.dp)) { content() }
+    }
+}
+
+/** A one-line filter over a list */
+@Composable
+private fun SearchField(value: String, onChange: (String) -> Unit, placeholder: String) {
+    var focused by remember { mutableStateOf(false) }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(CodeBackground, RoundedCornerShape(6.dp))
+            .border(1.dp, if (focused || value.isNotEmpty()) AddButton else AddButton.copy(alpha = 0.45f), RoundedCornerShape(6.dp))
+            .padding(horizontal = 8.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(Icons.Default.Search, contentDescription = null, tint = AddButton, modifier = Modifier.size(13.dp))
+        Spacer(Modifier.width(6.dp))
+        Box(modifier = Modifier.weight(1f)) {
+            if (value.isEmpty()) Text(placeholder, color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+            BasicTextField(
+                value = value,
+                onValueChange = onChange,
+                singleLine = true,
+                textStyle = TextStyle(color = FontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace),
+                cursorBrush = SolidColor(AddButton),
+                modifier = Modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused }
+            )
+        }
+        if (value.isNotEmpty()) SmallButton("×") { onChange("") }
+    }
+}
+
+/**
+ * The classes and resources of a jar: a filter on top, classes grouped by package and resources by folder, each
+ * group folded until opened (or while a filter matches inside it). The class a session opens on and the
+ * Main-Class are marked. Clicking a line copies its full name, for a script or a build.
+ */
+@Composable
+private fun ContentsBrowser(contents: JarContents) {
+    val clipboard = LocalClipboardManager.current
+    var query by remember(contents.name) { mutableStateOf("") }
+    var copied by remember(contents.name) { mutableStateOf<String?>(null) }
+    LaunchedEffect(copied) { if (copied != null) { delay(1500); copied = null } }
+    val q = query.trim().lowercase()
+    val filtering = q.isNotEmpty()
+    val classes = contents.classes.filter { !filtering || it.lowercase().contains(q) }
+    val resources = contents.resources.filter { !filtering || it.lowercase().contains(q) }
+
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        KeyValues(
+            "opens on" to (contents.entryClass ?: "no class with run(String) and close(): initMod will refuse it"),
+            *listOfNotNull(contents.mainClass?.let { "main class" to it }).toTypedArray(),
+        )
+        SearchField(query, { query = it }, "find a class or resource")
+        copied?.let { Meta("copied $it") }
+        if (filtering && classes.isEmpty() && resources.isEmpty()) Hint("no matches")
+
+        fun copy(name: String) {
+            clipboard.setText(AnnotatedString(name))
+            copied = name
+        }
+
+        if (classes.isNotEmpty()) Fold("CLASSES", classes.size, open = filtering || classes.size <= 12, key = "classes:$filtering") {
+            val byPackage = classes.groupBy { it.substringBeforeLast('.', "") }
+            byPackage.toSortedMap().forEach { (pkg, names) ->
+                Fold(pkg.ifEmpty { "(default package)" }, names.size, open = filtering || byPackage.size == 1, key = "pkg:$pkg:$filtering") {
+                    names.forEach { fqn ->
+                        ContentLine(
+                            name = fqn.substringAfterLast('.'),
+                            mark = when (fqn) {
+                                contents.entryClass -> "opens on"
+                                contents.mainClass -> "main"
+                                else -> null
+                            },
+                        ) { copy(fqn) }
+                    }
+                }
+            }
+        }
+        if (resources.isNotEmpty()) Fold("RESOURCES", resources.size, open = filtering || resources.size <= 12, key = "resources:$filtering") {
+            val byDir = resources.groupBy { it.substringBeforeLast('/', "") }
+            byDir.toSortedMap().forEach { (dir, names) ->
+                Fold(dir.ifEmpty { "(root)" }, names.size, open = filtering || byDir.size == 1, key = "dir:$dir:$filtering") {
+                    names.forEach { path -> ContentLine(path.substringAfterLast('/'), null) { copy(path) } }
+                }
+            }
+        }
+    }
+}
+
+/** One class or resource: its short name, a mark when it is special, and a hover that says it can be copied */
+@Composable
+private fun ContentLine(name: String, mark: String?, onClick: () -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(4.dp))
+            .background(if (hovered) PanelSurfaceSelected else Color.Transparent)
+            .hoverable(interactionSource)
+            .clickable(interactionSource = interactionSource, indication = null) { onClick() }
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(name, color = LogMessageColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+        mark?.let { Spacer(Modifier.width(8.dp)); BadgeLabel(it, strong = true) }
+    }
+}
+
+/** A file picker line: label, the chosen file or a hint, Choose and an optional Clear */
+@Composable
+private fun FileField(label: String, file: File?, hint: String, onClear: (() -> Unit)? = null, sample: (() -> Unit)? = null, onChoose: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
+        Text(label, color = MutedFontColor, fontSize = 11.sp, modifier = Modifier.width(56.dp))
+        Text(
+            file?.absolutePath ?: hint,
+            color = if (file != null) FontColor else MutedFontColor,
+            fontSize = 12.sp,
+            fontFamily = FontFamily.Monospace,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .widthIn(max = 420.dp)
+                .weight(1f, fill = false)
+                .background(CodeBackground, RoundedCornerShape(6.dp))
+                .border(1.dp, ConsoleBorderColor, RoundedCornerShape(6.dp))
+                .padding(horizontal = 8.dp, vertical = 5.dp)
+        )
+        Spacer(Modifier.width(6.dp))
+        SmallButton("Choose", onClick = onChoose)
+        if (sample != null) {
+            Spacer(Modifier.width(6.dp))
+            AccentButton("Sample data", onClick = sample)
+        }
+        if (file != null && onClear != null) {
+            Spacer(Modifier.width(6.dp))
+            SmallButton("Clear", onClick = onClear)
+        }
+    }
+}
+
+@Composable
+private fun SectionTitle(title: String, count: Int?, action: @Composable () -> Unit = {}) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(if (count == null) title else "$title  $count", color = FontColor, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.6.sp, modifier = Modifier.weight(1f))
         action()
     }
 }
 
 @Composable
-private fun Figure(label: String, value: String, accent: Color? = null) {
-    Column {
-        Text(label, color = MutedFontColor, fontSize = 10.sp, fontFamily = FontFamily.SansSerif)
-        Text(value, color = accent ?: FontColor, fontSize = 13.sp, fontFamily = FontFamily.Monospace)
-    }
+private fun SubTitle(title: String) {
+    Text(title, color = FontColor, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.6.sp, modifier = Modifier.padding(top = 2.dp))
 }
 
 @Composable
@@ -644,49 +1396,32 @@ private fun Card(content: @Composable () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
             .clip(RoundedCornerShape(8.dp))
-            .background(UnifiedBoxColor)
-            .border(1.dp, UnifiedBorderColor, RoundedCornerShape(8.dp))
-            .padding(12.dp)
+            .background(PanelSurface)
+            .border(1.dp, PanelBorder, RoundedCornerShape(8.dp))
+            .padding(10.dp)
     ) { content() }
 }
 
 @Composable
 private fun Hint(text: String) {
-    Text(text, color = MutedFontColor, fontSize = 11.sp, modifier = Modifier.padding(vertical = 2.dp))
+    Text(text, color = MutedFontColor, fontSize = 11.sp, lineHeight = 16.sp, modifier = Modifier.padding(vertical = 1.dp))
 }
 
 @Composable
 private fun Meta(text: String) {
-    Text(text, color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp)
+    Text(text, color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
 }
 
 @Composable
-private fun StatusDot(color: Color) {
-    Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(color))
-}
-
-@Composable
-private fun UrlLine(method: String, url: String) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
-        Text(
-            method,
-            color = FontColor,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
-            fontFamily = FontFamily.Monospace,
-            modifier = Modifier.width(40.dp).background(SurfaceHover, RoundedCornerShape(4.dp)).padding(horizontal = 4.dp, vertical = 1.dp)
-        )
-        Spacer(Modifier.width(6.dp))
-        Text(url, color = FontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
-    }
+private fun StatusDot(active: Boolean) {
+    Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(if (active) ActiveColor else IdleColor))
 }
 
 @Composable
 private fun SettingField(label: String, value: String, onChange: (String) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
-        Text(label, color = MutedFontColor, fontSize = 11.sp, modifier = Modifier.width(48.dp))
+        Text(label, color = MutedFontColor, fontSize = 11.sp, modifier = Modifier.width(56.dp))
         BasicTextField(
             value = value,
             onValueChange = onChange,
@@ -696,8 +1431,8 @@ private fun SettingField(label: String, value: String, onChange: (String) -> Uni
             modifier = Modifier
                 .widthIn(max = 420.dp)
                 .fillMaxWidth()
-                .background(ConsoleBackground, RoundedCornerShape(6.dp))
-                .border(1.dp, UnifiedBorderColor, RoundedCornerShape(6.dp))
+                .background(CodeBackground, RoundedCornerShape(6.dp))
+                .border(1.dp, ConsoleBorderColor, RoundedCornerShape(6.dp))
                 .padding(horizontal = 8.dp, vertical = 5.dp)
         )
     }
@@ -707,30 +1442,53 @@ private fun SettingField(label: String, value: String, onChange: (String) -> Uni
 private fun Toggle(label: String, on: Boolean, onChange: (Boolean) -> Unit) {
     Text(
         label,
-        color = if (on) FontColor else MutedFontColor,
+        color = if (on) AddButton else MutedFontColor,
         fontSize = 11.sp,
         fontFamily = FontFamily.Monospace,
         modifier = Modifier
             .clip(RoundedCornerShape(6.dp))
-            .background(if (on) AddButton.copy(alpha = 0.25f) else ConsoleBackground)
-            .border(1.dp, if (on) AddButton.copy(alpha = 0.6f) else UnifiedBorderColor, RoundedCornerShape(6.dp))
+            .background(if (on) AccentSoft else CodeBackground)
+            .border(1.dp, if (on) AddButton.copy(alpha = 0.6f) else ConsoleBorderColor, RoundedCornerShape(6.dp))
             .clickable { onChange(!on) }
             .padding(horizontal = 8.dp, vertical = 3.dp)
     )
 }
 
+/** The accent chip for the actions that create, build, validate, open or search: the header's + blue */
 @Composable
-private fun SmallButton(label: String, color: Color, enabled: Boolean = true, onClick: () -> Unit) {
+private fun AccentButton(label: String, enabled: Boolean = true, onClick: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val hovered by interactionSource.collectIsHoveredAsState()
     Text(
         label,
-        color = if (enabled) color else MutedFontColor.copy(alpha = 0.5f),
+        color = if (enabled) Color.White else Color.White.copy(alpha = 0.5f),
         fontSize = 11.sp,
-        fontWeight = FontWeight.Medium,
+        fontWeight = FontWeight.SemiBold,
+        maxLines = 1,
         modifier = Modifier
             .clip(RoundedCornerShape(6.dp))
-            .background(if (enabled && hovered) color.copy(alpha = 0.18f) else color.copy(alpha = if (enabled) 0.08f else 0.03f))
+            .background(when { !enabled -> AddButton.copy(alpha = 0.35f); hovered -> AccentButtonHover; else -> AddButton })
+            .hoverable(interactionSource)
+            .clickable(enabled = enabled, interactionSource = interactionSource, indication = null) { onClick() }
+            .padding(horizontal = 10.dp, vertical = 4.dp)
+    )
+}
+
+/** A gray chip like the editor's tabs; it brightens on hover instead of carrying a colour of its own */
+@Composable
+private fun SmallButton(label: String, enabled: Boolean = true, onClick: () -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
+    Text(
+        label,
+        color = if (enabled) FontColor else MutedFontColor.copy(alpha = 0.5f),
+        fontSize = 11.sp,
+        fontWeight = FontWeight.Medium,
+        maxLines = 1,
+        modifier = Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(if (enabled && hovered) ChipHoverBackground else ChipBackground)
+            .border(1.dp, if (enabled) ChipBorderColor else PanelBorder, RoundedCornerShape(6.dp))
             .hoverable(interactionSource)
             .clickable(enabled = enabled, interactionSource = interactionSource, indication = null) { onClick() }
             .padding(horizontal = 9.dp, vertical = 4.dp)

@@ -1,10 +1,14 @@
 # Models and metrics
 
 A model is an intent classifier: a small dense network trained on BERT embeddings of your texts. Everything about
-a model lives in `AMP/modules/<name>/`, so a guest can build, inspect and serve one; only publishing needs a
-Keycloak account.
+a model lives in `AMP/modules/<name>/`, so building, inspecting and serving one needs no account; only publishing
+does. A fresh checkout starts with a fixed **dummy** model (labels `greeting`, `lights`, `weather`) that is written
+when `AMP/modules` is empty, so `initMod("dummy")` and the Models page work before any training.
 
 ## Building one
+
+From the Models page: **+ New model**, pick the csv (or **Sample data**, `AMP/sample-intents.csv`), Build. From
+a script:
 
 ```kotlin
 val train = source("intents.csv")        // columns: text,label (header names like text/label/intent are detected)
@@ -27,6 +31,13 @@ become warnings), embeds every text, trains for 150 epochs, validates, and expor
 
 Accepted data shapes: a `DataSource` from `source(...)`, `List<Pair<text, label>>`, `Map<label, List<text>>`, or
 rows of `[text, …, label]`.
+
+## Validating without training
+
+A run can be added to `metrics.json` without rebuilding: on the Models page, **Validate on file** or **Validate
+on sample data** runs the model on every row of a csv and stores accuracy, F1 per label and the confusion
+matrix as one more run, with the file name as the validation set (`modules/ModelValidation.kt`). This is how the
+dummy model, which is written rather than trained, gets metrics at all.
 
 ## Reading the metrics
 
@@ -92,10 +103,12 @@ was never built logs an error telling you to run `modelBuilder` first.
 
 ### On the Models page
 
-The **Models** page (second sidebar icon) shows accuracy, macro F1, the number of builds, what the model was
-validated on and when, next to its uptime, requests, latency and ORT session figures. Expand a card for labels,
-encoder and serving settings. The page is open to guests; a guest sees a **Sign in** button in place of the
-backend card and no **Publish** button. The full list of tiles is in [Models page](models-page.md).
+The **Models** page (second sidebar icon) shows the same numbers as bars: accuracy and macro F1 of the last
+build, F1 per label with precision, recall and support, and the accuracy of every build, read from
+`metrics.json`. The ASCII charts and the confusion matrix stay in the console. The page also builds a model from
+a csv (**+ New model**: name, data file, optional test file), and every model is a component with Configure,
+Listen / Stop, Open session and Publish (Keycloak sign-in) actions; every open session can be terminated there
+and its log (what it was asked and answered) read. Details in [Models page](models-page.md).
 
 ## Using a model from a script
 
@@ -105,12 +118,17 @@ log(m.inference("turn the lights on").first())   // "lights:0.97"
 m.close()
 ```
 
+`initMod("<collection>")` opens every model of a collection made on the Models page as one session: the answers
+of all members come back in one list sorted by score, prefixed with the model name (`dummy/lights:0.61`).
 `initMod()` with no name opens the bundled NER model; `importModelOnnx("path.onnx")` opens any ONNX model behind
-the same `inference / getStatus / close` interface. Open sessions are listed on the Models page and with
-`sessions.print()`.
+the same `inference / getStatus / close` interface. Every `initMod("name")` is a session the Models page lists
+and can terminate; what it was asked and answered is logged per session (behind **Log** on the page and in
+`AMP/modules/<name>/sessions.log`). ORT sessions are also printed with `sessions.print()`.
 
 ## Publishing
 
-Signed in, expand a model on the Models page and press **Publish**: `model.onnx` and `module.json` are uploaded to
-your package folder on the Amie backend and the website's dashboard lists them. Requires the backend from
-[Amie backend](backend-integration.md) and a `GITHUB_TOKEN` on the backend side.
+Signed in with Keycloak, expand a model on the Models page and press **Publish**: `model.onnx` and `module.json`
+are uploaded to your package folder on the Amie backend (`POST /upload`, `progLanguage=onnx`) and the website's
+dashboard lists them. A guest pressing it is sent to the sign-in page. Requires the backend from
+[Amie backend](backend-integration.md) and a `GITHUB_TOKEN` on the backend side. Package jars go the other way: a
+script opens one the server lists with `initMod("name.jar")` (see [Packages](sandbox-scripting.md#packages)).

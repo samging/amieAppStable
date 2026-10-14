@@ -13,7 +13,9 @@ import org.example.project.components.terminal.window.controller.modelLoaders.Or
 import org.example.project.components.terminal.window.controller.modelLoaders.builderImplement.openOnnxModel
 import org.example.project.components.terminal.window.controller.envBuilder.ScriptEnvironments
 import org.example.project.components.terminal.window.controller.pluginEngine.JarInterpreter
+import org.example.project.components.terminal.window.controller.pluginEngine.JarPackages
 import org.example.project.components.terminal.window.controller.modules.MetricsReport
+import org.example.project.components.terminal.window.controller.modules.ModelSessions
 
 /**
  * A stable interface for logging from scripts.
@@ -26,9 +28,14 @@ interface ScriptLogger {
     fun data(message: String) = log(message, LogLevel.DATA)
     fun initAmie(text: String)
     fun initMod() : InteractionModel
-    // Opens the ONNX session of a module exported by modelBuilder (AMP/modules/<modelName>)
+    // Opens a session: the ONNX module modelBuilder exported to AMP/modules/<modelName>, or, for a name ending
+    // in .jar, a new instance of that package jar (env, AMP/pluginDir, a path, or fetched from the Amie server)
+    // Both kinds are listed on the Models page, where any session can be terminated
     fun initMod(modelName: String): InteractionModel =
-        org.example.project.components.terminal.integrations.amiePilot.InitMod(modelName).create()
+        if (modelName.trim().endsWith(".jar", ignoreCase = true)) JarPackages.open(modelName.trim())
+        else ModelSessions.open(modelName.trim())
+    // Package jar sessions: packages.available(), packages.fetch("x.jar"), packages.print(), packages.closeAll()
+    val packages: JarPackages get() = JarPackages
     
     // Default no-op implementations for optional script actions
     // A fixed ONNX model with initMod's interface (inference, getStatus, close); its session is managed by OrtSessions

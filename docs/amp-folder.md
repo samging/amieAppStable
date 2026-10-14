@@ -7,17 +7,23 @@ moves your scripts, models, metrics, plugins and sign-in to another checkout.
 | Path | What it holds | Tracked in git |
 |---|---|---|
 | `pluginDir/main.kts` | The sandbox script, saved as you type | yes |
-| `pluginDir/*.jar` | Plugin jars, run from the Models page or with `jars.run("x.jar")` | yes |
+| `pluginDir/*.jar` | Package jars, opened by scripts with `initMod("x.jar")`; jars fetched from the Amie server land here | yes |
+| `pluginDir/*.jar.source.json` | Where a fetched jar came from: download URL, website page, version, fetch time | yes |
+| `pluginDir/*.jar.sessions.log` | What every session of that package was asked and answered (open, run, error, close lines) | yes |
 | `modules/<name>/model.onnx` | An exported model | yes |
 | `modules/<name>/module.json` | Its manifest: encoder, dimensions, labels | yes |
 | `modules/<name>/metrics.json` | One validation entry per build (tables and charts read this) | yes |
 | `modules/<name>/serving.json` | Host, port, path, methods, listening | yes |
 | `modules/<name>/incoming.jsonl` | Requests the served model received | yes |
+| `modules/<name>/sessions.log` | What every session of that model was asked and answered (open, run, error, close lines) | yes |
+| `modules/collections.json` | The collections: name and member models | yes |
+| `modules/collections/<name>.sessions.log` | The log of sessions opened on a collection | yes |
 | `env/<name>/env.lock.json` | What a script environment has imported | yes |
 | `env/caches/` | Maven downloads | yes |
+| `sample-intents.csv` | 45 `text,label` rows over greeting / lights / weather, written on first start for trying New model and Validate | yes |
 | `relations.json` | Which test file belongs to which training file (`relate`) | yes |
 | `componentSettings.json` | Configured devices | yes |
-| `backend.json` | Amie backend and website addresses | yes |
+| `backend.json` | Amie backend, website and S3 service addresses | yes |
 | `keycloak.json` | Keycloak server, realm, client id and **secret** | **no** |
 | `session.json` | The signed-in session (access, refresh and id tokens) | **no** |
 | `logs.txt` | Everything the console showed, every level | yes |
@@ -38,7 +44,8 @@ moves your scripts, models, metrics, plugins and sign-in to another checkout.
 
 Environment variables `KEYCLOAK_URL`, `KEYCLOAK_REALM`, `KEYCLOAK_CLIENT_ID`, `KEYCLOAK_CLIENT_SECRET` override it.
 
-`backend.json` names the Amie backend and website; `AMIE_BACKEND_URL` and `AMIE_SITE_URL` override it. With
+`backend.json` names the Amie backend, the website and the S3 service that keeps package jars; `AMIE_BACKEND_URL`,
+`AMIE_SITE_URL` and `AMIE_S3_URL` override it. With
 Keycloak on port 8080, run the backend on another port (`AMIE_BACKEND_PORT=8090`) and set `baseUrl` here.
 
 ## Metrics format

@@ -43,8 +43,10 @@ Defined in `ScriptLogger.kt`. The most used calls (prefix `amie.` optional):
 | `sourceFile("file.csv", column = "")` | Raw rows keyed by index, optionally one column |
 | `modelBuilder("name", data)` | Trains and exports an intent classifier (below) |
 | `modelBuilder("name") { ... }` | Same, the lambda returns the data |
-| `initMod("name")` | Opens an exported model; `.inference("text")` returns `label:probability` sorted best first; `.close()` |
+| `initMod("name")` | Opens an exported model as a session (listed on the Models page, terminable there); `.inference("text")` returns `label:probability` sorted best first; `.close()`. `initMod("dummy")` works on a fresh checkout |
+| `initMod("collection")` | Every model of a collection (Models page) as one session; answers from all members, sorted by score, prefixed `model/` |
 | `initMod()` | The bundled BERT NER model |
+| `initMod("name.jar")` | A new instance of a package jar behind the same interface: `.inference("text")` calls its `run(text)`, `.close()` its `close()`. Looked up in the env, `AMP/pluginDir`, as a path, then fetched from the Amie server (below) |
 | `validateMetrics("name", labels = listOf(...))` | Prints the stored validation table of a model |
 | `metricsChart("name", labels = listOf(...))` | ASCII bars: accuracy, macro F1 and the F1 of each label with precision, recall and support |
 | `metricsHistory("name")` | ASCII line chart of accuracy and macro F1 across every build |
@@ -52,7 +54,8 @@ Defined in `ScriptLogger.kt`. The most used calls (prefix `amie.` optional):
 | `forwardContext("text") { ids -> }` | Runs the encoder and returns the hidden state `[batch][token][hidden]` |
 | `importModelOnnx("path.onnx")` | Any ONNX model behind the `inference / getStatus / close` interface |
 | `sessions.print()`, `sessions.cancel("name")`, `sessions.cancelAll()` | The open ORT sessions |
-| `jars.run("plugin.jar")`, `jars.quit("plugin.jar")` | Plugin jars from `AMP/pluginDir` or the env |
+| `packages.available()`, `packages.fetch("x.jar")`, `packages.print()`, `packages.closeAll()` | The package jars the server offers, a download into `AMP/pluginDir`, the open package sessions |
+| `jars.run("plugin.jar")`, `jars.quit("plugin.jar")` | Runs a static `run()` or `main` of a plugin jar once; not a package session |
 | `implementation("group:module:version")`, `amie.import("...")` | Add a package to the script's environment |
 | `implementation("my.jar")`, `amie.import("my.jar")` | Add a jar file to the environment |
 | `environment(SettingsEnv("name", "profile"))`, `amie.import(SettingsEnv(...))` | Select the script environment (must be written literally) |
@@ -73,6 +76,75 @@ m.close()
 ```
 
 The charts are described with examples in [Models and metrics](models.md#reading-the-metrics).
+
+## Packages
+
+A package is a jar with one public class that has `run(text: String): List<String>` and `close()`, the contract the
+website checks on upload (implementing the backend's `AmiePackage` interface is the easiest way to get there).
+Packages are bottles: every `initMod("name.jar")` makes a fresh instance in its own class loader, so two sessions
+on the same jar never share state, and `close()` releases that instance and its loader. The jar is looked up in the
+active env, then `AMP/pluginDir`, then as a path; when it is nowhere local it is fetched from the Amie server (the
+website's `/api/jar-download`, else the S3 service's `/api/aws/jars/<name>`; addresses in `AMP/backend.json`) and
+stored in `AMP/pluginDir`, so the next open is local. Next to it, `AMP/pluginDir/<name>.source.json` records where
+it came from: the exact download URL, the website page that lists and describes it (`<site>/downloads`), version,
+size, publish date and fetch time. `getStatus()` of a package session carries the `url` and `page`, and the
+Models page shows them behind the **i** toggle of the package.
+
+```kotlin
+val echo = initMod("echo-1.0.jar")        // fetched from the server when it is not local
+echo.inference("hello there").forEach { log(it) }
+log(echo.getStatus().toString())          // jar, class, source, runs
+echo.close()
+
+packages.available().forEach { log("${it.name} ${it.size}") }   // what the server lists
+packages.print()                                                   // open package sessions
+```
+
+The package class is the manifest's `Main-Class` when it satisfies the contract, else a class implementing an
+interface named `AmiePackage`, else the first class in the jar that does. `run` executes on the calling thread with
+the jar's class loader as context loader, and what it returns is shown one line per element. Open package sessions
+also appear under **Sessions** on the [Models page](models-page.md).
+
+### Session logs
+
+Every session of a model or a package keeps a log of what it was asked and answered: an `open` line, one `run`
+line per `inference` call with the text, the first answers and the time it took, an `error` line when the call
+threw, and a `close` line with the number of runs. The Models page shows it behind **Log** on the session, and the
+same lines are appended to `AMP/modules/<name>/sessions.log` for a model and `AMP/pluginDir/<jar>.sessions.log`
+for a package (`modules/SessionLog.kt`), so a terminated session's history stays readable:
+
+```
+2026-10-14T17:40:02.118Z dummy #3 open  opened as session #3
+2026-10-14T17:40:05.402Z dummy #3 run   "turn the lights on" -> lights:0.61, weather:0.22, greeting:0.17 (14 ms)
+2026-10-14T17:41:10.009Z dummy #3 close closed after 1 runs
+```
+
+### Building a package
+
+The **Packages** tab of the Models page reads a jar's classes and resources, the Java it needs (from the class
+file version) and what built it (the manifest), so a jar can be checked before a script opens it. The shape of a
+build that produces one:
+
+```kotlin
+plugins { kotlin("jvm") version "2.1.0" }
+repositories { mavenCentral() }
+kotlin { jvmToolchain(17) }
+tasks.jar {
+    archiveFileName = "echo-1.0.jar"
+    manifest { attributes("Main-Class" to "org.example.Echo") }
+}
+```
+
+```kotlin
+package org.example
+
+class Echo {
+    fun run(text: String): List<String> = listOf("echo: $text")
+    fun close() {}
+}
+```
+
+The app runs on Java 21, so a jar compiled for Java 21 or older loads; the page says so next to the class file version.
 
 Accepted data shapes: a `DataSource` from `source`, `List<Pair<text, label>>`, `Map<label, List<text>>`, or
 rows of `[text, ..., label]`.

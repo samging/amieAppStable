@@ -72,6 +72,7 @@ object SandboxApi {
     private const val SETTINGS_ENV = "$PKG.envBuilder.SettingsEnv"
     private const val ORT_SESSIONS = "$PKG.modelLoaders.OrtSessions"
     private const val JAR_INTERPRETER = "$PKG.pluginEngine.JarInterpreter"
+    private const val JAR_PACKAGES = "$PKG.pluginEngine.JarPackages"
     private const val MODEL_INTERFACE = "$PKG.ModelCreationalInterface"
 
     private fun fn(name: String, description: String, vararg params: Param, returns: String? = null, target: String? = name, aliasOf: String? = null) =
@@ -87,7 +88,8 @@ object SandboxApi {
         fn("data", "Prints a data line in the console", Param("message", STRING)),
         fn("initAmie", "Runs text through the Amie pilot and prints its answer", Param("text", STRING)),
         fn("initMod", "Opens the default interaction model", returns = INTERACTION_MODEL),
-        fn("initMod", "Opens the ONNX session of a module exported by modelBuilder (AMP/modules/<modelName>)", Param("modelName", STRING), returns = INTERACTION_MODEL),
+        fn("initMod", "Opens a session: the module modelBuilder exported to AMP/modules/<modelName>, or a new instance of a package jar when the name ends in .jar (local or fetched from the Amie server)", Param("modelName", STRING), returns = INTERACTION_MODEL),
+        prop("packages", JAR_PACKAGES, "Package jar sessions: packages.available(), packages.fetch(\"x.jar\"), packages.print(), packages.closeAll()"),
         fn("importModelOnnx", "A fixed ONNX model with initMod's interface; its session is managed by sessions", Param("it", PATH), returns = "$INTERACTION_MODEL?"),
         fn("importModelOnnx", "A fixed ONNX model with initMod's interface, by file path", Param("path", STRING), returns = "$INTERACTION_MODEL?"),
         prop("sessions", ORT_SESSIONS, "Global ORT sessions: sessions.print(), sessions.cancel(\"name\"), sessions.cancelAll()"),

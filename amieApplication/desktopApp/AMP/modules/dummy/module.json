@@ -1,0 +1,12 @@
+{
+    "name": "dummy",
+    "encoder": "/Users/samuel/Documents/onnx/bert/bge",
+    "inputDim": 768,
+    "outputDim": 3,
+    "labels": [
+        "greeting",
+        "lights",
+        "weather"
+    ],
+    "createdAt": "2026-10-14T15:15:36.984418Z"
+}

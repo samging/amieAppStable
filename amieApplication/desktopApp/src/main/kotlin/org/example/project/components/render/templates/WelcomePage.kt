@@ -85,9 +85,12 @@ import amiemultiplatform.shared.generated.resources.ascii_amie_welcome
 @Composable
 fun WelcomePage(navController: NavHostController) {
     val session by org.example.project.auth.AuthState.session.collectAsState()
-    // The saved session is restored on a background thread at start-up; Continue waits for it so a signed-in
-    // user is never sent to the login page again
+    // The start route only comes here without a session; should one exist (or appear) while this is shown, the
+    // page moves on to the dashboard by itself, so a signed-in user never sees this screen or a "Continue as" button
     val restoring by org.example.project.auth.AuthState.restoring.collectAsState()
+    LaunchedEffect(session, restoring) {
+        if (!restoring && session != null) navController.navigate("home1/") { popUpTo("welcome") { inclusive = true } }
+    }
 
     Column(
         modifier = Modifier
@@ -118,9 +121,7 @@ fun WelcomePage(navController: NavHostController) {
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
-            onClick = {
-                navController.navigate(if (session != null) "home1/" else "login")
-            },
+            onClick = { navController.navigate("login") },
             enabled = !restoring,
             modifier = Modifier.fillMaxWidth(0.4f).height(48.dp),
             shape = RoundedCornerShape(10.dp),
@@ -132,11 +133,7 @@ fun WelcomePage(navController: NavHostController) {
             ),
         ) {
             Text(
-                when {
-                    restoring -> "Restoring session…"
-                    session != null -> "Continue as ${session!!.username}"
-                    else -> "Continue"
-                },
+                if (restoring) "Restoring session…" else "Continue",
                 fontWeight = FontWeight.SemiBold,
                 fontFamily = FontFamily.SansSerif,
                 letterSpacing = 0.5.sp,

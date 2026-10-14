@@ -3,7 +3,7 @@
 A Kotlin Multiplatform workspace with a Compose Desktop app (`amieApplication/desktopApp`), an Android app
 (`amieApplication/androidApp`) and shared code (`amieApplication/shared`). The desktop app is the main
 product: a scripting sandbox that trains small intent classifiers on top of a BERT encoder, serves them over
-HTTP, runs plugin jars, and manages connected devices. Sign-in goes through Keycloak.
+HTTP, opens package jars as sessions, and manages connected devices. Sign-in goes through Keycloak.
 
 Documentation is a Markdown site in [`docs/`](docs/index.md) built with [MkDocs](https://www.mkdocs.org/)
 (`mkdocs.yml`): read it on GitHub, or run `mkdocs serve` and open http://127.0.0.1:8000. Pages:
@@ -84,15 +84,18 @@ that is `amieApplication/desktopApp/AMP/`:
 ## Using the app
 
 1. **Welcome** → **Continue**. The first time you land on the login page; sign in with a Keycloak account, create
-   one, or continue as a guest. The session is kept, so later starts go straight on.
+   one, or continue as a guest. The session is kept, so later starts skip the welcome screen and open the dashboard.
 2. **Sandbox** (the console icon in the left sidebar). Write a Kotlin script in `main.kts` and press the green
    **Run** button at the bottom of the sidebar. While it runs the button turns into a progress ring and the status
    line under the console header shows what is happening; `modelBuilder(...)` reports its phases there. The API
    is called without a prefix (`source`, `modelBuilder`, `metricsChart`, …) and the editor completes it.
    Details in [docs/sandbox.md](docs/sandbox.md) and [docs/sandbox-scripting.md](docs/sandbox-scripting.md).
-3. **Models** (the second sidebar icon). A full page with the app's resource usage and every model's uptime,
-   requests, latency and validation, plus serving settings, plugin jars and ORT sessions. Open to guests; only the
-   backend card and Publish need a sign-in. Details in [docs/models.md](docs/models.md).
+3. **Models** (the second sidebar icon), three tabs. **Models**: build one from a csv (**+ New model**, with a
+   bundled sample set), validate any model on a csv to get its metrics, group models into collections that open,
+   listen and validate as one, and every intent model as a component: configure how it is served, listen or
+   stop, open a session, publish it (Keycloak sign-in). **Packages**: the jars a script can open, searchable down to a class name, each
+   with its build, the Java it needs and its contents. **Sessions**: every open session with its log and a
+   Terminate button. A fixed `dummy` model is there from the first start. Details in [docs/models.md](docs/models.md).
 4. **Dashboard** (`home1/`): device cards with configure, manage, connect and disconnect screens; **+** adds a device.
 
 ## Project layout

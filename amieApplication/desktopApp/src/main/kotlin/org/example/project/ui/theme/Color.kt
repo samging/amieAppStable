@@ -62,3 +62,25 @@ val EditorPunctuationColor = Color(0xFFB4BCC8)
 val CompletionBackground = Color(0xFF1C1C1E)
 val CompletionBorder = Color(0xFF3A3A3C)
 val CompletionSelected = Color(0xFF2E3A44)
+
+// Models page: one quiet scheme, the same grays as the sandbox. White marks what is active, gray everything else;
+// nothing on the page carries a hue of its own.
+val ActiveColor = FontColor
+val IdleColor = Color(0xFF4A4A4A)
+// Rows and panels sit a step above the page background; a selected row one more step, with a brighter edge
+val PanelSurface = Color(0xFF141414)
+val PanelSurfaceSelected = Color(0xFF1E1E1E)
+val PanelBorder = Color(0xFF242424)
+val PanelBorderSelected = Color(0xFF444444)
+// Code boxes and session logs: the console's near-black with the console's border
+val CodeBackground = Color(0xFF0B0B0B)
+// Small buttons: gray chips that brighten on hover instead of carrying a colour
+val ChipBackground = Color(0xFF1F1F1F)
+val ChipHoverBackground = Color(0xFF2C2C2C)
+val ChipBorderColor = Color(0xFF343434)
+// The one accent on the page: the actions that create, build, validate or search (the header's + blue), and
+// the charts. ChartSecond is the second series next to it, checked for colour-blind separation on the panel.
+val AccentButtonHover = Color(0xFF5F9BFF)
+val ChartAccent = AddButton
+val ChartSecond = Color(0xFFC9742A)
+val ChartGrid = Color(0xFF242424)

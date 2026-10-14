@@ -1,0 +1,12 @@
+{
+    "name": "yourmamma",
+    "encoder": "/Users/samuel/Documents/onnx/bert/bge",
+    "inputDim": 768,
+    "outputDim": 3,
+    "labels": [
+        "greeting",
+        "lights",
+        "weather"
+    ],
+    "createdAt": "2026-10-14T16:59:56.662225Z"
+}

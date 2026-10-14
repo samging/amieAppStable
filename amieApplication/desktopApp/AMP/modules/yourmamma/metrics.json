@@ -1,0 +1,49 @@
+{
+    "runs": [
+        {
+            "createdAt": "2026-10-14T16:59:56.661979Z",
+            "samples": 45,
+            "trainSize": 36,
+            "validationSize": 9,
+            "accuracy": 1.0,
+            "macroF1": 1.0,
+            "labels": {
+                "greeting": {
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0,
+                    "support": 3
+                },
+                "lights": {
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0,
+                    "support": 3
+                },
+                "weather": {
+                    "precision": 1.0,
+                    "recall": 1.0,
+                    "f1": 1.0,
+                    "support": 3
+                }
+            },
+            "confusion": [
+                [
+                    3,
+                    0,
+                    0
+                ],
+                [
+                    0,
+                    3,
+                    0
+                ],
+                [
+                    0,
+                    0,
+                    3
+                ]
+            ]
+        }
+    ]
+}

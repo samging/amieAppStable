@@ -103,3 +103,1124 @@ Waiting for logs...
 > [ERROR] [internal] 2026-10-14T13:03:40.988774Z backend: http://192.168.1.114:8080 unreachable: Host is down
 > [INTERNAL] [internal] 2026-10-14T13:06:16.760574Z auth: signed in as 123 (http://192.168.1.114:8080/realms/master)
 > [ERROR] [internal] 2026-10-14T13:06:21.762375Z backend: http://192.168.1.114:8080 unreachable: Connect timeout has expired [url=http://192.168.1.114:8080/me, connect_timeout=5000 ms]
+> [ERROR] [internal] 2026-10-14T14:50:15.492970Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T14:50:15.523311Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T14:50:16.641609Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T14:51:21.122320Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T14:51:21.214288Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T14:51:22.372656Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T14:51:25.234705Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T14:51:37.328469Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T14:51:41.992121Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T14:51:43.048464Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T14:51:44.730307Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [INTERNAL] [internal] 2026-10-14T15:04:43.392110Z package echo-1.0.jar (#1): session ready on demo.EchoPackage from path
+> [INTERNAL] [internal] 2026-10-14T15:04:43.538750Z package echo-1.0.jar (#2): session ready on demo.EchoPackage from path
+> [INTERNAL] [internal] 2026-10-14T15:04:56.701935Z package echo-1.0.jar (#1): session ready on demo.EchoPackage from path
+> [INTERNAL] [internal] 2026-10-14T15:04:56.818902Z package echo-1.0.jar (#2): session ready on demo.EchoPackage from path
+> [INTERNAL] [internal] 2026-10-14T15:04:56.824922Z package echo-1.0.jar (#1): closed after 2 runs
+> [INTERNAL] [internal] 2026-10-14T15:04:56.825331Z package echo-1.0.jar (#2): closed after 1 runs
+> [ERROR] [internal] 2026-10-14T15:05:01.989706Z package nowhere-9.9.jar: http://192.168.1.114:8081/api/jar-download?name=nowhere-9.9.jar unreachable: Host is down
+> [ERROR] [internal] 2026-10-14T15:05:01.992263Z package nowhere-9.9.jar: http://192.168.1.114:8088/api/aws/jars/nowhere-9.9.jar unreachable: Host is down
+> [INTERNAL] [internal] 2026-10-14T15:05:30.611816Z package echo-1.0.jar: received 1842 bytes from http://127.0.0.1:8799/api/jar-download?name=echo-1.0.jar into /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/echo-1.0.jar
+> [INTERNAL] [internal] 2026-10-14T15:05:30.785462Z package echo-1.0.jar (#1): session ready on demo.EchoPackage from server
+> [INTERNAL] [internal] 2026-10-14T15:05:30.790111Z package echo-1.0.jar (#1): closed after 1 runs
+> [INTERNAL] [internal] 2026-10-14T15:05:30.791232Z package echo-1.0.jar (#2): session ready on demo.EchoPackage from pluginDir
+> [INTERNAL] [internal] 2026-10-14T15:05:30.791646Z package echo-1.0.jar (#2): closed after 0 runs
+> [ERROR] [internal] 2026-10-14T15:06:46.183463Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T15:06:46.290705Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T15:06:48.960178Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T15:06:59.975298Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T15:07:35.834924Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [INFO] [sandbox] 2026-10-14T15:07:54.307466Z Running pluginDir/main.kts
+> [INTERNAL] [internal] 2026-10-14T15:07:54.312726Z env 'default': sourcing no new imports
+> [INTERNAL] [internal] 2026-10-14T15:07:54.314673Z env 'default': sourced 0 packages, 0 in environment
+> [ERROR] [sandbox] 2026-10-14T15:07:54.893375Z Error: Error: incomplete code. ERROR Property getter or setter expected (ScriptingHost197078a7_Line_0.kts:34:20)\nERROR Incomplete code
+> [ERROR] [sandbox] 2026-10-14T15:07:54.893521Z Failed after 0s
+> [INFO] [sandbox] 2026-10-14T15:08:00.805172Z Running pluginDir/main.kts
+> [INTERNAL] [internal] 2026-10-14T15:08:00.805786Z env 'default': sourcing no new imports
+> [INTERNAL] [internal] 2026-10-14T15:08:00.805924Z env 'default': sourced 0 packages, 0 in environment
+> [ERROR] [sandbox] 2026-10-14T15:08:00.831918Z Error: Error: incomplete code. ERROR Property getter or setter expected (ScriptingHost57bef469_Line_0.kts:34:20)\nERROR Incomplete code
+> [ERROR] [sandbox] 2026-10-14T15:08:00.832005Z Failed after 0s
+> [INFO] [sandbox] 2026-10-14T15:08:01.423317Z Running pluginDir/main.kts
+> [INTERNAL] [internal] 2026-10-14T15:08:01.423676Z env 'default': sourcing no new imports
+> [INTERNAL] [internal] 2026-10-14T15:08:01.423812Z env 'default': sourced 0 packages, 0 in environment
+> [ERROR] [sandbox] 2026-10-14T15:08:01.446261Z Error: Error: incomplete code. ERROR Property getter or setter expected (ScriptingHost5535a87d_Line_0.kts:34:20)\nERROR Incomplete code
+> [ERROR] [sandbox] 2026-10-14T15:08:01.446359Z Failed after 0s
+> [INFO] [sandbox] 2026-10-14T15:08:03.792600Z Running pluginDir/main.kts
+> [INTERNAL] [internal] 2026-10-14T15:08:03.793025Z env 'default': sourcing no new imports
+> [INTERNAL] [internal] 2026-10-14T15:08:03.793107Z env 'default': sourced 0 packages, 0 in environment
+> [ERROR] [sandbox] 2026-10-14T15:08:03.838512Z Error: Error: incomplete code. ERROR Property getter or setter expected (ScriptingHost2c62451a_Line_0.kts:34:20)\nERROR Incomplete code
+> [ERROR] [sandbox] 2026-10-14T15:08:03.838576Z Failed after 0s
+> [ERROR] [internal] 2026-10-14T15:08:13.910354Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [INTERNAL] [internal] 2026-10-14T15:15:37.046243Z module 'dummy' exported to /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:15:38.207881Z ort: session #1 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:15:38.569214Z ort: session #2 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:15:40.834040Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T15:15:40.860251Z initMod: 'dummy' -> lights:0.5604048, greeting:0.47591606, weather:0.46288148
+> [INTERNAL] [internal] 2026-10-14T15:15:40.865430Z initMod: 'dummy' -> weather:0.60819036, lights:0.51950234, greeting:0.37319905
+> [INTERNAL] [internal] 2026-10-14T15:15:40.865866Z ort: session #1 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T15:15:40.868248Z ort: session #2 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T15:15:40.870777Z model dummy (#1): closed after 2 runs
+> [ERROR] [internal] 2026-10-14T15:17:23.172900Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T15:17:23.236996Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T15:17:24.477Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [INTERNAL] [internal] 2026-10-14T15:17:33.504176Z ort: session #1 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:17:33.919667Z ort: session #2 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:17:38.141588Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T15:17:41.216309Z ort: session #1 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T15:17:41.223156Z ort: session #2 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T15:17:41.227939Z model dummy (#1): closed after 0 runs
+> [INTERNAL] [internal] 2026-10-14T15:17:42.981846Z ort: session #3 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:17:43.116986Z ort: session #4 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:17:43.127629Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T15:17:43.133962Z serve 'dummy': listening on POST/GET http://127.0.0.1:8765/models/dummy/predict
+> [INTERNAL] [internal] 2026-10-14T15:17:47.198832Z ort: session #3 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T15:17:47.810153Z ort: session #4 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T15:18:04.751738Z env 'default': copied /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/amie-demo-1.0.0.jar into /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/env/default/libs
+> [INTERNAL] [internal] 2026-10-14T15:18:04.754414Z env 'default': amie-demo-1.0.0.jar added; scripts compiled from the next run can use it
+> [INTERNAL] [internal] 2026-10-14T15:18:14.996625Z ort: session #5 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:18:15.348819Z ort: session #6 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:18:15.358601Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [ERROR] [internal] 2026-10-14T15:18:20.989094Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [INTERNAL] [internal] 2026-10-14T15:18:30.653739Z ort: session #5 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T15:18:30.658497Z ort: session #6 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T15:18:30.660345Z model dummy (#2): closed after 0 runs
+> [INTERNAL] [internal] 2026-10-14T15:18:30.660704Z ort: cancelled 0 sessions
+> [ERROR] [internal] 2026-10-14T15:18:41.591007Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [INTERNAL] [internal] 2026-10-14T15:20:00.633409Z ort: session #7 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:20:01.059396Z ort: session #8 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:20:01.081539Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T15:24:23.333933Z package echo-1.0.jar: received 1842 bytes from http://127.0.0.1:8799/api/jar-download?name=echo-1.0.jar into /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/pluginDir/echo-1.0.jar
+> [INTERNAL] [internal] 2026-10-14T15:24:23.642420Z package echo-1.0.jar (#1): session ready on demo.EchoPackage from server
+> [INTERNAL] [internal] 2026-10-14T15:24:23.644652Z package echo-1.0.jar (#1): closed after 0 runs
+> [ERROR] [internal] 2026-10-14T15:26:33.486136Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T15:26:33.596756Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [INTERNAL] [internal] 2026-10-14T15:26:34.438279Z ort: session #1 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:26:34.775106Z ort: session #2 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:26:36.014097Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T15:26:36.023696Z serve 'dummy': listening on POST/GET http://127.0.0.1:8765/models/dummy/predict
+> [ERROR] [internal] 2026-10-14T15:26:36.468085Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [INTERNAL] [internal] 2026-10-14T15:26:43.419013Z ort: session #3 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:26:43.758397Z ort: session #4 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:26:43.770299Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T15:26:47.742659Z ort: session #5 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:26:48.091576Z ort: session #6 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:26:48.109605Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T15:26:49.441303Z ort: session #1 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T15:26:49.446697Z ort: session #2 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T15:26:49.449817Z serve 'dummy': stopped
+> [INTERNAL] [internal] 2026-10-14T15:26:50.639761Z ort: session #7 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:26:50.884874Z ort: session #8 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:26:50.909165Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T15:26:50.910486Z serve 'dummy': listening on POST/GET http://127.0.0.1:8765/models/dummy/predict
+> [INTERNAL] [internal] 2026-10-14T15:26:52.248428Z ort: session #3 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T15:26:52.259316Z ort: session #4 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T15:26:52.264417Z model dummy (#1): closed after 0 runs
+> [INTERNAL] [internal] 2026-10-14T15:26:52.667903Z ort: session #5 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T15:26:52.719092Z ort: session #6 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T15:26:52.720853Z model dummy (#2): closed after 0 runs
+> [INTERNAL] [internal] 2026-10-14T15:26:53.461133Z ort: session #7 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T15:26:53.481626Z ort: session #8 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T15:26:53.482975Z serve 'dummy': stopped
+> [INTERNAL] [internal] 2026-10-14T15:26:53.947405Z ort: session #9 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:26:54.093602Z ort: session #10 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:26:54.102421Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T15:26:54.102902Z serve 'dummy': listening on POST/GET http://127.0.0.1:8765/models/dummy/predict
+> [INTERNAL] [internal] 2026-10-14T15:26:54.812579Z ort: session #11 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:26:54.952105Z ort: session #12 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:26:54.961835Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T15:26:55.092713Z ort: session #13 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:26:55.246970Z ort: session #14 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:26:55.430090Z ort: session #15 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:26:55.533245Z ort: session #16 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:26:55.645027Z ort: session #17 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:26:55.681008Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T15:26:55.797387Z ort: session #18 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:26:55.814137Z ort: session #19 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:26:56.012962Z ort: session #20 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:26:56.272859Z ort: session #21 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:26:56.357673Z ort: session #22 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:26:56.534379Z ort: session #23 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:26:56.733347Z ort: session #24 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:26:56.922748Z ort: session #25 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:26:58.320091Z ort: session #26 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [ERROR] [internal] 2026-10-14T15:32:12.937929Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T15:32:12.977622Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [INTERNAL] [internal] 2026-10-14T15:32:13.863603Z ort: session #1 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T15:32:14.082283Z ort: session #2 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [ERROR] [internal] 2026-10-14T15:32:16.010171Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [INTERNAL] [internal] 2026-10-14T15:32:18.306285Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T15:32:18.313905Z serve 'dummy': listening on POST/GET http://127.0.0.1:8765/models/dummy/predict
+> [ERROR] [internal] 2026-10-14T16:05:01.377021Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T16:05:01.407416Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [INTERNAL] [internal] 2026-10-14T16:05:02.268524Z ort: session #1 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:05:02.472171Z ort: session #2 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:05:02.692506Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T16:05:02.698994Z serve 'dummy': listening on POST/GET http://127.0.0.1:8765/models/dummy/predict
+> [ERROR] [internal] 2026-10-14T16:05:03.618857Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [INTERNAL] [internal] 2026-10-14T16:05:19.999238Z ort: session #3 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:05:20.257620Z ort: session #4 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:05:20.271643Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T16:05:23.309487Z ort: session #3 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:05:23.316822Z ort: session #4 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:05:23.323870Z model dummy (#1): closed after 0 runs
+> [INTERNAL] [internal] 2026-10-14T16:05:33.510492Z ort: session #1 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:05:33.538064Z ort: session #2 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:05:33.540798Z serve 'dummy': stopped
+> [INTERNAL] [internal] 2026-10-14T16:05:34.598723Z ort: session #5 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:05:34.730845Z ort: session #6 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:05:34.741191Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T16:05:34.741678Z serve 'dummy': listening on POST/GET http://127.0.0.1:8765/models/dummy/predict
+> [INTERNAL] [internal] 2026-10-14T16:05:35.530300Z ort: session #5 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:05:35.538367Z ort: session #6 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:05:35.541372Z serve 'dummy': stopped
+> [INTERNAL] [internal] 2026-10-14T16:05:36.409924Z ort: session #7 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:05:36.530282Z ort: session #8 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:05:36.538574Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T16:05:36.539052Z serve 'dummy': listening on POST/GET http://127.0.0.1:8765/models/dummy/predict
+> [INTERNAL] [internal] 2026-10-14T16:05:37.392883Z ort: session #7 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:05:37.401908Z ort: session #8 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:05:37.405173Z serve 'dummy': stopped
+> [ERROR] [internal] 2026-10-14T16:31:11.633416Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T16:31:11.661313Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T16:31:13.402369Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T16:34:33.857014Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T16:34:33.885451Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T16:34:35.833076Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T16:34:40.190247Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T16:34:40.220159Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T16:36:07.214483Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T16:36:07.223991Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T16:36:07.410856Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T16:36:16.584454Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T16:40:20.127328Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T16:40:20.136680Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T16:40:20.329668Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [INFO] [sandbox] 2026-10-14T16:40:33.913736Z Running pluginDir/main.kts
+> [INTERNAL] [internal] 2026-10-14T16:40:33.916791Z env 'default': sourcing no new imports
+> [INTERNAL] [internal] 2026-10-14T16:40:33.918619Z env 'default': sourced 1 packages, 1 in environment
+> [ERROR] [sandbox] 2026-10-14T16:40:34.458999Z Error: Error: incomplete code. ERROR Property getter or setter expected (ScriptingHost1ab1220_Line_0.kts:34:20)\nERROR Incomplete code
+> [ERROR] [sandbox] 2026-10-14T16:40:34.459250Z Failed after 0s
+> [INFO] [sandbox] 2026-10-14T16:40:36.012344Z Running pluginDir/main.kts
+> [INTERNAL] [internal] 2026-10-14T16:40:36.012785Z env 'default': sourcing no new imports
+> [INTERNAL] [internal] 2026-10-14T16:40:36.013163Z env 'default': sourced 1 packages, 1 in environment
+> [ERROR] [sandbox] 2026-10-14T16:40:36.032039Z Error: Error: incomplete code. ERROR Property getter or setter expected (ScriptingHost2832420d_Line_0.kts:34:20)\nERROR Incomplete code
+> [ERROR] [sandbox] 2026-10-14T16:40:36.032112Z Failed after 0s
+> [INTERNAL] [internal] 2026-10-14T16:41:13.506263Z source: sample-intents.csv [text=text, label=label, 45 rows]
+> [INTERNAL] [internal] 2026-10-14T16:41:13.521493Z ort: session #1 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:41:13.788624Z ort: session #2 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:41:18.081532Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T16:41:18.104737Z initMod: 'dummy' -> weather:0.60819036, lights:0.51950234, greeting:0.37319905
+> [INTERNAL] [internal] 2026-10-14T16:41:18.115391Z initMod: 'dummy' -> weather:0.5444942, lights:0.5111637, greeting:0.44434565
+> [INTERNAL] [internal] 2026-10-14T16:41:18.122240Z initMod: 'dummy' -> weather:0.56830585, greeting:0.46856803, lights:0.46316245
+> [INTERNAL] [internal] 2026-10-14T16:41:18.129337Z initMod: 'dummy' -> weather:0.65583366, greeting:0.5421442, lights:0.30875468
+> [INTERNAL] [internal] 2026-10-14T16:41:18.136179Z initMod: 'dummy' -> weather:0.56382513, greeting:0.47702867, lights:0.4592979
+> [INTERNAL] [internal] 2026-10-14T16:41:18.145839Z initMod: 'dummy' -> weather:0.54457355, lights:0.53664476, greeting:0.41896242
+> [INTERNAL] [internal] 2026-10-14T16:41:18.152482Z initMod: 'dummy' -> weather:0.5779325, lights:0.4893945, greeting:0.43255064
+> [INTERNAL] [internal] 2026-10-14T16:41:18.157889Z initMod: 'dummy' -> weather:0.5675384, greeting:0.5071472, lights:0.42616338
+> [INTERNAL] [internal] 2026-10-14T16:41:18.164537Z initMod: 'dummy' -> weather:0.5676954, greeting:0.5421453, lights:0.39240852
+> [INTERNAL] [internal] 2026-10-14T16:41:18.170704Z initMod: 'dummy' -> weather:0.59157056, lights:0.5375975, greeting:0.37224525
+> [INTERNAL] [internal] 2026-10-14T16:41:18.175970Z initMod: 'dummy' -> weather:0.5703034, greeting:0.5320881, lights:0.39947173
+> [INTERNAL] [internal] 2026-10-14T16:41:18.183649Z initMod: 'dummy' -> weather:0.6598409, greeting:0.52861375, lights:0.31654304
+> [INTERNAL] [internal] 2026-10-14T16:41:18.188522Z initMod: 'dummy' -> weather:0.6067637, greeting:0.47965434, lights:0.41364455
+> [INTERNAL] [internal] 2026-10-14T16:41:18.193587Z initMod: 'dummy' -> weather:0.5603754, lights:0.5435235, greeting:0.3967769
+> [INTERNAL] [internal] 2026-10-14T16:41:18.200347Z initMod: 'dummy' -> weather:0.5403451, lights:0.5160137, greeting:0.44363323
+> [INTERNAL] [internal] 2026-10-14T16:41:18.207062Z initMod: 'dummy' -> lights:0.57225937, weather:0.4760027, greeting:0.45070234
+> [INTERNAL] [internal] 2026-10-14T16:41:18.216515Z initMod: 'dummy' -> weather:0.62326646, greeting:0.51100385, lights:0.36767507
+> [INTERNAL] [internal] 2026-10-14T16:41:18.225099Z initMod: 'dummy' -> weather:0.57715964, greeting:0.4749579, lights:0.44797686
+> [INTERNAL] [internal] 2026-10-14T16:41:18.231751Z initMod: 'dummy' -> weather:0.61063355, greeting:0.4989282, lights:0.39140496
+> [INTERNAL] [internal] 2026-10-14T16:41:18.238474Z initMod: 'dummy' -> weather:0.6301832, lights:0.4793232, greeting:0.38949236
+> [INTERNAL] [internal] 2026-10-14T16:41:18.247922Z initMod: 'dummy' -> lights:0.51302916, greeting:0.5071778, weather:0.4796745
+> [INTERNAL] [internal] 2026-10-14T16:41:18.256004Z initMod: 'dummy' -> greeting:0.55405325, weather:0.4748808, lights:0.47118658
+> [INTERNAL] [internal] 2026-10-14T16:41:18.263846Z initMod: 'dummy' -> weather:0.5880185, greeting:0.46884602, lights:0.44305187
+> [INTERNAL] [internal] 2026-10-14T16:41:18.276440Z initMod: 'dummy' -> weather:0.5189152, greeting:0.5037301, lights:0.4775781
+> [INTERNAL] [internal] 2026-10-14T16:41:18.285816Z initMod: 'dummy' -> weather:0.6112888, lights:0.4810947, greeting:0.40700948
+> [INTERNAL] [internal] 2026-10-14T16:41:18.291853Z initMod: 'dummy' -> lights:0.5770103, greeting:0.48156136, weather:0.44035205
+> [INTERNAL] [internal] 2026-10-14T16:41:18.299353Z initMod: 'dummy' -> weather:0.6410107, lights:0.4394682, greeting:0.4172495
+> [INTERNAL] [internal] 2026-10-14T16:41:18.311062Z initMod: 'dummy' -> greeting:0.542123, lights:0.52671754, weather:0.43121356
+> [INTERNAL] [internal] 2026-10-14T16:41:18.322813Z initMod: 'dummy' -> weather:0.6575374, lights:0.49142423, greeting:0.35030463
+> [INTERNAL] [internal] 2026-10-14T16:41:18.335694Z initMod: 'dummy' -> weather:0.61360717, greeting:0.45403558, lights:0.4315691
+> [INTERNAL] [internal] 2026-10-14T16:41:18.347614Z initMod: 'dummy' -> greeting:0.6440654, weather:0.4722571, lights:0.3828802
+> [INTERNAL] [internal] 2026-10-14T16:41:18.356401Z initMod: 'dummy' -> lights:0.5262529, weather:0.50282085, greeting:0.470681
+> [INTERNAL] [internal] 2026-10-14T16:41:18.364438Z initMod: 'dummy' -> lights:0.5049359, greeting:0.49776712, weather:0.49724907
+> [INTERNAL] [internal] 2026-10-14T16:41:18.372659Z initMod: 'dummy' -> greeting:0.57907873, weather:0.50702584, lights:0.4148949
+> [INTERNAL] [internal] 2026-10-14T16:41:18.381420Z initMod: 'dummy' -> weather:0.5891823, lights:0.47635207, greeting:0.43413353
+> [INTERNAL] [internal] 2026-10-14T16:41:18.390930Z initMod: 'dummy' -> weather:0.56308436, greeting:0.52268094, lights:0.41552565
+> [INTERNAL] [internal] 2026-10-14T16:41:18.399089Z initMod: 'dummy' -> greeting:0.5975436, weather:0.5000462, lights:0.403325
+> [INTERNAL] [internal] 2026-10-14T16:41:18.406354Z initMod: 'dummy' -> weather:0.5804657, lights:0.4762677, greeting:0.44305706
+> [INTERNAL] [internal] 2026-10-14T16:41:18.414709Z initMod: 'dummy' -> greeting:0.57255584, weather:0.49809897, lights:0.42997587
+> [INTERNAL] [internal] 2026-10-14T16:41:18.422786Z initMod: 'dummy' -> weather:0.6009335, greeting:0.4799606, lights:0.41921514
+> [INTERNAL] [internal] 2026-10-14T16:41:18.430047Z initMod: 'dummy' -> greeting:0.6025627, lights:0.47914457, weather:0.41778442
+> [INTERNAL] [internal] 2026-10-14T16:41:18.437076Z initMod: 'dummy' -> weather:0.6165599, lights:0.44204453, greeting:0.44032416
+> [INTERNAL] [internal] 2026-10-14T16:41:18.444671Z initMod: 'dummy' -> greeting:0.63001984, weather:0.4757465, lights:0.3938795
+> [INTERNAL] [internal] 2026-10-14T16:41:18.452316Z initMod: 'dummy' -> greeting:0.59787655, weather:0.54010123, lights:0.36539477
+> [INTERNAL] [internal] 2026-10-14T16:41:18.459366Z initMod: 'dummy' -> weather:0.55560136, greeting:0.51015055, lights:0.43501872
+> [INTERNAL] [internal] 2026-10-14T16:41:18.460167Z ort: session #1 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:41:18.462694Z ort: session #2 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:41:18.464649Z model dummy (#1): closed after 45 runs
+> [INTERNAL] [internal] 2026-10-14T16:41:18.469661Z validate: 'dummy' on sample-intents.csv: 45 rows, accuracy 0.200, macro F1 0.187
+> [INTERNAL] [internal] 2026-10-14T16:41:34.002573Z source: sample-intents.csv [text=text, label=label, 45 rows]
+> [INTERNAL] [internal] 2026-10-14T16:41:34.004332Z ort: session #3 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:41:34.202859Z ort: session #4 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:41:34.216234Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T16:41:34.222017Z initMod: 'dummy' -> weather:0.60819036, lights:0.51950234, greeting:0.37319905
+> [INTERNAL] [internal] 2026-10-14T16:41:34.229734Z initMod: 'dummy' -> weather:0.5444942, lights:0.5111637, greeting:0.44434565
+> [INTERNAL] [internal] 2026-10-14T16:41:34.235093Z initMod: 'dummy' -> weather:0.56830585, greeting:0.46856803, lights:0.46316245
+> [INTERNAL] [internal] 2026-10-14T16:41:34.241352Z initMod: 'dummy' -> weather:0.65583366, greeting:0.5421442, lights:0.30875468
+> [INTERNAL] [internal] 2026-10-14T16:41:34.247261Z initMod: 'dummy' -> weather:0.56382513, greeting:0.47702867, lights:0.4592979
+> [INTERNAL] [internal] 2026-10-14T16:41:34.255771Z initMod: 'dummy' -> weather:0.54457355, lights:0.53664476, greeting:0.41896242
+> [INTERNAL] [internal] 2026-10-14T16:41:34.262100Z initMod: 'dummy' -> weather:0.5779325, lights:0.4893945, greeting:0.43255064
+> [INTERNAL] [internal] 2026-10-14T16:41:34.266987Z initMod: 'dummy' -> weather:0.5675384, greeting:0.5071472, lights:0.42616338
+> [INTERNAL] [internal] 2026-10-14T16:41:34.273423Z initMod: 'dummy' -> weather:0.5676954, greeting:0.5421453, lights:0.39240852
+> [INTERNAL] [internal] 2026-10-14T16:41:34.279301Z initMod: 'dummy' -> weather:0.59157056, lights:0.5375975, greeting:0.37224525
+> [INTERNAL] [internal] 2026-10-14T16:41:34.284615Z initMod: 'dummy' -> weather:0.5703034, greeting:0.5320881, lights:0.39947173
+> [INTERNAL] [internal] 2026-10-14T16:41:34.291503Z initMod: 'dummy' -> weather:0.6598409, greeting:0.52861375, lights:0.31654304
+> [INTERNAL] [internal] 2026-10-14T16:41:34.295990Z initMod: 'dummy' -> weather:0.6067637, greeting:0.47965434, lights:0.41364455
+> [INTERNAL] [internal] 2026-10-14T16:41:34.300702Z initMod: 'dummy' -> weather:0.5603754, lights:0.5435235, greeting:0.3967769
+> [INTERNAL] [internal] 2026-10-14T16:41:34.307299Z initMod: 'dummy' -> weather:0.5403451, lights:0.5160137, greeting:0.44363323
+> [INTERNAL] [internal] 2026-10-14T16:41:34.313868Z initMod: 'dummy' -> lights:0.57225937, weather:0.4760027, greeting:0.45070234
+> [INTERNAL] [internal] 2026-10-14T16:41:34.322057Z initMod: 'dummy' -> weather:0.62326646, greeting:0.51100385, lights:0.36767507
+> [INTERNAL] [internal] 2026-10-14T16:41:34.329673Z initMod: 'dummy' -> weather:0.57715964, greeting:0.4749579, lights:0.44797686
+> [INTERNAL] [internal] 2026-10-14T16:41:34.335729Z initMod: 'dummy' -> weather:0.61063355, greeting:0.4989282, lights:0.39140496
+> [INTERNAL] [internal] 2026-10-14T16:41:34.341884Z initMod: 'dummy' -> weather:0.6301832, lights:0.4793232, greeting:0.38949236
+> [INTERNAL] [internal] 2026-10-14T16:41:34.347437Z initMod: 'dummy' -> lights:0.51302916, greeting:0.5071778, weather:0.4796745
+> [INTERNAL] [internal] 2026-10-14T16:41:34.354055Z initMod: 'dummy' -> greeting:0.55405325, weather:0.4748808, lights:0.47118658
+> [INTERNAL] [internal] 2026-10-14T16:41:34.360741Z initMod: 'dummy' -> weather:0.5880185, greeting:0.46884602, lights:0.44305187
+> [INTERNAL] [internal] 2026-10-14T16:41:34.371187Z initMod: 'dummy' -> weather:0.5189152, greeting:0.5037301, lights:0.4775781
+> [INTERNAL] [internal] 2026-10-14T16:41:34.379136Z initMod: 'dummy' -> weather:0.6112888, lights:0.4810947, greeting:0.40700948
+> [INTERNAL] [internal] 2026-10-14T16:41:34.384348Z initMod: 'dummy' -> lights:0.5770103, greeting:0.48156136, weather:0.44035205
+> [INTERNAL] [internal] 2026-10-14T16:41:34.390145Z initMod: 'dummy' -> weather:0.6410107, lights:0.4394682, greeting:0.4172495
+> [INTERNAL] [internal] 2026-10-14T16:41:34.397537Z initMod: 'dummy' -> greeting:0.542123, lights:0.52671754, weather:0.43121356
+> [INTERNAL] [internal] 2026-10-14T16:41:34.405037Z initMod: 'dummy' -> weather:0.6575374, lights:0.49142423, greeting:0.35030463
+> [INTERNAL] [internal] 2026-10-14T16:41:34.413282Z initMod: 'dummy' -> weather:0.61360717, greeting:0.45403558, lights:0.4315691
+> [INTERNAL] [internal] 2026-10-14T16:41:34.425492Z initMod: 'dummy' -> greeting:0.6440654, weather:0.4722571, lights:0.3828802
+> [INTERNAL] [internal] 2026-10-14T16:41:34.433377Z initMod: 'dummy' -> lights:0.5262529, weather:0.50282085, greeting:0.470681
+> [INTERNAL] [internal] 2026-10-14T16:41:34.440536Z initMod: 'dummy' -> lights:0.5049359, greeting:0.49776712, weather:0.49724907
+> [INTERNAL] [internal] 2026-10-14T16:41:34.448211Z initMod: 'dummy' -> greeting:0.57907873, weather:0.50702584, lights:0.4148949
+> [INTERNAL] [internal] 2026-10-14T16:41:34.456745Z initMod: 'dummy' -> weather:0.5891823, lights:0.47635207, greeting:0.43413353
+> [INTERNAL] [internal] 2026-10-14T16:41:34.464997Z initMod: 'dummy' -> weather:0.56308436, greeting:0.52268094, lights:0.41552565
+> [INTERNAL] [internal] 2026-10-14T16:41:34.473916Z initMod: 'dummy' -> greeting:0.5975436, weather:0.5000462, lights:0.403325
+> [INTERNAL] [internal] 2026-10-14T16:41:34.479430Z initMod: 'dummy' -> weather:0.5804657, lights:0.4762677, greeting:0.44305706
+> [INTERNAL] [internal] 2026-10-14T16:41:34.485130Z initMod: 'dummy' -> greeting:0.57255584, weather:0.49809897, lights:0.42997587
+> [INTERNAL] [internal] 2026-10-14T16:41:34.490776Z initMod: 'dummy' -> weather:0.6009335, greeting:0.4799606, lights:0.41921514
+> [INTERNAL] [internal] 2026-10-14T16:41:34.496505Z initMod: 'dummy' -> greeting:0.6025627, lights:0.47914457, weather:0.41778442
+> [INTERNAL] [internal] 2026-10-14T16:41:34.502323Z initMod: 'dummy' -> weather:0.6165599, lights:0.44204453, greeting:0.44032416
+> [INTERNAL] [internal] 2026-10-14T16:41:34.508680Z initMod: 'dummy' -> greeting:0.63001984, weather:0.4757465, lights:0.3938795
+> [INTERNAL] [internal] 2026-10-14T16:41:34.514999Z initMod: 'dummy' -> greeting:0.59787655, weather:0.54010123, lights:0.36539477
+> [INTERNAL] [internal] 2026-10-14T16:41:34.521185Z initMod: 'dummy' -> weather:0.55560136, greeting:0.51015055, lights:0.43501872
+> [INTERNAL] [internal] 2026-10-14T16:41:34.521696Z ort: session #3 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:41:34.524773Z ort: session #4 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:41:34.525672Z model dummy (#2): closed after 45 runs
+> [INTERNAL] [internal] 2026-10-14T16:41:34.526212Z validate: 'dummy' on sample-intents.csv: 45 rows, accuracy 0.200, macro F1 0.187
+> [INTERNAL] [internal] 2026-10-14T16:41:35.224789Z source: sample-intents.csv [text=text, label=label, 45 rows]
+> [INTERNAL] [internal] 2026-10-14T16:41:35.226118Z ort: session #5 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:41:35.395024Z ort: session #6 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:41:35.405390Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T16:41:35.416376Z initMod: 'dummy' -> weather:0.60819036, lights:0.51950234, greeting:0.37319905
+> [INTERNAL] [internal] 2026-10-14T16:41:35.423946Z initMod: 'dummy' -> weather:0.5444942, lights:0.5111637, greeting:0.44434565
+> [INTERNAL] [internal] 2026-10-14T16:41:35.428751Z initMod: 'dummy' -> weather:0.56830585, greeting:0.46856803, lights:0.46316245
+> [INTERNAL] [internal] 2026-10-14T16:41:35.434906Z initMod: 'dummy' -> weather:0.65583366, greeting:0.5421442, lights:0.30875468
+> [INTERNAL] [internal] 2026-10-14T16:41:35.441004Z initMod: 'dummy' -> weather:0.56382513, greeting:0.47702867, lights:0.4592979
+> [INTERNAL] [internal] 2026-10-14T16:41:35.448674Z initMod: 'dummy' -> weather:0.54457355, lights:0.53664476, greeting:0.41896242
+> [INTERNAL] [internal] 2026-10-14T16:41:35.454550Z initMod: 'dummy' -> weather:0.5779325, lights:0.4893945, greeting:0.43255064
+> [INTERNAL] [internal] 2026-10-14T16:41:35.459314Z initMod: 'dummy' -> weather:0.5675384, greeting:0.5071472, lights:0.42616338
+> [INTERNAL] [internal] 2026-10-14T16:41:35.465669Z initMod: 'dummy' -> weather:0.5676954, greeting:0.5421453, lights:0.39240852
+> [INTERNAL] [internal] 2026-10-14T16:41:35.471179Z initMod: 'dummy' -> weather:0.59157056, lights:0.5375975, greeting:0.37224525
+> [INTERNAL] [internal] 2026-10-14T16:41:35.476192Z initMod: 'dummy' -> weather:0.5703034, greeting:0.5320881, lights:0.39947173
+> [INTERNAL] [internal] 2026-10-14T16:41:35.482136Z initMod: 'dummy' -> weather:0.6598409, greeting:0.52861375, lights:0.31654304
+> [INTERNAL] [internal] 2026-10-14T16:41:35.486674Z initMod: 'dummy' -> weather:0.6067637, greeting:0.47965434, lights:0.41364455
+> [INTERNAL] [internal] 2026-10-14T16:41:35.491746Z initMod: 'dummy' -> weather:0.5603754, lights:0.5435235, greeting:0.3967769
+> [INTERNAL] [internal] 2026-10-14T16:41:35.497752Z initMod: 'dummy' -> weather:0.5403451, lights:0.5160137, greeting:0.44363323
+> [INTERNAL] [internal] 2026-10-14T16:41:35.504306Z initMod: 'dummy' -> lights:0.57225937, weather:0.4760027, greeting:0.45070234
+> [INTERNAL] [internal] 2026-10-14T16:41:35.512217Z initMod: 'dummy' -> weather:0.62326646, greeting:0.51100385, lights:0.36767507
+> [INTERNAL] [internal] 2026-10-14T16:41:35.520383Z initMod: 'dummy' -> weather:0.57715964, greeting:0.4749579, lights:0.44797686
+> [INTERNAL] [internal] 2026-10-14T16:41:35.526491Z initMod: 'dummy' -> weather:0.61063355, greeting:0.4989282, lights:0.39140496
+> [INTERNAL] [internal] 2026-10-14T16:41:35.532632Z initMod: 'dummy' -> weather:0.6301832, lights:0.4793232, greeting:0.38949236
+> [INTERNAL] [internal] 2026-10-14T16:41:35.539347Z initMod: 'dummy' -> lights:0.51302916, greeting:0.5071778, weather:0.4796745
+> [INTERNAL] [internal] 2026-10-14T16:41:35.546202Z initMod: 'dummy' -> greeting:0.55405325, weather:0.4748808, lights:0.47118658
+> [INTERNAL] [internal] 2026-10-14T16:41:35.553571Z initMod: 'dummy' -> weather:0.5880185, greeting:0.46884602, lights:0.44305187
+> [INTERNAL] [internal] 2026-10-14T16:41:35.563482Z initMod: 'dummy' -> weather:0.5189152, greeting:0.5037301, lights:0.4775781
+> [INTERNAL] [internal] 2026-10-14T16:41:35.571067Z initMod: 'dummy' -> weather:0.6112888, lights:0.4810947, greeting:0.40700948
+> [INTERNAL] [internal] 2026-10-14T16:41:35.575792Z initMod: 'dummy' -> lights:0.5770103, greeting:0.48156136, weather:0.44035205
+> [INTERNAL] [internal] 2026-10-14T16:41:35.581834Z initMod: 'dummy' -> weather:0.6410107, lights:0.4394682, greeting:0.4172495
+> [INTERNAL] [internal] 2026-10-14T16:41:35.589919Z initMod: 'dummy' -> greeting:0.542123, lights:0.52671754, weather:0.43121356
+> [INTERNAL] [internal] 2026-10-14T16:41:35.597109Z initMod: 'dummy' -> weather:0.6575374, lights:0.49142423, greeting:0.35030463
+> [INTERNAL] [internal] 2026-10-14T16:41:35.604528Z initMod: 'dummy' -> weather:0.61360717, greeting:0.45403558, lights:0.4315691
+> [INTERNAL] [internal] 2026-10-14T16:41:35.613179Z initMod: 'dummy' -> greeting:0.6440654, weather:0.4722571, lights:0.3828802
+> [INTERNAL] [internal] 2026-10-14T16:41:35.619981Z initMod: 'dummy' -> lights:0.5262529, weather:0.50282085, greeting:0.470681
+> [INTERNAL] [internal] 2026-10-14T16:41:35.626088Z initMod: 'dummy' -> lights:0.5049359, greeting:0.49776712, weather:0.49724907
+> [INTERNAL] [internal] 2026-10-14T16:41:35.633065Z initMod: 'dummy' -> greeting:0.57907873, weather:0.50702584, lights:0.4148949
+> [INTERNAL] [internal] 2026-10-14T16:41:35.640368Z initMod: 'dummy' -> weather:0.5891823, lights:0.47635207, greeting:0.43413353
+> [INTERNAL] [internal] 2026-10-14T16:41:35.649146Z initMod: 'dummy' -> weather:0.56308436, greeting:0.52268094, lights:0.41552565
+> [INTERNAL] [internal] 2026-10-14T16:41:35.656855Z initMod: 'dummy' -> greeting:0.5975436, weather:0.5000462, lights:0.403325
+> [INTERNAL] [internal] 2026-10-14T16:41:35.662575Z initMod: 'dummy' -> weather:0.5804657, lights:0.4762677, greeting:0.44305706
+> [INTERNAL] [internal] 2026-10-14T16:41:35.668634Z initMod: 'dummy' -> greeting:0.57255584, weather:0.49809897, lights:0.42997587
+> [INTERNAL] [internal] 2026-10-14T16:41:35.674589Z initMod: 'dummy' -> weather:0.6009335, greeting:0.4799606, lights:0.41921514
+> [INTERNAL] [internal] 2026-10-14T16:41:35.680142Z initMod: 'dummy' -> greeting:0.6025627, lights:0.47914457, weather:0.41778442
+> [INTERNAL] [internal] 2026-10-14T16:41:35.686298Z initMod: 'dummy' -> weather:0.6165599, lights:0.44204453, greeting:0.44032416
+> [INTERNAL] [internal] 2026-10-14T16:41:35.692890Z initMod: 'dummy' -> greeting:0.63001984, weather:0.4757465, lights:0.3938795
+> [INTERNAL] [internal] 2026-10-14T16:41:35.698709Z initMod: 'dummy' -> greeting:0.59787655, weather:0.54010123, lights:0.36539477
+> [INTERNAL] [internal] 2026-10-14T16:41:35.704530Z initMod: 'dummy' -> weather:0.55560136, greeting:0.51015055, lights:0.43501872
+> [INTERNAL] [internal] 2026-10-14T16:41:35.704880Z ort: session #5 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:41:35.708174Z ort: session #6 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:41:35.709072Z model dummy (#3): closed after 45 runs
+> [INTERNAL] [internal] 2026-10-14T16:41:35.709694Z validate: 'dummy' on sample-intents.csv: 45 rows, accuracy 0.200, macro F1 0.187
+> [INTERNAL] [internal] 2026-10-14T16:41:36.230065Z source: sample-intents.csv [text=text, label=label, 45 rows]
+> [INTERNAL] [internal] 2026-10-14T16:41:36.231907Z ort: session #7 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:41:36.444871Z ort: session #8 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:41:36.453510Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T16:41:36.459321Z initMod: 'dummy' -> weather:0.60819036, lights:0.51950234, greeting:0.37319905
+> [INTERNAL] [internal] 2026-10-14T16:41:36.466596Z initMod: 'dummy' -> weather:0.5444942, lights:0.5111637, greeting:0.44434565
+> [INTERNAL] [internal] 2026-10-14T16:41:36.471396Z initMod: 'dummy' -> weather:0.56830585, greeting:0.46856803, lights:0.46316245
+> [INTERNAL] [internal] 2026-10-14T16:41:36.477373Z initMod: 'dummy' -> weather:0.65583366, greeting:0.5421442, lights:0.30875468
+> [INTERNAL] [internal] 2026-10-14T16:41:36.484030Z initMod: 'dummy' -> weather:0.56382513, greeting:0.47702867, lights:0.4592979
+> [INTERNAL] [internal] 2026-10-14T16:41:36.492323Z initMod: 'dummy' -> weather:0.54457355, lights:0.53664476, greeting:0.41896242
+> [INTERNAL] [internal] 2026-10-14T16:41:36.498191Z initMod: 'dummy' -> weather:0.5779325, lights:0.4893945, greeting:0.43255064
+> [INTERNAL] [internal] 2026-10-14T16:41:36.502780Z initMod: 'dummy' -> weather:0.5675384, greeting:0.5071472, lights:0.42616338
+> [INTERNAL] [internal] 2026-10-14T16:41:36.510167Z initMod: 'dummy' -> weather:0.5676954, greeting:0.5421453, lights:0.39240852
+> [INTERNAL] [internal] 2026-10-14T16:41:36.516166Z initMod: 'dummy' -> weather:0.59157056, lights:0.5375975, greeting:0.37224525
+> [INTERNAL] [internal] 2026-10-14T16:41:36.521847Z initMod: 'dummy' -> weather:0.5703034, greeting:0.5320881, lights:0.39947173
+> [INTERNAL] [internal] 2026-10-14T16:41:36.528992Z initMod: 'dummy' -> weather:0.6598409, greeting:0.52861375, lights:0.31654304
+> [INTERNAL] [internal] 2026-10-14T16:41:36.533942Z initMod: 'dummy' -> weather:0.6067637, greeting:0.47965434, lights:0.41364455
+> [INTERNAL] [internal] 2026-10-14T16:41:36.538374Z initMod: 'dummy' -> weather:0.5603754, lights:0.5435235, greeting:0.3967769
+> [INTERNAL] [internal] 2026-10-14T16:41:36.544360Z initMod: 'dummy' -> weather:0.5403451, lights:0.5160137, greeting:0.44363323
+> [INTERNAL] [internal] 2026-10-14T16:41:36.551110Z initMod: 'dummy' -> lights:0.57225937, weather:0.4760027, greeting:0.45070234
+> [INTERNAL] [internal] 2026-10-14T16:41:36.558856Z initMod: 'dummy' -> weather:0.62326646, greeting:0.51100385, lights:0.36767507
+> [INTERNAL] [internal] 2026-10-14T16:41:36.566629Z initMod: 'dummy' -> weather:0.57715964, greeting:0.4749579, lights:0.44797686
+> [INTERNAL] [internal] 2026-10-14T16:41:36.572800Z initMod: 'dummy' -> weather:0.61063355, greeting:0.4989282, lights:0.39140496
+> [INTERNAL] [internal] 2026-10-14T16:41:36.578590Z initMod: 'dummy' -> weather:0.6301832, lights:0.4793232, greeting:0.38949236
+> [INTERNAL] [internal] 2026-10-14T16:41:36.584878Z initMod: 'dummy' -> lights:0.51302916, greeting:0.5071778, weather:0.4796745
+> [INTERNAL] [internal] 2026-10-14T16:41:36.591716Z initMod: 'dummy' -> greeting:0.55405325, weather:0.4748808, lights:0.47118658
+> [INTERNAL] [internal] 2026-10-14T16:41:36.598896Z initMod: 'dummy' -> weather:0.5880185, greeting:0.46884602, lights:0.44305187
+> [INTERNAL] [internal] 2026-10-14T16:41:36.610216Z initMod: 'dummy' -> weather:0.5189152, greeting:0.5037301, lights:0.4775781
+> [INTERNAL] [internal] 2026-10-14T16:41:36.619694Z initMod: 'dummy' -> weather:0.6112888, lights:0.4810947, greeting:0.40700948
+> [INTERNAL] [internal] 2026-10-14T16:41:36.627706Z initMod: 'dummy' -> lights:0.5770103, greeting:0.48156136, weather:0.44035205
+> [INTERNAL] [internal] 2026-10-14T16:41:36.634498Z initMod: 'dummy' -> weather:0.6410107, lights:0.4394682, greeting:0.4172495
+> [INTERNAL] [internal] 2026-10-14T16:41:36.642627Z initMod: 'dummy' -> greeting:0.542123, lights:0.52671754, weather:0.43121356
+> [INTERNAL] [internal] 2026-10-14T16:41:36.651354Z initMod: 'dummy' -> weather:0.6575374, lights:0.49142423, greeting:0.35030463
+> [INTERNAL] [internal] 2026-10-14T16:41:36.660397Z initMod: 'dummy' -> weather:0.61360717, greeting:0.45403558, lights:0.4315691
+> [INTERNAL] [internal] 2026-10-14T16:41:36.669740Z initMod: 'dummy' -> greeting:0.6440654, weather:0.4722571, lights:0.3828802
+> [INTERNAL] [internal] 2026-10-14T16:41:36.676313Z initMod: 'dummy' -> lights:0.5262529, weather:0.50282085, greeting:0.470681
+> [INTERNAL] [internal] 2026-10-14T16:41:36.682328Z initMod: 'dummy' -> lights:0.5049359, greeting:0.49776712, weather:0.49724907
+> [INTERNAL] [internal] 2026-10-14T16:41:36.688475Z initMod: 'dummy' -> greeting:0.57907873, weather:0.50702584, lights:0.4148949
+> [INTERNAL] [internal] 2026-10-14T16:41:36.695817Z initMod: 'dummy' -> weather:0.5891823, lights:0.47635207, greeting:0.43413353
+> [INTERNAL] [internal] 2026-10-14T16:41:36.704277Z initMod: 'dummy' -> weather:0.56308436, greeting:0.52268094, lights:0.41552565
+> [INTERNAL] [internal] 2026-10-14T16:41:36.712512Z initMod: 'dummy' -> greeting:0.5975436, weather:0.5000462, lights:0.403325
+> [INTERNAL] [internal] 2026-10-14T16:41:36.719546Z initMod: 'dummy' -> weather:0.5804657, lights:0.4762677, greeting:0.44305706
+> [INTERNAL] [internal] 2026-10-14T16:41:36.725641Z initMod: 'dummy' -> greeting:0.57255584, weather:0.49809897, lights:0.42997587
+> [INTERNAL] [internal] 2026-10-14T16:41:36.731290Z initMod: 'dummy' -> weather:0.6009335, greeting:0.4799606, lights:0.41921514
+> [INTERNAL] [internal] 2026-10-14T16:41:36.737454Z initMod: 'dummy' -> greeting:0.6025627, lights:0.47914457, weather:0.41778442
+> [INTERNAL] [internal] 2026-10-14T16:41:36.743614Z initMod: 'dummy' -> weather:0.6165599, lights:0.44204453, greeting:0.44032416
+> [INTERNAL] [internal] 2026-10-14T16:41:36.749865Z initMod: 'dummy' -> greeting:0.63001984, weather:0.4757465, lights:0.3938795
+> [INTERNAL] [internal] 2026-10-14T16:41:36.755974Z initMod: 'dummy' -> greeting:0.59787655, weather:0.54010123, lights:0.36539477
+> [INTERNAL] [internal] 2026-10-14T16:41:36.761563Z initMod: 'dummy' -> weather:0.55560136, greeting:0.51015055, lights:0.43501872
+> [INTERNAL] [internal] 2026-10-14T16:41:36.761962Z ort: session #7 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:41:36.765252Z ort: session #8 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:41:36.766161Z model dummy (#4): closed after 45 runs
+> [INTERNAL] [internal] 2026-10-14T16:41:36.766867Z validate: 'dummy' on sample-intents.csv: 45 rows, accuracy 0.200, macro F1 0.187
+> [INTERNAL] [internal] 2026-10-14T16:41:37.730675Z source: sample-intents.csv [text=text, label=label, 45 rows]
+> [INTERNAL] [internal] 2026-10-14T16:41:37.732195Z ort: session #9 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:41:37.947199Z ort: session #10 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:41:37.957609Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T16:41:37.963560Z initMod: 'dummy' -> weather:0.60819036, lights:0.51950234, greeting:0.37319905
+> [INTERNAL] [internal] 2026-10-14T16:41:37.971075Z initMod: 'dummy' -> weather:0.5444942, lights:0.5111637, greeting:0.44434565
+> [INTERNAL] [internal] 2026-10-14T16:41:37.975866Z initMod: 'dummy' -> weather:0.56830585, greeting:0.46856803, lights:0.46316245
+> [INTERNAL] [internal] 2026-10-14T16:41:37.981311Z initMod: 'dummy' -> weather:0.65583366, greeting:0.5421442, lights:0.30875468
+> [INTERNAL] [internal] 2026-10-14T16:41:37.986877Z initMod: 'dummy' -> weather:0.56382513, greeting:0.47702867, lights:0.4592979
+> [INTERNAL] [internal] 2026-10-14T16:41:37.994487Z initMod: 'dummy' -> weather:0.54457355, lights:0.53664476, greeting:0.41896242
+> [INTERNAL] [internal] 2026-10-14T16:41:37.999978Z initMod: 'dummy' -> weather:0.5779325, lights:0.4893945, greeting:0.43255064
+> [INTERNAL] [internal] 2026-10-14T16:41:38.004862Z initMod: 'dummy' -> weather:0.5675384, greeting:0.5071472, lights:0.42616338
+> [INTERNAL] [internal] 2026-10-14T16:41:38.013217Z initMod: 'dummy' -> weather:0.5676954, greeting:0.5421453, lights:0.39240852
+> [INTERNAL] [internal] 2026-10-14T16:41:38.018514Z initMod: 'dummy' -> weather:0.59157056, lights:0.5375975, greeting:0.37224525
+> [INTERNAL] [internal] 2026-10-14T16:41:38.023213Z initMod: 'dummy' -> weather:0.5703034, greeting:0.5320881, lights:0.39947173
+> [INTERNAL] [internal] 2026-10-14T16:41:38.030154Z initMod: 'dummy' -> weather:0.6598409, greeting:0.52861375, lights:0.31654304
+> [INTERNAL] [internal] 2026-10-14T16:41:38.035694Z initMod: 'dummy' -> weather:0.6067637, greeting:0.47965434, lights:0.41364455
+> [INTERNAL] [internal] 2026-10-14T16:41:38.040847Z initMod: 'dummy' -> weather:0.5603754, lights:0.5435235, greeting:0.3967769
+> [INTERNAL] [internal] 2026-10-14T16:41:38.046668Z initMod: 'dummy' -> weather:0.5403451, lights:0.5160137, greeting:0.44363323
+> [INTERNAL] [internal] 2026-10-14T16:41:38.052739Z initMod: 'dummy' -> lights:0.57225937, weather:0.4760027, greeting:0.45070234
+> [INTERNAL] [internal] 2026-10-14T16:41:38.060728Z initMod: 'dummy' -> weather:0.62326646, greeting:0.51100385, lights:0.36767507
+> [INTERNAL] [internal] 2026-10-14T16:41:38.068196Z initMod: 'dummy' -> weather:0.57715964, greeting:0.4749579, lights:0.44797686
+> [INTERNAL] [internal] 2026-10-14T16:41:38.073595Z initMod: 'dummy' -> weather:0.61063355, greeting:0.4989282, lights:0.39140496
+> [INTERNAL] [internal] 2026-10-14T16:41:38.079199Z initMod: 'dummy' -> weather:0.6301832, lights:0.4793232, greeting:0.38949236
+> [INTERNAL] [internal] 2026-10-14T16:41:38.085057Z initMod: 'dummy' -> lights:0.51302916, greeting:0.5071778, weather:0.4796745
+> [INTERNAL] [internal] 2026-10-14T16:41:38.091591Z initMod: 'dummy' -> greeting:0.55405325, weather:0.4748808, lights:0.47118658
+> [INTERNAL] [internal] 2026-10-14T16:41:38.097308Z initMod: 'dummy' -> weather:0.5880185, greeting:0.46884602, lights:0.44305187
+> [INTERNAL] [internal] 2026-10-14T16:41:38.106892Z initMod: 'dummy' -> weather:0.5189152, greeting:0.5037301, lights:0.4775781
+> [INTERNAL] [internal] 2026-10-14T16:41:38.115050Z initMod: 'dummy' -> weather:0.6112888, lights:0.4810947, greeting:0.40700948
+> [INTERNAL] [internal] 2026-10-14T16:41:38.120305Z initMod: 'dummy' -> lights:0.5770103, greeting:0.48156136, weather:0.44035205
+> [INTERNAL] [internal] 2026-10-14T16:41:38.127270Z initMod: 'dummy' -> weather:0.6410107, lights:0.4394682, greeting:0.4172495
+> [INTERNAL] [internal] 2026-10-14T16:41:38.135377Z initMod: 'dummy' -> greeting:0.542123, lights:0.52671754, weather:0.43121356
+> [INTERNAL] [internal] 2026-10-14T16:41:38.144886Z initMod: 'dummy' -> weather:0.6575374, lights:0.49142423, greeting:0.35030463
+> [INTERNAL] [internal] 2026-10-14T16:41:38.153600Z initMod: 'dummy' -> weather:0.61360717, greeting:0.45403558, lights:0.4315691
+> [INTERNAL] [internal] 2026-10-14T16:41:38.183923Z initMod: 'dummy' -> greeting:0.6440654, weather:0.4722571, lights:0.3828802
+> [INTERNAL] [internal] 2026-10-14T16:41:38.201080Z initMod: 'dummy' -> lights:0.5262529, weather:0.50282085, greeting:0.470681
+> [INTERNAL] [internal] 2026-10-14T16:41:38.220249Z initMod: 'dummy' -> lights:0.5049359, greeting:0.49776712, weather:0.49724907
+> [INTERNAL] [internal] 2026-10-14T16:41:38.227395Z initMod: 'dummy' -> greeting:0.57907873, weather:0.50702584, lights:0.4148949
+> [INTERNAL] [internal] 2026-10-14T16:41:38.236030Z initMod: 'dummy' -> weather:0.5891823, lights:0.47635207, greeting:0.43413353
+> [INTERNAL] [internal] 2026-10-14T16:41:38.244769Z initMod: 'dummy' -> weather:0.56308436, greeting:0.52268094, lights:0.41552565
+> [INTERNAL] [internal] 2026-10-14T16:41:38.252005Z initMod: 'dummy' -> greeting:0.5975436, weather:0.5000462, lights:0.403325
+> [INTERNAL] [internal] 2026-10-14T16:41:38.258463Z initMod: 'dummy' -> weather:0.5804657, lights:0.4762677, greeting:0.44305706
+> [INTERNAL] [internal] 2026-10-14T16:41:38.265244Z initMod: 'dummy' -> greeting:0.57255584, weather:0.49809897, lights:0.42997587
+> [INTERNAL] [internal] 2026-10-14T16:41:38.271848Z initMod: 'dummy' -> weather:0.6009335, greeting:0.4799606, lights:0.41921514
+> [INTERNAL] [internal] 2026-10-14T16:41:38.277948Z initMod: 'dummy' -> greeting:0.6025627, lights:0.47914457, weather:0.41778442
+> [INTERNAL] [internal] 2026-10-14T16:41:38.284480Z initMod: 'dummy' -> weather:0.6165599, lights:0.44204453, greeting:0.44032416
+> [INTERNAL] [internal] 2026-10-14T16:41:38.294554Z initMod: 'dummy' -> greeting:0.63001984, weather:0.4757465, lights:0.3938795
+> [INTERNAL] [internal] 2026-10-14T16:41:38.302051Z initMod: 'dummy' -> greeting:0.59787655, weather:0.54010123, lights:0.36539477
+> [INTERNAL] [internal] 2026-10-14T16:41:38.309117Z initMod: 'dummy' -> weather:0.55560136, greeting:0.51015055, lights:0.43501872
+> [INTERNAL] [internal] 2026-10-14T16:41:38.309394Z ort: session #9 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:41:38.312477Z ort: session #10 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:41:38.313452Z model dummy (#5): closed after 45 runs
+> [INTERNAL] [internal] 2026-10-14T16:41:38.314261Z validate: 'dummy' on sample-intents.csv: 45 rows, accuracy 0.200, macro F1 0.187
+> [INTERNAL] [internal] 2026-10-14T16:41:45.671419Z ort: session #11 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:41:45.902393Z ort: session #12 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:41:45.912905Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T16:41:45.924081Z serve 'dummy': listening on POST/GET http://127.0.0.1:8765/models/dummy/predict
+> [INTERNAL] [internal] 2026-10-14T16:41:51.870688Z ort: session #11 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:41:51.880427Z ort: session #12 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:41:51.885185Z serve 'dummy': stopped
+> [INTERNAL] [internal] 2026-10-14T16:41:53.165510Z ort: session #13 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:41:53.376719Z ort: session #14 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:41:53.388027Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [ERROR] [internal] 2026-10-14T16:42:02.069807Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [INFO] [sandbox] 2026-10-14T16:42:33.784400Z Running pluginDir/main.kts
+> [INTERNAL] [internal] 2026-10-14T16:42:33.784605Z env 'default': sourcing no new imports
+> [INTERNAL] [internal] 2026-10-14T16:42:33.784869Z env 'default': sourced 1 packages, 1 in environment
+> [INTERNAL] [internal] 2026-10-14T16:42:34.913589Z ort: session #15 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:42:35.325280Z ort: session #16 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:42:35.337035Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INFO] [sandbox] 2026-10-14T16:42:35.345174Z Finished in 1s
+> [INTERNAL] [internal] 2026-10-14T16:43:05.971240Z ort: session #13 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:43:05.984676Z ort: session #14 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:43:05.989137Z model dummy (#6): closed after 0 runs
+> [ERROR] [internal] 2026-10-14T16:43:09.248871Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [INFO] [sandbox] 2026-10-14T16:43:21.636167Z Running pluginDir/main.kts
+> [INTERNAL] [internal] 2026-10-14T16:43:21.636337Z env 'default': sourcing no new imports
+> [INTERNAL] [internal] 2026-10-14T16:43:21.636570Z env 'default': sourced 1 packages, 1 in environment
+> [ERROR] [sandbox] 2026-10-14T16:43:21.833707Z Error: ERROR Unresolved reference: info (ScriptingHost30e90126_Line_0.kts:34:18)
+> [ERROR] [sandbox] 2026-10-14T16:43:21.833780Z Failed after 0s
+> [INFO] [sandbox] 2026-10-14T16:43:46.257445Z Running pluginDir/main.kts
+> [INTERNAL] [internal] 2026-10-14T16:43:46.257561Z env 'default': sourcing no new imports
+> [INTERNAL] [internal] 2026-10-14T16:43:46.257747Z env 'default': sourced 1 packages, 1 in environment
+> [INTERNAL] [internal] 2026-10-14T16:43:46.500304Z ort: session #17 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:43:46.721313Z ort: session #18 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:43:46.733462Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T16:43:46.741591Z initMod: 'dummy' -> lights:0.6714898, weather:0.49647042, greeting:0.3300981
+> [INFO] [sandbox] 2026-10-14T16:43:46.743765Z Finished in 0s
+> [ERROR] [internal] 2026-10-14T16:44:17.680758Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T16:51:45.404890Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T16:51:45.414378Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T16:51:45.620190Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T16:51:52.372476Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T16:51:54.674613Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T16:52:37.922844Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T16:57:59.919530Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T16:57:59.929394Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T16:58:00.108012Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [INTERNAL] [internal] 2026-10-14T16:58:22.797601Z source: sample-intents.csv [text=text, label=label, 45 rows]
+> [INTERNAL] [internal] 2026-10-14T16:58:22.809944Z ort: session #1 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:58:22.945013Z ort: session #2 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:58:23.167675Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T16:58:23.183828Z initMod: 'dummy' -> weather:0.60819036, lights:0.51950234, greeting:0.37319905
+> [INTERNAL] [internal] 2026-10-14T16:58:23.193329Z initMod: 'dummy' -> weather:0.5444942, lights:0.5111637, greeting:0.44434565
+> [INTERNAL] [internal] 2026-10-14T16:58:23.198731Z initMod: 'dummy' -> weather:0.56830585, greeting:0.46856803, lights:0.46316245
+> [INTERNAL] [internal] 2026-10-14T16:58:23.205563Z initMod: 'dummy' -> weather:0.65583366, greeting:0.5421442, lights:0.30875468
+> [INTERNAL] [internal] 2026-10-14T16:58:23.212521Z initMod: 'dummy' -> weather:0.56382513, greeting:0.47702867, lights:0.4592979
+> [INTERNAL] [internal] 2026-10-14T16:58:23.222073Z initMod: 'dummy' -> weather:0.54457355, lights:0.53664476, greeting:0.41896242
+> [INTERNAL] [internal] 2026-10-14T16:58:23.228719Z initMod: 'dummy' -> weather:0.5779325, lights:0.4893945, greeting:0.43255064
+> [INTERNAL] [internal] 2026-10-14T16:58:23.233879Z initMod: 'dummy' -> weather:0.5675384, greeting:0.5071472, lights:0.42616338
+> [INTERNAL] [internal] 2026-10-14T16:58:23.240673Z initMod: 'dummy' -> weather:0.5676954, greeting:0.5421453, lights:0.39240852
+> [INTERNAL] [internal] 2026-10-14T16:58:23.246978Z initMod: 'dummy' -> weather:0.59157056, lights:0.5375975, greeting:0.37224525
+> [INTERNAL] [internal] 2026-10-14T16:58:23.252778Z initMod: 'dummy' -> weather:0.5703034, greeting:0.5320881, lights:0.39947173
+> [INTERNAL] [internal] 2026-10-14T16:58:23.261603Z initMod: 'dummy' -> weather:0.6598409, greeting:0.52861375, lights:0.31654304
+> [INTERNAL] [internal] 2026-10-14T16:58:23.266717Z initMod: 'dummy' -> weather:0.6067637, greeting:0.47965434, lights:0.41364455
+> [INTERNAL] [internal] 2026-10-14T16:58:23.272323Z initMod: 'dummy' -> weather:0.5603754, lights:0.5435235, greeting:0.3967769
+> [INTERNAL] [internal] 2026-10-14T16:58:23.279077Z initMod: 'dummy' -> weather:0.5403451, lights:0.5160137, greeting:0.44363323
+> [INTERNAL] [internal] 2026-10-14T16:58:23.285840Z initMod: 'dummy' -> lights:0.57225937, weather:0.4760027, greeting:0.45070234
+> [INTERNAL] [internal] 2026-10-14T16:58:23.293914Z initMod: 'dummy' -> weather:0.62326646, greeting:0.51100385, lights:0.36767507
+> [INTERNAL] [internal] 2026-10-14T16:58:23.302408Z initMod: 'dummy' -> weather:0.57715964, greeting:0.4749579, lights:0.44797686
+> [INTERNAL] [internal] 2026-10-14T16:58:23.309064Z initMod: 'dummy' -> weather:0.61063355, greeting:0.4989282, lights:0.39140496
+> [INTERNAL] [internal] 2026-10-14T16:58:23.315463Z initMod: 'dummy' -> weather:0.6301832, lights:0.4793232, greeting:0.38949236
+> [INTERNAL] [internal] 2026-10-14T16:58:23.322250Z initMod: 'dummy' -> lights:0.51302916, greeting:0.5071778, weather:0.4796745
+> [INTERNAL] [internal] 2026-10-14T16:58:23.329343Z initMod: 'dummy' -> greeting:0.55405325, weather:0.4748808, lights:0.47118658
+> [INTERNAL] [internal] 2026-10-14T16:58:23.335398Z initMod: 'dummy' -> weather:0.5880185, greeting:0.46884602, lights:0.44305187
+> [INTERNAL] [internal] 2026-10-14T16:58:23.346282Z initMod: 'dummy' -> weather:0.5189152, greeting:0.5037301, lights:0.4775781
+> [INTERNAL] [internal] 2026-10-14T16:58:23.356308Z initMod: 'dummy' -> weather:0.6112888, lights:0.4810947, greeting:0.40700948
+> [INTERNAL] [internal] 2026-10-14T16:58:23.361418Z initMod: 'dummy' -> lights:0.5770103, greeting:0.48156136, weather:0.44035205
+> [INTERNAL] [internal] 2026-10-14T16:58:23.368915Z initMod: 'dummy' -> weather:0.6410107, lights:0.4394682, greeting:0.4172495
+> [INTERNAL] [internal] 2026-10-14T16:58:23.377291Z initMod: 'dummy' -> greeting:0.542123, lights:0.52671754, weather:0.43121356
+> [INTERNAL] [internal] 2026-10-14T16:58:23.385787Z initMod: 'dummy' -> weather:0.6575374, lights:0.49142423, greeting:0.35030463
+> [INTERNAL] [internal] 2026-10-14T16:58:23.393735Z initMod: 'dummy' -> weather:0.61360717, greeting:0.45403558, lights:0.4315691
+> [INTERNAL] [internal] 2026-10-14T16:58:23.402697Z initMod: 'dummy' -> greeting:0.6440654, weather:0.4722571, lights:0.3828802
+> [INTERNAL] [internal] 2026-10-14T16:58:23.408707Z initMod: 'dummy' -> lights:0.5262529, weather:0.50282085, greeting:0.470681
+> [INTERNAL] [internal] 2026-10-14T16:58:23.415150Z initMod: 'dummy' -> lights:0.5049359, greeting:0.49776712, weather:0.49724907
+> [INTERNAL] [internal] 2026-10-14T16:58:23.422422Z initMod: 'dummy' -> greeting:0.57907873, weather:0.50702584, lights:0.4148949
+> [INTERNAL] [internal] 2026-10-14T16:58:23.429637Z initMod: 'dummy' -> weather:0.5891823, lights:0.47635207, greeting:0.43413353
+> [INTERNAL] [internal] 2026-10-14T16:58:23.437862Z initMod: 'dummy' -> weather:0.56308436, greeting:0.52268094, lights:0.41552565
+> [INTERNAL] [internal] 2026-10-14T16:58:23.446189Z initMod: 'dummy' -> greeting:0.5975436, weather:0.5000462, lights:0.403325
+> [INTERNAL] [internal] 2026-10-14T16:58:23.453322Z initMod: 'dummy' -> weather:0.5804657, lights:0.4762677, greeting:0.44305706
+> [INTERNAL] [internal] 2026-10-14T16:58:23.459799Z initMod: 'dummy' -> greeting:0.57255584, weather:0.49809897, lights:0.42997587
+> [INTERNAL] [internal] 2026-10-14T16:58:23.465770Z initMod: 'dummy' -> weather:0.6009335, greeting:0.4799606, lights:0.41921514
+> [INTERNAL] [internal] 2026-10-14T16:58:23.471955Z initMod: 'dummy' -> greeting:0.6025627, lights:0.47914457, weather:0.41778442
+> [INTERNAL] [internal] 2026-10-14T16:58:23.478553Z initMod: 'dummy' -> weather:0.6165599, lights:0.44204453, greeting:0.44032416
+> [INTERNAL] [internal] 2026-10-14T16:58:23.485991Z initMod: 'dummy' -> greeting:0.63001984, weather:0.4757465, lights:0.3938795
+> [INTERNAL] [internal] 2026-10-14T16:58:23.492833Z initMod: 'dummy' -> greeting:0.59787655, weather:0.54010123, lights:0.36539477
+> [INTERNAL] [internal] 2026-10-14T16:58:23.498975Z initMod: 'dummy' -> weather:0.55560136, greeting:0.51015055, lights:0.43501872
+> [INTERNAL] [internal] 2026-10-14T16:58:23.499440Z ort: session #1 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:58:23.500953Z ort: session #2 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:58:23.502420Z model dummy (#1): closed after 45 runs
+> [INTERNAL] [internal] 2026-10-14T16:58:23.503948Z validate: 'dummy' on sample-intents.csv: 45 rows, accuracy 0.200, macro F1 0.187
+> [INTERNAL] [internal] 2026-10-14T16:58:24.465893Z source: sample-intents.csv [text=text, label=label, 45 rows]
+> [INTERNAL] [internal] 2026-10-14T16:58:24.467763Z ort: session #3 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:58:24.615134Z ort: session #4 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:58:24.623635Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T16:58:24.630828Z initMod: 'dummy' -> weather:0.60819036, lights:0.51950234, greeting:0.37319905
+> [INTERNAL] [internal] 2026-10-14T16:58:24.640015Z initMod: 'dummy' -> weather:0.5444942, lights:0.5111637, greeting:0.44434565
+> [INTERNAL] [internal] 2026-10-14T16:58:24.645362Z initMod: 'dummy' -> weather:0.56830585, greeting:0.46856803, lights:0.46316245
+> [INTERNAL] [internal] 2026-10-14T16:58:24.653239Z initMod: 'dummy' -> weather:0.65583366, greeting:0.5421442, lights:0.30875468
+> [INTERNAL] [internal] 2026-10-14T16:58:24.659745Z initMod: 'dummy' -> weather:0.56382513, greeting:0.47702867, lights:0.4592979
+> [INTERNAL] [internal] 2026-10-14T16:58:24.667511Z initMod: 'dummy' -> weather:0.54457355, lights:0.53664476, greeting:0.41896242
+> [INTERNAL] [internal] 2026-10-14T16:58:24.673913Z initMod: 'dummy' -> weather:0.5779325, lights:0.4893945, greeting:0.43255064
+> [INTERNAL] [internal] 2026-10-14T16:58:24.678862Z initMod: 'dummy' -> weather:0.5675384, greeting:0.5071472, lights:0.42616338
+> [INTERNAL] [internal] 2026-10-14T16:58:24.685627Z initMod: 'dummy' -> weather:0.5676954, greeting:0.5421453, lights:0.39240852
+> [INTERNAL] [internal] 2026-10-14T16:58:24.691101Z initMod: 'dummy' -> weather:0.59157056, lights:0.5375975, greeting:0.37224525
+> [INTERNAL] [internal] 2026-10-14T16:58:24.696164Z initMod: 'dummy' -> weather:0.5703034, greeting:0.5320881, lights:0.39947173
+> [INTERNAL] [internal] 2026-10-14T16:58:24.702120Z initMod: 'dummy' -> weather:0.6598409, greeting:0.52861375, lights:0.31654304
+> [INTERNAL] [internal] 2026-10-14T16:58:24.706960Z initMod: 'dummy' -> weather:0.6067637, greeting:0.47965434, lights:0.41364455
+> [INTERNAL] [internal] 2026-10-14T16:58:24.711786Z initMod: 'dummy' -> weather:0.5603754, lights:0.5435235, greeting:0.3967769
+> [INTERNAL] [internal] 2026-10-14T16:58:24.717503Z initMod: 'dummy' -> weather:0.5403451, lights:0.5160137, greeting:0.44363323
+> [INTERNAL] [internal] 2026-10-14T16:58:24.723341Z initMod: 'dummy' -> lights:0.57225937, weather:0.4760027, greeting:0.45070234
+> [INTERNAL] [internal] 2026-10-14T16:58:24.731127Z initMod: 'dummy' -> weather:0.62326646, greeting:0.51100385, lights:0.36767507
+> [INTERNAL] [internal] 2026-10-14T16:58:24.739143Z initMod: 'dummy' -> weather:0.57715964, greeting:0.4749579, lights:0.44797686
+> [INTERNAL] [internal] 2026-10-14T16:58:24.745390Z initMod: 'dummy' -> weather:0.61063355, greeting:0.4989282, lights:0.39140496
+> [INTERNAL] [internal] 2026-10-14T16:58:24.752174Z initMod: 'dummy' -> weather:0.6301832, lights:0.4793232, greeting:0.38949236
+> [INTERNAL] [internal] 2026-10-14T16:58:24.758486Z initMod: 'dummy' -> lights:0.51302916, greeting:0.5071778, weather:0.4796745
+> [INTERNAL] [internal] 2026-10-14T16:58:24.765323Z initMod: 'dummy' -> greeting:0.55405325, weather:0.4748808, lights:0.47118658
+> [INTERNAL] [internal] 2026-10-14T16:58:24.772581Z initMod: 'dummy' -> weather:0.5880185, greeting:0.46884602, lights:0.44305187
+> [INTERNAL] [internal] 2026-10-14T16:58:24.782217Z initMod: 'dummy' -> weather:0.5189152, greeting:0.5037301, lights:0.4775781
+> [INTERNAL] [internal] 2026-10-14T16:58:24.789971Z initMod: 'dummy' -> weather:0.6112888, lights:0.4810947, greeting:0.40700948
+> [INTERNAL] [internal] 2026-10-14T16:58:24.794911Z initMod: 'dummy' -> lights:0.5770103, greeting:0.48156136, weather:0.44035205
+> [INTERNAL] [internal] 2026-10-14T16:58:24.801650Z initMod: 'dummy' -> weather:0.6410107, lights:0.4394682, greeting:0.4172495
+> [INTERNAL] [internal] 2026-10-14T16:58:24.809545Z initMod: 'dummy' -> greeting:0.542123, lights:0.52671754, weather:0.43121356
+> [INTERNAL] [internal] 2026-10-14T16:58:24.817005Z initMod: 'dummy' -> weather:0.6575374, lights:0.49142423, greeting:0.35030463
+> [INTERNAL] [internal] 2026-10-14T16:58:24.825428Z initMod: 'dummy' -> weather:0.61360717, greeting:0.45403558, lights:0.4315691
+> [INTERNAL] [internal] 2026-10-14T16:58:24.834116Z initMod: 'dummy' -> greeting:0.6440654, weather:0.4722571, lights:0.3828802
+> [INTERNAL] [internal] 2026-10-14T16:58:24.840688Z initMod: 'dummy' -> lights:0.5262529, weather:0.50282085, greeting:0.470681
+> [INTERNAL] [internal] 2026-10-14T16:58:24.848347Z initMod: 'dummy' -> lights:0.5049359, greeting:0.49776712, weather:0.49724907
+> [INTERNAL] [internal] 2026-10-14T16:58:24.856036Z initMod: 'dummy' -> greeting:0.57907873, weather:0.50702584, lights:0.4148949
+> [INTERNAL] [internal] 2026-10-14T16:58:24.864480Z initMod: 'dummy' -> weather:0.5891823, lights:0.47635207, greeting:0.43413353
+> [INTERNAL] [internal] 2026-10-14T16:58:24.873570Z initMod: 'dummy' -> weather:0.56308436, greeting:0.52268094, lights:0.41552565
+> [INTERNAL] [internal] 2026-10-14T16:58:24.882654Z initMod: 'dummy' -> greeting:0.5975436, weather:0.5000462, lights:0.403325
+> [INTERNAL] [internal] 2026-10-14T16:58:24.889769Z initMod: 'dummy' -> weather:0.5804657, lights:0.4762677, greeting:0.44305706
+> [INTERNAL] [internal] 2026-10-14T16:58:24.896647Z initMod: 'dummy' -> greeting:0.57255584, weather:0.49809897, lights:0.42997587
+> [INTERNAL] [internal] 2026-10-14T16:58:24.902705Z initMod: 'dummy' -> weather:0.6009335, greeting:0.4799606, lights:0.41921514
+> [INTERNAL] [internal] 2026-10-14T16:58:24.908348Z initMod: 'dummy' -> greeting:0.6025627, lights:0.47914457, weather:0.41778442
+> [INTERNAL] [internal] 2026-10-14T16:58:24.914195Z initMod: 'dummy' -> weather:0.6165599, lights:0.44204453, greeting:0.44032416
+> [INTERNAL] [internal] 2026-10-14T16:58:24.920172Z initMod: 'dummy' -> greeting:0.63001984, weather:0.4757465, lights:0.3938795
+> [INTERNAL] [internal] 2026-10-14T16:58:24.926636Z initMod: 'dummy' -> greeting:0.59787655, weather:0.54010123, lights:0.36539477
+> [INTERNAL] [internal] 2026-10-14T16:58:24.932548Z initMod: 'dummy' -> weather:0.55560136, greeting:0.51015055, lights:0.43501872
+> [INTERNAL] [internal] 2026-10-14T16:58:24.932850Z ort: session #3 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:58:24.934636Z ort: session #4 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:58:24.935382Z model dummy (#2): closed after 45 runs
+> [INTERNAL] [internal] 2026-10-14T16:58:24.936134Z validate: 'dummy' on sample-intents.csv: 45 rows, accuracy 0.200, macro F1 0.187
+> [INTERNAL] [internal] 2026-10-14T16:58:25.621367Z source: sample-intents.csv [text=text, label=label, 45 rows]
+> [INTERNAL] [internal] 2026-10-14T16:58:25.623057Z ort: session #5 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:58:25.798197Z ort: session #6 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:58:25.806174Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T16:58:25.811690Z initMod: 'dummy' -> weather:0.60819036, lights:0.51950234, greeting:0.37319905
+> [INTERNAL] [internal] 2026-10-14T16:58:25.818979Z initMod: 'dummy' -> weather:0.5444942, lights:0.5111637, greeting:0.44434565
+> [INTERNAL] [internal] 2026-10-14T16:58:25.824200Z initMod: 'dummy' -> weather:0.56830585, greeting:0.46856803, lights:0.46316245
+> [INTERNAL] [internal] 2026-10-14T16:58:25.830142Z initMod: 'dummy' -> weather:0.65583366, greeting:0.5421442, lights:0.30875468
+> [INTERNAL] [internal] 2026-10-14T16:58:25.835651Z initMod: 'dummy' -> weather:0.56382513, greeting:0.47702867, lights:0.4592979
+> [INTERNAL] [internal] 2026-10-14T16:58:25.843250Z initMod: 'dummy' -> weather:0.54457355, lights:0.53664476, greeting:0.41896242
+> [INTERNAL] [internal] 2026-10-14T16:58:25.849377Z initMod: 'dummy' -> weather:0.5779325, lights:0.4893945, greeting:0.43255064
+> [INTERNAL] [internal] 2026-10-14T16:58:25.855063Z initMod: 'dummy' -> weather:0.5675384, greeting:0.5071472, lights:0.42616338
+> [INTERNAL] [internal] 2026-10-14T16:58:25.862022Z initMod: 'dummy' -> weather:0.5676954, greeting:0.5421453, lights:0.39240852
+> [INTERNAL] [internal] 2026-10-14T16:58:25.867517Z initMod: 'dummy' -> weather:0.59157056, lights:0.5375975, greeting:0.37224525
+> [INTERNAL] [internal] 2026-10-14T16:58:25.872521Z initMod: 'dummy' -> weather:0.5703034, greeting:0.5320881, lights:0.39947173
+> [INTERNAL] [internal] 2026-10-14T16:58:25.879431Z initMod: 'dummy' -> weather:0.6598409, greeting:0.52861375, lights:0.31654304
+> [INTERNAL] [internal] 2026-10-14T16:58:25.884906Z initMod: 'dummy' -> weather:0.6067637, greeting:0.47965434, lights:0.41364455
+> [INTERNAL] [internal] 2026-10-14T16:58:25.889865Z initMod: 'dummy' -> weather:0.5603754, lights:0.5435235, greeting:0.3967769
+> [INTERNAL] [internal] 2026-10-14T16:58:25.899155Z initMod: 'dummy' -> weather:0.5403451, lights:0.5160137, greeting:0.44363323
+> [INTERNAL] [internal] 2026-10-14T16:58:25.905812Z initMod: 'dummy' -> lights:0.57225937, weather:0.4760027, greeting:0.45070234
+> [INTERNAL] [internal] 2026-10-14T16:58:25.913546Z initMod: 'dummy' -> weather:0.62326646, greeting:0.51100385, lights:0.36767507
+> [INTERNAL] [internal] 2026-10-14T16:58:25.920934Z initMod: 'dummy' -> weather:0.57715964, greeting:0.4749579, lights:0.44797686
+> [INTERNAL] [internal] 2026-10-14T16:58:25.926304Z initMod: 'dummy' -> weather:0.61063355, greeting:0.4989282, lights:0.39140496
+> [INTERNAL] [internal] 2026-10-14T16:58:25.932511Z initMod: 'dummy' -> weather:0.6301832, lights:0.4793232, greeting:0.38949236
+> [INTERNAL] [internal] 2026-10-14T16:58:25.938371Z initMod: 'dummy' -> lights:0.51302916, greeting:0.5071778, weather:0.4796745
+> [INTERNAL] [internal] 2026-10-14T16:58:25.944380Z initMod: 'dummy' -> greeting:0.55405325, weather:0.4748808, lights:0.47118658
+> [INTERNAL] [internal] 2026-10-14T16:58:25.950891Z initMod: 'dummy' -> weather:0.5880185, greeting:0.46884602, lights:0.44305187
+> [INTERNAL] [internal] 2026-10-14T16:58:25.961219Z initMod: 'dummy' -> weather:0.5189152, greeting:0.5037301, lights:0.4775781
+> [INTERNAL] [internal] 2026-10-14T16:58:25.968324Z initMod: 'dummy' -> weather:0.6112888, lights:0.4810947, greeting:0.40700948
+> [INTERNAL] [internal] 2026-10-14T16:58:25.973292Z initMod: 'dummy' -> lights:0.5770103, greeting:0.48156136, weather:0.44035205
+> [INTERNAL] [internal] 2026-10-14T16:58:25.979150Z initMod: 'dummy' -> weather:0.6410107, lights:0.4394682, greeting:0.4172495
+> [INTERNAL] [internal] 2026-10-14T16:58:25.986639Z initMod: 'dummy' -> greeting:0.542123, lights:0.52671754, weather:0.43121356
+> [INTERNAL] [internal] 2026-10-14T16:58:25.994206Z initMod: 'dummy' -> weather:0.6575374, lights:0.49142423, greeting:0.35030463
+> [INTERNAL] [internal] 2026-10-14T16:58:26.001373Z initMod: 'dummy' -> weather:0.61360717, greeting:0.45403558, lights:0.4315691
+> [INTERNAL] [internal] 2026-10-14T16:58:26.009087Z initMod: 'dummy' -> greeting:0.6440654, weather:0.4722571, lights:0.3828802
+> [INTERNAL] [internal] 2026-10-14T16:58:26.015411Z initMod: 'dummy' -> lights:0.5262529, weather:0.50282085, greeting:0.470681
+> [INTERNAL] [internal] 2026-10-14T16:58:26.021802Z initMod: 'dummy' -> lights:0.5049359, greeting:0.49776712, weather:0.49724907
+> [INTERNAL] [internal] 2026-10-14T16:58:26.028496Z initMod: 'dummy' -> greeting:0.57907873, weather:0.50702584, lights:0.4148949
+> [INTERNAL] [internal] 2026-10-14T16:58:26.036423Z initMod: 'dummy' -> weather:0.5891823, lights:0.47635207, greeting:0.43413353
+> [INTERNAL] [internal] 2026-10-14T16:58:26.045014Z initMod: 'dummy' -> weather:0.56308436, greeting:0.52268094, lights:0.41552565
+> [INTERNAL] [internal] 2026-10-14T16:58:26.053133Z initMod: 'dummy' -> greeting:0.5975436, weather:0.5000462, lights:0.403325
+> [INTERNAL] [internal] 2026-10-14T16:58:26.059133Z initMod: 'dummy' -> weather:0.5804657, lights:0.4762677, greeting:0.44305706
+> [INTERNAL] [internal] 2026-10-14T16:58:26.064920Z initMod: 'dummy' -> greeting:0.57255584, weather:0.49809897, lights:0.42997587
+> [INTERNAL] [internal] 2026-10-14T16:58:26.070927Z initMod: 'dummy' -> weather:0.6009335, greeting:0.4799606, lights:0.41921514
+> [INTERNAL] [internal] 2026-10-14T16:58:26.077195Z initMod: 'dummy' -> greeting:0.6025627, lights:0.47914457, weather:0.41778442
+> [INTERNAL] [internal] 2026-10-14T16:58:26.083373Z initMod: 'dummy' -> weather:0.6165599, lights:0.44204453, greeting:0.44032416
+> [INTERNAL] [internal] 2026-10-14T16:58:26.090794Z initMod: 'dummy' -> greeting:0.63001984, weather:0.4757465, lights:0.3938795
+> [INTERNAL] [internal] 2026-10-14T16:58:26.098208Z initMod: 'dummy' -> greeting:0.59787655, weather:0.54010123, lights:0.36539477
+> [INTERNAL] [internal] 2026-10-14T16:58:26.104051Z initMod: 'dummy' -> weather:0.55560136, greeting:0.51015055, lights:0.43501872
+> [INTERNAL] [internal] 2026-10-14T16:58:26.104486Z ort: session #5 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:58:26.107008Z ort: session #6 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:58:26.107821Z model dummy (#3): closed after 45 runs
+> [INTERNAL] [internal] 2026-10-14T16:58:26.108596Z validate: 'dummy' on sample-intents.csv: 45 rows, accuracy 0.200, macro F1 0.187
+> [INTERNAL] [internal] 2026-10-14T16:58:29.031778Z source: sample-intents.csv [text=text, label=label, 45 rows]
+> [INTERNAL] [internal] 2026-10-14T16:58:29.032713Z ort: session #7 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:58:29.196380Z ort: session #8 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:58:29.207462Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T16:58:29.216938Z initMod: 'dummy' -> weather:0.60819036, lights:0.51950234, greeting:0.37319905
+> [INTERNAL] [internal] 2026-10-14T16:58:29.227343Z initMod: 'dummy' -> weather:0.5444942, lights:0.5111637, greeting:0.44434565
+> [INTERNAL] [internal] 2026-10-14T16:58:29.233297Z initMod: 'dummy' -> weather:0.56830585, greeting:0.46856803, lights:0.46316245
+> [INTERNAL] [internal] 2026-10-14T16:58:29.241017Z initMod: 'dummy' -> weather:0.65583366, greeting:0.5421442, lights:0.30875468
+> [INTERNAL] [internal] 2026-10-14T16:58:29.249390Z initMod: 'dummy' -> weather:0.56382513, greeting:0.47702867, lights:0.4592979
+> [INTERNAL] [internal] 2026-10-14T16:58:29.262581Z initMod: 'dummy' -> weather:0.54457355, lights:0.53664476, greeting:0.41896242
+> [INTERNAL] [internal] 2026-10-14T16:58:29.270827Z initMod: 'dummy' -> weather:0.5779325, lights:0.4893945, greeting:0.43255064
+> [INTERNAL] [internal] 2026-10-14T16:58:29.277715Z initMod: 'dummy' -> weather:0.5675384, greeting:0.5071472, lights:0.42616338
+> [INTERNAL] [internal] 2026-10-14T16:58:29.287825Z initMod: 'dummy' -> weather:0.5676954, greeting:0.5421453, lights:0.39240852
+> [INTERNAL] [internal] 2026-10-14T16:58:29.295951Z initMod: 'dummy' -> weather:0.59157056, lights:0.5375975, greeting:0.37224525
+> [INTERNAL] [internal] 2026-10-14T16:58:29.302786Z initMod: 'dummy' -> weather:0.5703034, greeting:0.5320881, lights:0.39947173
+> [INTERNAL] [internal] 2026-10-14T16:58:29.312335Z initMod: 'dummy' -> weather:0.6598409, greeting:0.52861375, lights:0.31654304
+> [INTERNAL] [internal] 2026-10-14T16:58:29.327622Z initMod: 'dummy' -> weather:0.6067637, greeting:0.47965434, lights:0.41364455
+> [INTERNAL] [internal] 2026-10-14T16:58:29.332784Z initMod: 'dummy' -> weather:0.5603754, lights:0.5435235, greeting:0.3967769
+> [INTERNAL] [internal] 2026-10-14T16:58:29.338858Z initMod: 'dummy' -> weather:0.5403451, lights:0.5160137, greeting:0.44363323
+> [INTERNAL] [internal] 2026-10-14T16:58:29.344816Z initMod: 'dummy' -> lights:0.57225937, weather:0.4760027, greeting:0.45070234
+> [INTERNAL] [internal] 2026-10-14T16:58:29.352989Z initMod: 'dummy' -> weather:0.62326646, greeting:0.51100385, lights:0.36767507
+> [INTERNAL] [internal] 2026-10-14T16:58:29.360953Z initMod: 'dummy' -> weather:0.57715964, greeting:0.4749579, lights:0.44797686
+> [INTERNAL] [internal] 2026-10-14T16:58:29.366842Z initMod: 'dummy' -> weather:0.61063355, greeting:0.4989282, lights:0.39140496
+> [INTERNAL] [internal] 2026-10-14T16:58:29.373013Z initMod: 'dummy' -> weather:0.6301832, lights:0.4793232, greeting:0.38949236
+> [INTERNAL] [internal] 2026-10-14T16:58:29.378884Z initMod: 'dummy' -> lights:0.51302916, greeting:0.5071778, weather:0.4796745
+> [INTERNAL] [internal] 2026-10-14T16:58:29.385611Z initMod: 'dummy' -> greeting:0.55405325, weather:0.4748808, lights:0.47118658
+> [INTERNAL] [internal] 2026-10-14T16:58:29.392238Z initMod: 'dummy' -> weather:0.5880185, greeting:0.46884602, lights:0.44305187
+> [INTERNAL] [internal] 2026-10-14T16:58:29.403024Z initMod: 'dummy' -> weather:0.5189152, greeting:0.5037301, lights:0.4775781
+> [INTERNAL] [internal] 2026-10-14T16:58:29.411484Z initMod: 'dummy' -> weather:0.6112888, lights:0.4810947, greeting:0.40700948
+> [INTERNAL] [internal] 2026-10-14T16:58:29.416920Z initMod: 'dummy' -> lights:0.5770103, greeting:0.48156136, weather:0.44035205
+> [INTERNAL] [internal] 2026-10-14T16:58:29.423822Z initMod: 'dummy' -> weather:0.6410107, lights:0.4394682, greeting:0.4172495
+> [INTERNAL] [internal] 2026-10-14T16:58:29.431623Z initMod: 'dummy' -> greeting:0.542123, lights:0.52671754, weather:0.43121356
+> [INTERNAL] [internal] 2026-10-14T16:58:29.439319Z initMod: 'dummy' -> weather:0.6575374, lights:0.49142423, greeting:0.35030463
+> [INTERNAL] [internal] 2026-10-14T16:58:29.447836Z initMod: 'dummy' -> weather:0.61360717, greeting:0.45403558, lights:0.4315691
+> [INTERNAL] [internal] 2026-10-14T16:58:29.457094Z initMod: 'dummy' -> greeting:0.6440654, weather:0.4722571, lights:0.3828802
+> [INTERNAL] [internal] 2026-10-14T16:58:29.463535Z initMod: 'dummy' -> lights:0.5262529, weather:0.50282085, greeting:0.470681
+> [INTERNAL] [internal] 2026-10-14T16:58:29.469963Z initMod: 'dummy' -> lights:0.5049359, greeting:0.49776712, weather:0.49724907
+> [INTERNAL] [internal] 2026-10-14T16:58:29.476880Z initMod: 'dummy' -> greeting:0.57907873, weather:0.50702584, lights:0.4148949
+> [INTERNAL] [internal] 2026-10-14T16:58:29.485202Z initMod: 'dummy' -> weather:0.5891823, lights:0.47635207, greeting:0.43413353
+> [INTERNAL] [internal] 2026-10-14T16:58:29.494425Z initMod: 'dummy' -> weather:0.56308436, greeting:0.52268094, lights:0.41552565
+> [INTERNAL] [internal] 2026-10-14T16:58:29.503988Z initMod: 'dummy' -> greeting:0.5975436, weather:0.5000462, lights:0.403325
+> [INTERNAL] [internal] 2026-10-14T16:58:29.510963Z initMod: 'dummy' -> weather:0.5804657, lights:0.4762677, greeting:0.44305706
+> [INTERNAL] [internal] 2026-10-14T16:58:29.516962Z initMod: 'dummy' -> greeting:0.57255584, weather:0.49809897, lights:0.42997587
+> [INTERNAL] [internal] 2026-10-14T16:58:29.523453Z initMod: 'dummy' -> weather:0.6009335, greeting:0.4799606, lights:0.41921514
+> [INTERNAL] [internal] 2026-10-14T16:58:29.529180Z initMod: 'dummy' -> greeting:0.6025627, lights:0.47914457, weather:0.41778442
+> [INTERNAL] [internal] 2026-10-14T16:58:29.535299Z initMod: 'dummy' -> weather:0.6165599, lights:0.44204453, greeting:0.44032416
+> [INTERNAL] [internal] 2026-10-14T16:58:29.541772Z initMod: 'dummy' -> greeting:0.63001984, weather:0.4757465, lights:0.3938795
+> [INTERNAL] [internal] 2026-10-14T16:58:29.548203Z initMod: 'dummy' -> greeting:0.59787655, weather:0.54010123, lights:0.36539477
+> [INTERNAL] [internal] 2026-10-14T16:58:29.553834Z initMod: 'dummy' -> weather:0.55560136, greeting:0.51015055, lights:0.43501872
+> [INTERNAL] [internal] 2026-10-14T16:58:29.554406Z ort: session #7 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:58:29.557453Z ort: session #8 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:58:29.558293Z model dummy (#4): closed after 45 runs
+> [INTERNAL] [internal] 2026-10-14T16:58:29.559171Z validate: 'dummy' on sample-intents.csv: 45 rows, accuracy 0.200, macro F1 0.187
+> [INTERNAL] [internal] 2026-10-14T16:58:30.087674Z source: sample-intents.csv [text=text, label=label, 45 rows]
+> [INTERNAL] [internal] 2026-10-14T16:58:30.089383Z ort: session #9 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:58:30.322724Z ort: session #10 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:58:30.335844Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T16:58:30.341405Z initMod: 'dummy' -> weather:0.60819036, lights:0.51950234, greeting:0.37319905
+> [INTERNAL] [internal] 2026-10-14T16:58:30.349486Z initMod: 'dummy' -> weather:0.5444942, lights:0.5111637, greeting:0.44434565
+> [INTERNAL] [internal] 2026-10-14T16:58:30.354299Z initMod: 'dummy' -> weather:0.56830585, greeting:0.46856803, lights:0.46316245
+> [INTERNAL] [internal] 2026-10-14T16:58:30.361569Z initMod: 'dummy' -> weather:0.65583366, greeting:0.5421442, lights:0.30875468
+> [INTERNAL] [internal] 2026-10-14T16:58:30.368406Z initMod: 'dummy' -> weather:0.56382513, greeting:0.47702867, lights:0.4592979
+> [INTERNAL] [internal] 2026-10-14T16:58:30.376780Z initMod: 'dummy' -> weather:0.54457355, lights:0.53664476, greeting:0.41896242
+> [INTERNAL] [internal] 2026-10-14T16:58:30.383119Z initMod: 'dummy' -> weather:0.5779325, lights:0.4893945, greeting:0.43255064
+> [INTERNAL] [internal] 2026-10-14T16:58:30.388604Z initMod: 'dummy' -> weather:0.5675384, greeting:0.5071472, lights:0.42616338
+> [INTERNAL] [internal] 2026-10-14T16:58:30.395433Z initMod: 'dummy' -> weather:0.5676954, greeting:0.5421453, lights:0.39240852
+> [INTERNAL] [internal] 2026-10-14T16:58:30.400785Z initMod: 'dummy' -> weather:0.59157056, lights:0.5375975, greeting:0.37224525
+> [INTERNAL] [internal] 2026-10-14T16:58:30.405885Z initMod: 'dummy' -> weather:0.5703034, greeting:0.5320881, lights:0.39947173
+> [INTERNAL] [internal] 2026-10-14T16:58:30.414525Z initMod: 'dummy' -> weather:0.6598409, greeting:0.52861375, lights:0.31654304
+> [INTERNAL] [internal] 2026-10-14T16:58:30.419659Z initMod: 'dummy' -> weather:0.6067637, greeting:0.47965434, lights:0.41364455
+> [INTERNAL] [internal] 2026-10-14T16:58:30.424528Z initMod: 'dummy' -> weather:0.5603754, lights:0.5435235, greeting:0.3967769
+> [INTERNAL] [internal] 2026-10-14T16:58:30.430781Z initMod: 'dummy' -> weather:0.5403451, lights:0.5160137, greeting:0.44363323
+> [INTERNAL] [internal] 2026-10-14T16:58:30.436661Z initMod: 'dummy' -> lights:0.57225937, weather:0.4760027, greeting:0.45070234
+> [INTERNAL] [internal] 2026-10-14T16:58:30.443701Z initMod: 'dummy' -> weather:0.62326646, greeting:0.51100385, lights:0.36767507
+> [INTERNAL] [internal] 2026-10-14T16:58:30.451907Z initMod: 'dummy' -> weather:0.57715964, greeting:0.4749579, lights:0.44797686
+> [INTERNAL] [internal] 2026-10-14T16:58:30.457788Z initMod: 'dummy' -> weather:0.61063355, greeting:0.4989282, lights:0.39140496
+> [INTERNAL] [internal] 2026-10-14T16:58:30.463997Z initMod: 'dummy' -> weather:0.6301832, lights:0.4793232, greeting:0.38949236
+> [INTERNAL] [internal] 2026-10-14T16:58:30.470105Z initMod: 'dummy' -> lights:0.51302916, greeting:0.5071778, weather:0.4796745
+> [INTERNAL] [internal] 2026-10-14T16:58:30.477637Z initMod: 'dummy' -> greeting:0.55405325, weather:0.4748808, lights:0.47118658
+> [INTERNAL] [internal] 2026-10-14T16:58:30.484508Z initMod: 'dummy' -> weather:0.5880185, greeting:0.46884602, lights:0.44305187
+> [INTERNAL] [internal] 2026-10-14T16:58:30.494219Z initMod: 'dummy' -> weather:0.5189152, greeting:0.5037301, lights:0.4775781
+> [INTERNAL] [internal] 2026-10-14T16:58:30.501576Z initMod: 'dummy' -> weather:0.6112888, lights:0.4810947, greeting:0.40700948
+> [INTERNAL] [internal] 2026-10-14T16:58:30.506516Z initMod: 'dummy' -> lights:0.5770103, greeting:0.48156136, weather:0.44035205
+> [INTERNAL] [internal] 2026-10-14T16:58:30.512328Z initMod: 'dummy' -> weather:0.6410107, lights:0.4394682, greeting:0.4172495
+> [INTERNAL] [internal] 2026-10-14T16:58:30.519774Z initMod: 'dummy' -> greeting:0.542123, lights:0.52671754, weather:0.43121356
+> [INTERNAL] [internal] 2026-10-14T16:58:30.527165Z initMod: 'dummy' -> weather:0.6575374, lights:0.49142423, greeting:0.35030463
+> [INTERNAL] [internal] 2026-10-14T16:58:30.534870Z initMod: 'dummy' -> weather:0.61360717, greeting:0.45403558, lights:0.4315691
+> [INTERNAL] [internal] 2026-10-14T16:58:30.543602Z initMod: 'dummy' -> greeting:0.6440654, weather:0.4722571, lights:0.3828802
+> [INTERNAL] [internal] 2026-10-14T16:58:30.550668Z initMod: 'dummy' -> lights:0.5262529, weather:0.50282085, greeting:0.470681
+> [INTERNAL] [internal] 2026-10-14T16:58:30.557449Z initMod: 'dummy' -> lights:0.5049359, greeting:0.49776712, weather:0.49724907
+> [INTERNAL] [internal] 2026-10-14T16:58:30.564674Z initMod: 'dummy' -> greeting:0.57907873, weather:0.50702584, lights:0.4148949
+> [INTERNAL] [internal] 2026-10-14T16:58:30.573307Z initMod: 'dummy' -> weather:0.5891823, lights:0.47635207, greeting:0.43413353
+> [INTERNAL] [internal] 2026-10-14T16:58:30.582055Z initMod: 'dummy' -> weather:0.56308436, greeting:0.52268094, lights:0.41552565
+> [INTERNAL] [internal] 2026-10-14T16:58:30.592543Z initMod: 'dummy' -> greeting:0.5975436, weather:0.5000462, lights:0.403325
+> [INTERNAL] [internal] 2026-10-14T16:58:30.599345Z initMod: 'dummy' -> weather:0.5804657, lights:0.4762677, greeting:0.44305706
+> [INTERNAL] [internal] 2026-10-14T16:58:30.605737Z initMod: 'dummy' -> greeting:0.57255584, weather:0.49809897, lights:0.42997587
+> [INTERNAL] [internal] 2026-10-14T16:58:30.612148Z initMod: 'dummy' -> weather:0.6009335, greeting:0.4799606, lights:0.41921514
+> [INTERNAL] [internal] 2026-10-14T16:58:30.618058Z initMod: 'dummy' -> greeting:0.6025627, lights:0.47914457, weather:0.41778442
+> [INTERNAL] [internal] 2026-10-14T16:58:30.624543Z initMod: 'dummy' -> weather:0.6165599, lights:0.44204453, greeting:0.44032416
+> [INTERNAL] [internal] 2026-10-14T16:58:30.631475Z initMod: 'dummy' -> greeting:0.63001984, weather:0.4757465, lights:0.3938795
+> [INTERNAL] [internal] 2026-10-14T16:58:30.638810Z initMod: 'dummy' -> greeting:0.59787655, weather:0.54010123, lights:0.36539477
+> [INTERNAL] [internal] 2026-10-14T16:58:30.645667Z initMod: 'dummy' -> weather:0.55560136, greeting:0.51015055, lights:0.43501872
+> [INTERNAL] [internal] 2026-10-14T16:58:30.646413Z ort: session #9 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:58:30.653252Z ort: session #10 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:58:30.654219Z model dummy (#5): closed after 45 runs
+> [INTERNAL] [internal] 2026-10-14T16:58:30.654820Z validate: 'dummy' on sample-intents.csv: 45 rows, accuracy 0.200, macro F1 0.187
+> [INTERNAL] [internal] 2026-10-14T16:58:31.153373Z source: sample-intents.csv [text=text, label=label, 45 rows]
+> [INTERNAL] [internal] 2026-10-14T16:58:31.154767Z ort: session #11 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:58:31.371010Z ort: session #12 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:58:31.383245Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T16:58:31.388517Z initMod: 'dummy' -> weather:0.60819036, lights:0.51950234, greeting:0.37319905
+> [INTERNAL] [internal] 2026-10-14T16:58:31.395997Z initMod: 'dummy' -> weather:0.5444942, lights:0.5111637, greeting:0.44434565
+> [INTERNAL] [internal] 2026-10-14T16:58:31.400803Z initMod: 'dummy' -> weather:0.56830585, greeting:0.46856803, lights:0.46316245
+> [INTERNAL] [internal] 2026-10-14T16:58:31.406705Z initMod: 'dummy' -> weather:0.65583366, greeting:0.5421442, lights:0.30875468
+> [INTERNAL] [internal] 2026-10-14T16:58:31.412236Z initMod: 'dummy' -> weather:0.56382513, greeting:0.47702867, lights:0.4592979
+> [INTERNAL] [internal] 2026-10-14T16:58:31.419533Z initMod: 'dummy' -> weather:0.54457355, lights:0.53664476, greeting:0.41896242
+> [INTERNAL] [internal] 2026-10-14T16:58:31.425299Z initMod: 'dummy' -> weather:0.5779325, lights:0.4893945, greeting:0.43255064
+> [INTERNAL] [internal] 2026-10-14T16:58:31.430440Z initMod: 'dummy' -> weather:0.5675384, greeting:0.5071472, lights:0.42616338
+> [INTERNAL] [internal] 2026-10-14T16:58:31.437155Z initMod: 'dummy' -> weather:0.5676954, greeting:0.5421453, lights:0.39240852
+> [INTERNAL] [internal] 2026-10-14T16:58:31.442271Z initMod: 'dummy' -> weather:0.59157056, lights:0.5375975, greeting:0.37224525
+> [INTERNAL] [internal] 2026-10-14T16:58:31.447176Z initMod: 'dummy' -> weather:0.5703034, greeting:0.5320881, lights:0.39947173
+> [INTERNAL] [internal] 2026-10-14T16:58:31.453980Z initMod: 'dummy' -> weather:0.6598409, greeting:0.52861375, lights:0.31654304
+> [INTERNAL] [internal] 2026-10-14T16:58:31.458754Z initMod: 'dummy' -> weather:0.6067637, greeting:0.47965434, lights:0.41364455
+> [INTERNAL] [internal] 2026-10-14T16:58:31.463355Z initMod: 'dummy' -> weather:0.5603754, lights:0.5435235, greeting:0.3967769
+> [INTERNAL] [internal] 2026-10-14T16:58:31.468894Z initMod: 'dummy' -> weather:0.5403451, lights:0.5160137, greeting:0.44363323
+> [INTERNAL] [internal] 2026-10-14T16:58:31.474730Z initMod: 'dummy' -> lights:0.57225937, weather:0.4760027, greeting:0.45070234
+> [INTERNAL] [internal] 2026-10-14T16:58:31.488358Z initMod: 'dummy' -> weather:0.62326646, greeting:0.51100385, lights:0.36767507
+> [INTERNAL] [internal] 2026-10-14T16:58:31.497437Z initMod: 'dummy' -> weather:0.57715964, greeting:0.4749579, lights:0.44797686
+> [INTERNAL] [internal] 2026-10-14T16:58:31.503483Z initMod: 'dummy' -> weather:0.61063355, greeting:0.4989282, lights:0.39140496
+> [INTERNAL] [internal] 2026-10-14T16:58:31.509135Z initMod: 'dummy' -> weather:0.6301832, lights:0.4793232, greeting:0.38949236
+> [INTERNAL] [internal] 2026-10-14T16:58:31.514944Z initMod: 'dummy' -> lights:0.51302916, greeting:0.5071778, weather:0.4796745
+> [INTERNAL] [internal] 2026-10-14T16:58:31.521566Z initMod: 'dummy' -> greeting:0.55405325, weather:0.4748808, lights:0.47118658
+> [INTERNAL] [internal] 2026-10-14T16:58:31.528682Z initMod: 'dummy' -> weather:0.5880185, greeting:0.46884602, lights:0.44305187
+> [INTERNAL] [internal] 2026-10-14T16:58:31.538783Z initMod: 'dummy' -> weather:0.5189152, greeting:0.5037301, lights:0.4775781
+> [INTERNAL] [internal] 2026-10-14T16:58:31.547065Z initMod: 'dummy' -> weather:0.6112888, lights:0.4810947, greeting:0.40700948
+> [INTERNAL] [internal] 2026-10-14T16:58:31.551469Z initMod: 'dummy' -> lights:0.5770103, greeting:0.48156136, weather:0.44035205
+> [INTERNAL] [internal] 2026-10-14T16:58:31.557861Z initMod: 'dummy' -> weather:0.6410107, lights:0.4394682, greeting:0.4172495
+> [INTERNAL] [internal] 2026-10-14T16:58:31.565342Z initMod: 'dummy' -> greeting:0.542123, lights:0.52671754, weather:0.43121356
+> [INTERNAL] [internal] 2026-10-14T16:58:31.572714Z initMod: 'dummy' -> weather:0.6575374, lights:0.49142423, greeting:0.35030463
+> [INTERNAL] [internal] 2026-10-14T16:58:31.579975Z initMod: 'dummy' -> weather:0.61360717, greeting:0.45403558, lights:0.4315691
+> [INTERNAL] [internal] 2026-10-14T16:58:31.588574Z initMod: 'dummy' -> greeting:0.6440654, weather:0.4722571, lights:0.3828802
+> [INTERNAL] [internal] 2026-10-14T16:58:31.594346Z initMod: 'dummy' -> lights:0.5262529, weather:0.50282085, greeting:0.470681
+> [INTERNAL] [internal] 2026-10-14T16:58:31.600028Z initMod: 'dummy' -> lights:0.5049359, greeting:0.49776712, weather:0.49724907
+> [INTERNAL] [internal] 2026-10-14T16:58:31.606794Z initMod: 'dummy' -> greeting:0.57907873, weather:0.50702584, lights:0.4148949
+> [INTERNAL] [internal] 2026-10-14T16:58:31.613822Z initMod: 'dummy' -> weather:0.5891823, lights:0.47635207, greeting:0.43413353
+> [INTERNAL] [internal] 2026-10-14T16:58:31.621644Z initMod: 'dummy' -> weather:0.56308436, greeting:0.52268094, lights:0.41552565
+> [INTERNAL] [internal] 2026-10-14T16:58:31.629302Z initMod: 'dummy' -> greeting:0.5975436, weather:0.5000462, lights:0.403325
+> [INTERNAL] [internal] 2026-10-14T16:58:31.635042Z initMod: 'dummy' -> weather:0.5804657, lights:0.4762677, greeting:0.44305706
+> [INTERNAL] [internal] 2026-10-14T16:58:31.640792Z initMod: 'dummy' -> greeting:0.57255584, weather:0.49809897, lights:0.42997587
+> [INTERNAL] [internal] 2026-10-14T16:58:31.647375Z initMod: 'dummy' -> weather:0.6009335, greeting:0.4799606, lights:0.41921514
+> [INTERNAL] [internal] 2026-10-14T16:58:31.654194Z initMod: 'dummy' -> greeting:0.6025627, lights:0.47914457, weather:0.41778442
+> [INTERNAL] [internal] 2026-10-14T16:58:31.660187Z initMod: 'dummy' -> weather:0.6165599, lights:0.44204453, greeting:0.44032416
+> [INTERNAL] [internal] 2026-10-14T16:58:31.666354Z initMod: 'dummy' -> greeting:0.63001984, weather:0.4757465, lights:0.3938795
+> [INTERNAL] [internal] 2026-10-14T16:58:31.673079Z initMod: 'dummy' -> greeting:0.59787655, weather:0.54010123, lights:0.36539477
+> [INTERNAL] [internal] 2026-10-14T16:58:31.678787Z initMod: 'dummy' -> weather:0.55560136, greeting:0.51015055, lights:0.43501872
+> [INTERNAL] [internal] 2026-10-14T16:58:31.679077Z ort: session #11 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:58:31.682059Z ort: session #12 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:58:31.683001Z model dummy (#6): closed after 45 runs
+> [INTERNAL] [internal] 2026-10-14T16:58:31.683526Z validate: 'dummy' on sample-intents.csv: 45 rows, accuracy 0.200, macro F1 0.187
+> [INTERNAL] [internal] 2026-10-14T16:58:32.507008Z source: sample-intents.csv [text=text, label=label, 45 rows]
+> [INTERNAL] [internal] 2026-10-14T16:58:32.508920Z ort: session #13 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:58:32.747919Z ort: session #14 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:58:32.758158Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T16:58:32.763664Z initMod: 'dummy' -> weather:0.60819036, lights:0.51950234, greeting:0.37319905
+> [INTERNAL] [internal] 2026-10-14T16:58:32.771283Z initMod: 'dummy' -> weather:0.5444942, lights:0.5111637, greeting:0.44434565
+> [INTERNAL] [internal] 2026-10-14T16:58:32.776107Z initMod: 'dummy' -> weather:0.56830585, greeting:0.46856803, lights:0.46316245
+> [INTERNAL] [internal] 2026-10-14T16:58:32.782268Z initMod: 'dummy' -> weather:0.65583366, greeting:0.5421442, lights:0.30875468
+> [INTERNAL] [internal] 2026-10-14T16:58:32.791527Z initMod: 'dummy' -> weather:0.56382513, greeting:0.47702867, lights:0.4592979
+> [INTERNAL] [internal] 2026-10-14T16:58:32.802541Z initMod: 'dummy' -> weather:0.54457355, lights:0.53664476, greeting:0.41896242
+> [INTERNAL] [internal] 2026-10-14T16:58:32.808568Z initMod: 'dummy' -> weather:0.5779325, lights:0.4893945, greeting:0.43255064
+> [INTERNAL] [internal] 2026-10-14T16:58:32.813540Z initMod: 'dummy' -> weather:0.5675384, greeting:0.5071472, lights:0.42616338
+> [INTERNAL] [internal] 2026-10-14T16:58:32.819706Z initMod: 'dummy' -> weather:0.5676954, greeting:0.5421453, lights:0.39240852
+> [INTERNAL] [internal] 2026-10-14T16:58:32.824898Z initMod: 'dummy' -> weather:0.59157056, lights:0.5375975, greeting:0.37224525
+> [INTERNAL] [internal] 2026-10-14T16:58:32.829411Z initMod: 'dummy' -> weather:0.5703034, greeting:0.5320881, lights:0.39947173
+> [INTERNAL] [internal] 2026-10-14T16:58:32.835229Z initMod: 'dummy' -> weather:0.6598409, greeting:0.52861375, lights:0.31654304
+> [INTERNAL] [internal] 2026-10-14T16:58:32.840103Z initMod: 'dummy' -> weather:0.6067637, greeting:0.47965434, lights:0.41364455
+> [INTERNAL] [internal] 2026-10-14T16:58:32.845097Z initMod: 'dummy' -> weather:0.5603754, lights:0.5435235, greeting:0.3967769
+> [INTERNAL] [internal] 2026-10-14T16:58:32.851025Z initMod: 'dummy' -> weather:0.5403451, lights:0.5160137, greeting:0.44363323
+> [INTERNAL] [internal] 2026-10-14T16:58:32.857671Z initMod: 'dummy' -> lights:0.57225937, weather:0.4760027, greeting:0.45070234
+> [INTERNAL] [internal] 2026-10-14T16:58:32.865141Z initMod: 'dummy' -> weather:0.62326646, greeting:0.51100385, lights:0.36767507
+> [INTERNAL] [internal] 2026-10-14T16:58:32.872003Z initMod: 'dummy' -> weather:0.57715964, greeting:0.4749579, lights:0.44797686
+> [INTERNAL] [internal] 2026-10-14T16:58:32.877757Z initMod: 'dummy' -> weather:0.61063355, greeting:0.4989282, lights:0.39140496
+> [INTERNAL] [internal] 2026-10-14T16:58:32.884003Z initMod: 'dummy' -> weather:0.6301832, lights:0.4793232, greeting:0.38949236
+> [INTERNAL] [internal] 2026-10-14T16:58:32.889724Z initMod: 'dummy' -> lights:0.51302916, greeting:0.5071778, weather:0.4796745
+> [INTERNAL] [internal] 2026-10-14T16:58:32.895855Z initMod: 'dummy' -> greeting:0.55405325, weather:0.4748808, lights:0.47118658
+> [INTERNAL] [internal] 2026-10-14T16:58:32.901628Z initMod: 'dummy' -> weather:0.5880185, greeting:0.46884602, lights:0.44305187
+> [INTERNAL] [internal] 2026-10-14T16:58:32.912198Z initMod: 'dummy' -> weather:0.5189152, greeting:0.5037301, lights:0.4775781
+> [INTERNAL] [internal] 2026-10-14T16:58:32.919644Z initMod: 'dummy' -> weather:0.6112888, lights:0.4810947, greeting:0.40700948
+> [INTERNAL] [internal] 2026-10-14T16:58:32.924820Z initMod: 'dummy' -> lights:0.5770103, greeting:0.48156136, weather:0.44035205
+> [INTERNAL] [internal] 2026-10-14T16:58:32.930980Z initMod: 'dummy' -> weather:0.6410107, lights:0.4394682, greeting:0.4172495
+> [INTERNAL] [internal] 2026-10-14T16:58:32.938579Z initMod: 'dummy' -> greeting:0.542123, lights:0.52671754, weather:0.43121356
+> [INTERNAL] [internal] 2026-10-14T16:58:32.945991Z initMod: 'dummy' -> weather:0.6575374, lights:0.49142423, greeting:0.35030463
+> [INTERNAL] [internal] 2026-10-14T16:58:32.953071Z initMod: 'dummy' -> weather:0.61360717, greeting:0.45403558, lights:0.4315691
+> [INTERNAL] [internal] 2026-10-14T16:58:32.960908Z initMod: 'dummy' -> greeting:0.6440654, weather:0.4722571, lights:0.3828802
+> [INTERNAL] [internal] 2026-10-14T16:58:32.966980Z initMod: 'dummy' -> lights:0.5262529, weather:0.50282085, greeting:0.470681
+> [INTERNAL] [internal] 2026-10-14T16:58:32.977545Z initMod: 'dummy' -> lights:0.5049359, greeting:0.49776712, weather:0.49724907
+> [INTERNAL] [internal] 2026-10-14T16:58:32.986724Z initMod: 'dummy' -> greeting:0.57907873, weather:0.50702584, lights:0.4148949
+> [INTERNAL] [internal] 2026-10-14T16:58:32.994260Z initMod: 'dummy' -> weather:0.5891823, lights:0.47635207, greeting:0.43413353
+> [INTERNAL] [internal] 2026-10-14T16:58:33.002656Z initMod: 'dummy' -> weather:0.56308436, greeting:0.52268094, lights:0.41552565
+> [INTERNAL] [internal] 2026-10-14T16:58:33.010343Z initMod: 'dummy' -> greeting:0.5975436, weather:0.5000462, lights:0.403325
+> [INTERNAL] [internal] 2026-10-14T16:58:33.016590Z initMod: 'dummy' -> weather:0.5804657, lights:0.4762677, greeting:0.44305706
+> [INTERNAL] [internal] 2026-10-14T16:58:33.022541Z initMod: 'dummy' -> greeting:0.57255584, weather:0.49809897, lights:0.42997587
+> [INTERNAL] [internal] 2026-10-14T16:58:33.028082Z initMod: 'dummy' -> weather:0.6009335, greeting:0.4799606, lights:0.41921514
+> [INTERNAL] [internal] 2026-10-14T16:58:33.033639Z initMod: 'dummy' -> greeting:0.6025627, lights:0.47914457, weather:0.41778442
+> [INTERNAL] [internal] 2026-10-14T16:58:33.039445Z initMod: 'dummy' -> weather:0.6165599, lights:0.44204453, greeting:0.44032416
+> [INTERNAL] [internal] 2026-10-14T16:58:33.046618Z initMod: 'dummy' -> greeting:0.63001984, weather:0.4757465, lights:0.3938795
+> [INTERNAL] [internal] 2026-10-14T16:58:33.052989Z initMod: 'dummy' -> greeting:0.59787655, weather:0.54010123, lights:0.36539477
+> [INTERNAL] [internal] 2026-10-14T16:58:33.059332Z initMod: 'dummy' -> weather:0.55560136, greeting:0.51015055, lights:0.43501872
+> [INTERNAL] [internal] 2026-10-14T16:58:33.059744Z ort: session #13 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:58:33.062843Z ort: session #14 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:58:33.063676Z model dummy (#7): closed after 45 runs
+> [INTERNAL] [internal] 2026-10-14T16:58:33.064691Z validate: 'dummy' on sample-intents.csv: 45 rows, accuracy 0.200, macro F1 0.187
+> [INTERNAL] [internal] 2026-10-14T16:58:35.596386Z ort: session #15 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:58:35.799275Z ort: session #16 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:58:35.808199Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T16:58:37.994501Z ort: session #15 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:58:38.003427Z ort: session #16 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:58:38.006506Z model dummy (#8): closed after 0 runs
+> [ERROR] [internal] 2026-10-14T16:58:52.438992Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [ERROR] [internal] 2026-10-14T16:58:53.756304Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry
+> [INTERNAL] [internal] 2026-10-14T16:59:52.419659Z source: sample-intents.csv [text=text, label=label, 45 rows]
+> [INTERNAL] [internal] 2026-10-14T16:59:55.845014Z source: sample-intents.csv [text=text, label=label, 45 rows]
+> [INTERNAL] [internal] 2026-10-14T16:59:55.848558Z modelBuilder: embedding 45 samples over 3 labels [greeting, lights, weather]
+> [INTERNAL] [internal] 2026-10-14T16:59:56.235822Z ort: session #17 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:59:56.549285Z ort: session #17 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T16:59:56.553431Z modelBuilder: training 'yourmamma' on 36 samples, validating on 9
+> [INTERNAL] [internal] 2026-10-14T16:59:56.554521Z modelBuilder: fitting dense[16 relu] -> dense[3] for 150 epochs
+> [INTERNAL] [internal] 2026-10-14T16:59:56.605875Z modelBuilder: epoch 25 loss 0.1999 accuracy 1.000
+> [INTERNAL] [internal] 2026-10-14T16:59:56.617658Z modelBuilder: epoch 50 loss 0.0942 accuracy 1.000
+> [INTERNAL] [internal] 2026-10-14T16:59:56.628547Z modelBuilder: epoch 75 loss 0.0535 accuracy 1.000
+> [INTERNAL] [internal] 2026-10-14T16:59:56.639678Z modelBuilder: epoch 100 loss 0.0347 accuracy 1.000
+> [INTERNAL] [internal] 2026-10-14T16:59:56.650748Z modelBuilder: epoch 125 loss 0.0244 accuracy 1.000
+> [INTERNAL] [internal] 2026-10-14T16:59:56.661770Z modelBuilder: trained, epoch 150 loss 0.0183 accuracy 1.000
+> [INTERNAL] [internal] 2026-10-14T16:59:56.664580Z module 'yourmamma' exported to /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/yourmamma/model.onnx
+> [INTERNAL] [internal] 2026-10-14T16:59:56.666246Z metrics 'yourmamma' @ 2026-10-14T16:59:56.661979Z: 45 samples (36 train / 9 validation on split 20%)\naccuracy 1.000  macro F1 1.000\nlabel     precision  recall  f1     support\ngreeting  1.000      1.000   1.000  3\nlights    1.000      1.000   1.000  3\nweather   1.000      1.000   1.000  3
+> [INTERNAL] [internal] 2026-10-14T17:00:14.349821Z source: sample-intents.csv [text=text, label=label, 45 rows]
+> [INTERNAL] [internal] 2026-10-14T17:00:14.352009Z ort: session #18 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T17:00:14.562101Z ort: session #19 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T17:00:14.572418Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T17:00:14.578362Z initMod: 'dummy' -> weather:0.60819036, lights:0.51950234, greeting:0.37319905
+> [INTERNAL] [internal] 2026-10-14T17:00:14.585829Z initMod: 'dummy' -> weather:0.5444942, lights:0.5111637, greeting:0.44434565
+> [INTERNAL] [internal] 2026-10-14T17:00:14.590625Z initMod: 'dummy' -> weather:0.56830585, greeting:0.46856803, lights:0.46316245
+> [INTERNAL] [internal] 2026-10-14T17:00:14.596296Z initMod: 'dummy' -> weather:0.65583366, greeting:0.5421442, lights:0.30875468
+> [INTERNAL] [internal] 2026-10-14T17:00:14.602005Z initMod: 'dummy' -> weather:0.56382513, greeting:0.47702867, lights:0.4592979
+> [INTERNAL] [internal] 2026-10-14T17:00:14.610368Z initMod: 'dummy' -> weather:0.54457355, lights:0.53664476, greeting:0.41896242
+> [INTERNAL] [internal] 2026-10-14T17:00:14.615840Z initMod: 'dummy' -> weather:0.5779325, lights:0.4893945, greeting:0.43255064
+> [INTERNAL] [internal] 2026-10-14T17:00:14.620379Z initMod: 'dummy' -> weather:0.5675384, greeting:0.5071472, lights:0.42616338
+> [INTERNAL] [internal] 2026-10-14T17:00:14.626267Z initMod: 'dummy' -> weather:0.5676954, greeting:0.5421453, lights:0.39240852
+> [INTERNAL] [internal] 2026-10-14T17:00:14.631533Z initMod: 'dummy' -> weather:0.59157056, lights:0.5375975, greeting:0.37224525
+> [INTERNAL] [internal] 2026-10-14T17:00:14.636301Z initMod: 'dummy' -> weather:0.5703034, greeting:0.5320881, lights:0.39947173
+> [INTERNAL] [internal] 2026-10-14T17:00:14.642693Z initMod: 'dummy' -> weather:0.6598409, greeting:0.52861375, lights:0.31654304
+> [INTERNAL] [internal] 2026-10-14T17:00:14.647591Z initMod: 'dummy' -> weather:0.6067637, greeting:0.47965434, lights:0.41364455
+> [INTERNAL] [internal] 2026-10-14T17:00:14.653813Z initMod: 'dummy' -> weather:0.5603754, lights:0.5435235, greeting:0.3967769
+> [INTERNAL] [internal] 2026-10-14T17:00:14.659858Z initMod: 'dummy' -> weather:0.5403451, lights:0.5160137, greeting:0.44363323
+> [INTERNAL] [internal] 2026-10-14T17:00:14.666539Z initMod: 'dummy' -> lights:0.57225937, weather:0.4760027, greeting:0.45070234
+> [INTERNAL] [internal] 2026-10-14T17:00:14.674798Z initMod: 'dummy' -> weather:0.62326646, greeting:0.51100385, lights:0.36767507
+> [INTERNAL] [internal] 2026-10-14T17:00:14.682882Z initMod: 'dummy' -> weather:0.57715964, greeting:0.4749579, lights:0.44797686
+> [INTERNAL] [internal] 2026-10-14T17:00:14.688680Z initMod: 'dummy' -> weather:0.61063355, greeting:0.4989282, lights:0.39140496
+> [INTERNAL] [internal] 2026-10-14T17:00:14.694268Z initMod: 'dummy' -> weather:0.6301832, lights:0.4793232, greeting:0.38949236
+> [INTERNAL] [internal] 2026-10-14T17:00:14.700290Z initMod: 'dummy' -> lights:0.51302916, greeting:0.5071778, weather:0.4796745
+> [INTERNAL] [internal] 2026-10-14T17:00:14.707055Z initMod: 'dummy' -> greeting:0.55405325, weather:0.4748808, lights:0.47118658
+> [INTERNAL] [internal] 2026-10-14T17:00:14.713561Z initMod: 'dummy' -> weather:0.5880185, greeting:0.46884602, lights:0.44305187
+> [INTERNAL] [internal] 2026-10-14T17:00:14.723092Z initMod: 'dummy' -> weather:0.5189152, greeting:0.5037301, lights:0.4775781
+> [INTERNAL] [internal] 2026-10-14T17:00:14.730387Z initMod: 'dummy' -> weather:0.6112888, lights:0.4810947, greeting:0.40700948
+> [INTERNAL] [internal] 2026-10-14T17:00:14.734927Z initMod: 'dummy' -> lights:0.5770103, greeting:0.48156136, weather:0.44035205
+> [INTERNAL] [internal] 2026-10-14T17:00:14.741516Z initMod: 'dummy' -> weather:0.6410107, lights:0.4394682, greeting:0.4172495
+> [INTERNAL] [internal] 2026-10-14T17:00:14.749640Z initMod: 'dummy' -> greeting:0.542123, lights:0.52671754, weather:0.43121356
+> [INTERNAL] [internal] 2026-10-14T17:00:14.756880Z initMod: 'dummy' -> weather:0.6575374, lights:0.49142423, greeting:0.35030463
+> [INTERNAL] [internal] 2026-10-14T17:00:14.763726Z initMod: 'dummy' -> weather:0.61360717, greeting:0.45403558, lights:0.4315691
+> [INTERNAL] [internal] 2026-10-14T17:00:14.772135Z initMod: 'dummy' -> greeting:0.6440654, weather:0.4722571, lights:0.3828802
+> [INTERNAL] [internal] 2026-10-14T17:00:14.777922Z initMod: 'dummy' -> lights:0.5262529, weather:0.50282085, greeting:0.470681
+> [INTERNAL] [internal] 2026-10-14T17:00:14.784075Z initMod: 'dummy' -> lights:0.5049359, greeting:0.49776712, weather:0.49724907
+> [INTERNAL] [internal] 2026-10-14T17:00:14.790676Z initMod: 'dummy' -> greeting:0.57907873, weather:0.50702584, lights:0.4148949
+> [INTERNAL] [internal] 2026-10-14T17:00:14.798091Z initMod: 'dummy' -> weather:0.5891823, lights:0.47635207, greeting:0.43413353
+> [INTERNAL] [internal] 2026-10-14T17:00:14.806860Z initMod: 'dummy' -> weather:0.56308436, greeting:0.52268094, lights:0.41552565
+> [INTERNAL] [internal] 2026-10-14T17:00:14.814320Z initMod: 'dummy' -> greeting:0.5975436, weather:0.5000462, lights:0.403325
+> [INTERNAL] [internal] 2026-10-14T17:00:14.819759Z initMod: 'dummy' -> weather:0.5804657, lights:0.4762677, greeting:0.44305706
+> [INTERNAL] [internal] 2026-10-14T17:00:14.825361Z initMod: 'dummy' -> greeting:0.57255584, weather:0.49809897, lights:0.42997587
+> [INTERNAL] [internal] 2026-10-14T17:00:14.831050Z initMod: 'dummy' -> weather:0.6009335, greeting:0.4799606, lights:0.41921514
+> [INTERNAL] [internal] 2026-10-14T17:00:14.836556Z initMod: 'dummy' -> greeting:0.6025627, lights:0.47914457, weather:0.41778442
+> [INTERNAL] [internal] 2026-10-14T17:00:14.841867Z initMod: 'dummy' -> weather:0.6165599, lights:0.44204453, greeting:0.44032416
+> [INTERNAL] [internal] 2026-10-14T17:00:14.848859Z initMod: 'dummy' -> greeting:0.63001984, weather:0.4757465, lights:0.3938795
+> [INTERNAL] [internal] 2026-10-14T17:00:14.856331Z initMod: 'dummy' -> greeting:0.59787655, weather:0.54010123, lights:0.36539477
+> [INTERNAL] [internal] 2026-10-14T17:00:14.862039Z initMod: 'dummy' -> weather:0.55560136, greeting:0.51015055, lights:0.43501872
+> [INTERNAL] [internal] 2026-10-14T17:00:14.862499Z ort: session #18 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T17:00:14.865668Z ort: session #19 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T17:00:14.866507Z model dummy (#9): closed after 45 runs
+> [INTERNAL] [internal] 2026-10-14T17:00:14.867321Z validate: 'dummy' on sample-intents.csv: 45 rows, accuracy 0.200, macro F1 0.187
+> [INTERNAL] [internal] 2026-10-14T17:00:18.548776Z source: sample-intents.csv [text=text, label=label, 45 rows]
+> [INTERNAL] [internal] 2026-10-14T17:00:18.549485Z ort: session #20 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T17:00:18.735349Z ort: session #21 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T17:00:18.749128Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T17:00:18.755692Z initMod: 'dummy' -> weather:0.60819036, lights:0.51950234, greeting:0.37319905
+> [INTERNAL] [internal] 2026-10-14T17:00:18.763578Z initMod: 'dummy' -> weather:0.5444942, lights:0.5111637, greeting:0.44434565
+> [INTERNAL] [internal] 2026-10-14T17:00:18.768125Z initMod: 'dummy' -> weather:0.56830585, greeting:0.46856803, lights:0.46316245
+> [INTERNAL] [internal] 2026-10-14T17:00:18.774081Z initMod: 'dummy' -> weather:0.65583366, greeting:0.5421442, lights:0.30875468
+> [INTERNAL] [internal] 2026-10-14T17:00:18.779877Z initMod: 'dummy' -> weather:0.56382513, greeting:0.47702867, lights:0.4592979
+> [INTERNAL] [internal] 2026-10-14T17:00:18.788297Z initMod: 'dummy' -> weather:0.54457355, lights:0.53664476, greeting:0.41896242
+> [INTERNAL] [internal] 2026-10-14T17:00:18.794619Z initMod: 'dummy' -> weather:0.5779325, lights:0.4893945, greeting:0.43255064
+> [INTERNAL] [internal] 2026-10-14T17:00:18.799681Z initMod: 'dummy' -> weather:0.5675384, greeting:0.5071472, lights:0.42616338
+> [INTERNAL] [internal] 2026-10-14T17:00:18.805819Z initMod: 'dummy' -> weather:0.5676954, greeting:0.5421453, lights:0.39240852
+> [INTERNAL] [internal] 2026-10-14T17:00:18.810784Z initMod: 'dummy' -> weather:0.59157056, lights:0.5375975, greeting:0.37224525
+> [INTERNAL] [internal] 2026-10-14T17:00:18.815749Z initMod: 'dummy' -> weather:0.5703034, greeting:0.5320881, lights:0.39947173
+> [INTERNAL] [internal] 2026-10-14T17:00:18.822214Z initMod: 'dummy' -> weather:0.6598409, greeting:0.52861375, lights:0.31654304
+> [INTERNAL] [internal] 2026-10-14T17:00:18.826941Z initMod: 'dummy' -> weather:0.6067637, greeting:0.47965434, lights:0.41364455
+> [INTERNAL] [internal] 2026-10-14T17:00:18.831395Z initMod: 'dummy' -> weather:0.5603754, lights:0.5435235, greeting:0.3967769
+> [INTERNAL] [internal] 2026-10-14T17:00:18.836782Z initMod: 'dummy' -> weather:0.5403451, lights:0.5160137, greeting:0.44363323
+> [INTERNAL] [internal] 2026-10-14T17:00:18.842416Z initMod: 'dummy' -> lights:0.57225937, weather:0.4760027, greeting:0.45070234
+> [INTERNAL] [internal] 2026-10-14T17:00:18.850111Z initMod: 'dummy' -> weather:0.62326646, greeting:0.51100385, lights:0.36767507
+> [INTERNAL] [internal] 2026-10-14T17:00:18.857787Z initMod: 'dummy' -> weather:0.57715964, greeting:0.4749579, lights:0.44797686
+> [INTERNAL] [internal] 2026-10-14T17:00:18.864114Z initMod: 'dummy' -> weather:0.61063355, greeting:0.4989282, lights:0.39140496
+> [INTERNAL] [internal] 2026-10-14T17:00:18.870052Z initMod: 'dummy' -> weather:0.6301832, lights:0.4793232, greeting:0.38949236
+> [INTERNAL] [internal] 2026-10-14T17:00:18.875684Z initMod: 'dummy' -> lights:0.51302916, greeting:0.5071778, weather:0.4796745
+> [INTERNAL] [internal] 2026-10-14T17:00:18.882140Z initMod: 'dummy' -> greeting:0.55405325, weather:0.4748808, lights:0.47118658
+> [INTERNAL] [internal] 2026-10-14T17:00:18.889360Z initMod: 'dummy' -> weather:0.5880185, greeting:0.46884602, lights:0.44305187
+> [INTERNAL] [internal] 2026-10-14T17:00:18.899242Z initMod: 'dummy' -> weather:0.5189152, greeting:0.5037301, lights:0.4775781
+> [INTERNAL] [internal] 2026-10-14T17:00:18.906645Z initMod: 'dummy' -> weather:0.6112888, lights:0.4810947, greeting:0.40700948
+> [INTERNAL] [internal] 2026-10-14T17:00:18.913006Z initMod: 'dummy' -> lights:0.5770103, greeting:0.48156136, weather:0.44035205
+> [INTERNAL] [internal] 2026-10-14T17:00:18.918701Z initMod: 'dummy' -> weather:0.6410107, lights:0.4394682, greeting:0.4172495
+> [INTERNAL] [internal] 2026-10-14T17:00:18.925699Z initMod: 'dummy' -> greeting:0.542123, lights:0.52671754, weather:0.43121356
+> [INTERNAL] [internal] 2026-10-14T17:00:18.933974Z initMod: 'dummy' -> weather:0.6575374, lights:0.49142423, greeting:0.35030463
+> [INTERNAL] [internal] 2026-10-14T17:00:18.942114Z initMod: 'dummy' -> weather:0.61360717, greeting:0.45403558, lights:0.4315691
+> [INTERNAL] [internal] 2026-10-14T17:00:18.950765Z initMod: 'dummy' -> greeting:0.6440654, weather:0.4722571, lights:0.3828802
+> [INTERNAL] [internal] 2026-10-14T17:00:18.956927Z initMod: 'dummy' -> lights:0.5262529, weather:0.50282085, greeting:0.470681
+> [INTERNAL] [internal] 2026-10-14T17:00:18.962672Z initMod: 'dummy' -> lights:0.5049359, greeting:0.49776712, weather:0.49724907
+> [INTERNAL] [internal] 2026-10-14T17:00:18.969382Z initMod: 'dummy' -> greeting:0.57907873, weather:0.50702584, lights:0.4148949
+> [INTERNAL] [internal] 2026-10-14T17:00:18.978182Z initMod: 'dummy' -> weather:0.5891823, lights:0.47635207, greeting:0.43413353
+> [INTERNAL] [internal] 2026-10-14T17:00:18.986204Z initMod: 'dummy' -> weather:0.56308436, greeting:0.52268094, lights:0.41552565
+> [INTERNAL] [internal] 2026-10-14T17:00:18.993228Z initMod: 'dummy' -> greeting:0.5975436, weather:0.5000462, lights:0.403325
+> [INTERNAL] [internal] 2026-10-14T17:00:18.999552Z initMod: 'dummy' -> weather:0.5804657, lights:0.4762677, greeting:0.44305706
+> [INTERNAL] [internal] 2026-10-14T17:00:19.005499Z initMod: 'dummy' -> greeting:0.57255584, weather:0.49809897, lights:0.42997587
+> [INTERNAL] [internal] 2026-10-14T17:00:19.011188Z initMod: 'dummy' -> weather:0.6009335, greeting:0.4799606, lights:0.41921514
+> [INTERNAL] [internal] 2026-10-14T17:00:19.016970Z initMod: 'dummy' -> greeting:0.6025627, lights:0.47914457, weather:0.41778442
+> [INTERNAL] [internal] 2026-10-14T17:00:19.022727Z initMod: 'dummy' -> weather:0.6165599, lights:0.44204453, greeting:0.44032416
+> [INTERNAL] [internal] 2026-10-14T17:00:19.028759Z initMod: 'dummy' -> greeting:0.63001984, weather:0.4757465, lights:0.3938795
+> [INTERNAL] [internal] 2026-10-14T17:00:19.035368Z initMod: 'dummy' -> greeting:0.59787655, weather:0.54010123, lights:0.36539477
+> [INTERNAL] [internal] 2026-10-14T17:00:19.040899Z initMod: 'dummy' -> weather:0.55560136, greeting:0.51015055, lights:0.43501872
+> [INTERNAL] [internal] 2026-10-14T17:00:19.041377Z ort: session #20 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T17:00:19.044459Z ort: session #21 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T17:00:19.045992Z model dummy (#10): closed after 45 runs
+> [INTERNAL] [internal] 2026-10-14T17:00:19.046701Z validate: 'dummy' on sample-intents.csv: 45 rows, accuracy 0.200, macro F1 0.187
+> [INTERNAL] [internal] 2026-10-14T17:00:19.600803Z source: sample-intents.csv [text=text, label=label, 45 rows]
+> [INTERNAL] [internal] 2026-10-14T17:00:19.602382Z ort: session #22 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T17:00:19.831250Z ort: session #23 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T17:00:19.839914Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T17:00:19.845344Z initMod: 'dummy' -> weather:0.60819036, lights:0.51950234, greeting:0.37319905
+> [INTERNAL] [internal] 2026-10-14T17:00:19.853013Z initMod: 'dummy' -> weather:0.5444942, lights:0.5111637, greeting:0.44434565
+> [INTERNAL] [internal] 2026-10-14T17:00:19.858087Z initMod: 'dummy' -> weather:0.56830585, greeting:0.46856803, lights:0.46316245
+> [INTERNAL] [internal] 2026-10-14T17:00:19.863668Z initMod: 'dummy' -> weather:0.65583366, greeting:0.5421442, lights:0.30875468
+> [INTERNAL] [internal] 2026-10-14T17:00:19.869552Z initMod: 'dummy' -> weather:0.56382513, greeting:0.47702867, lights:0.4592979
+> [INTERNAL] [internal] 2026-10-14T17:00:19.877439Z initMod: 'dummy' -> weather:0.54457355, lights:0.53664476, greeting:0.41896242
+> [INTERNAL] [internal] 2026-10-14T17:00:19.884059Z initMod: 'dummy' -> weather:0.5779325, lights:0.4893945, greeting:0.43255064
+> [INTERNAL] [internal] 2026-10-14T17:00:19.889147Z initMod: 'dummy' -> weather:0.5675384, greeting:0.5071472, lights:0.42616338
+> [INTERNAL] [internal] 2026-10-14T17:00:19.896083Z initMod: 'dummy' -> weather:0.5676954, greeting:0.5421453, lights:0.39240852
+> [INTERNAL] [internal] 2026-10-14T17:00:19.901677Z initMod: 'dummy' -> weather:0.59157056, lights:0.5375975, greeting:0.37224525
+> [INTERNAL] [internal] 2026-10-14T17:00:19.906677Z initMod: 'dummy' -> weather:0.5703034, greeting:0.5320881, lights:0.39947173
+> [INTERNAL] [internal] 2026-10-14T17:00:19.913408Z initMod: 'dummy' -> weather:0.6598409, greeting:0.52861375, lights:0.31654304
+> [INTERNAL] [internal] 2026-10-14T17:00:19.917952Z initMod: 'dummy' -> weather:0.6067637, greeting:0.47965434, lights:0.41364455
+> [INTERNAL] [internal] 2026-10-14T17:00:19.922881Z initMod: 'dummy' -> weather:0.5603754, lights:0.5435235, greeting:0.3967769
+> [INTERNAL] [internal] 2026-10-14T17:00:19.929034Z initMod: 'dummy' -> weather:0.5403451, lights:0.5160137, greeting:0.44363323
+> [INTERNAL] [internal] 2026-10-14T17:00:19.935444Z initMod: 'dummy' -> lights:0.57225937, weather:0.4760027, greeting:0.45070234
+> [INTERNAL] [internal] 2026-10-14T17:00:19.943407Z initMod: 'dummy' -> weather:0.62326646, greeting:0.51100385, lights:0.36767507
+> [INTERNAL] [internal] 2026-10-14T17:00:19.951210Z initMod: 'dummy' -> weather:0.57715964, greeting:0.4749579, lights:0.44797686
+> [INTERNAL] [internal] 2026-10-14T17:00:19.959415Z initMod: 'dummy' -> weather:0.61063355, greeting:0.4989282, lights:0.39140496
+> [INTERNAL] [internal] 2026-10-14T17:00:19.969548Z initMod: 'dummy' -> weather:0.6301832, lights:0.4793232, greeting:0.38949236
+> [INTERNAL] [internal] 2026-10-14T17:00:19.975488Z initMod: 'dummy' -> lights:0.51302916, greeting:0.5071778, weather:0.4796745
+> [INTERNAL] [internal] 2026-10-14T17:00:19.981928Z initMod: 'dummy' -> greeting:0.55405325, weather:0.4748808, lights:0.47118658
+> [INTERNAL] [internal] 2026-10-14T17:00:19.988099Z initMod: 'dummy' -> weather:0.5880185, greeting:0.46884602, lights:0.44305187
+> [INTERNAL] [internal] 2026-10-14T17:00:19.997853Z initMod: 'dummy' -> weather:0.5189152, greeting:0.5037301, lights:0.4775781
+> [INTERNAL] [internal] 2026-10-14T17:00:20.005522Z initMod: 'dummy' -> weather:0.6112888, lights:0.4810947, greeting:0.40700948
+> [INTERNAL] [internal] 2026-10-14T17:00:20.010328Z initMod: 'dummy' -> lights:0.5770103, greeting:0.48156136, weather:0.44035205
+> [INTERNAL] [internal] 2026-10-14T17:00:20.016278Z initMod: 'dummy' -> weather:0.6410107, lights:0.4394682, greeting:0.4172495
+> [INTERNAL] [internal] 2026-10-14T17:00:20.023471Z initMod: 'dummy' -> greeting:0.542123, lights:0.52671754, weather:0.43121356
+> [INTERNAL] [internal] 2026-10-14T17:00:20.030160Z initMod: 'dummy' -> weather:0.6575374, lights:0.49142423, greeting:0.35030463
+> [INTERNAL] [internal] 2026-10-14T17:00:20.036859Z initMod: 'dummy' -> weather:0.61360717, greeting:0.45403558, lights:0.4315691
+> [INTERNAL] [internal] 2026-10-14T17:00:20.045159Z initMod: 'dummy' -> greeting:0.6440654, weather:0.4722571, lights:0.3828802
+> [INTERNAL] [internal] 2026-10-14T17:00:20.051068Z initMod: 'dummy' -> lights:0.5262529, weather:0.50282085, greeting:0.470681
+> [INTERNAL] [internal] 2026-10-14T17:00:20.057197Z initMod: 'dummy' -> lights:0.5049359, greeting:0.49776712, weather:0.49724907
+> [INTERNAL] [internal] 2026-10-14T17:00:20.063748Z initMod: 'dummy' -> greeting:0.57907873, weather:0.50702584, lights:0.4148949
+> [INTERNAL] [internal] 2026-10-14T17:00:20.070961Z initMod: 'dummy' -> weather:0.5891823, lights:0.47635207, greeting:0.43413353
+> [INTERNAL] [internal] 2026-10-14T17:00:20.078570Z initMod: 'dummy' -> weather:0.56308436, greeting:0.52268094, lights:0.41552565
+> [INTERNAL] [internal] 2026-10-14T17:00:20.085901Z initMod: 'dummy' -> greeting:0.5975436, weather:0.5000462, lights:0.403325
+> [INTERNAL] [internal] 2026-10-14T17:00:20.091801Z initMod: 'dummy' -> weather:0.5804657, lights:0.4762677, greeting:0.44305706
+> [INTERNAL] [internal] 2026-10-14T17:00:20.097544Z initMod: 'dummy' -> greeting:0.57255584, weather:0.49809897, lights:0.42997587
+> [INTERNAL] [internal] 2026-10-14T17:00:20.103336Z initMod: 'dummy' -> weather:0.6009335, greeting:0.4799606, lights:0.41921514
+> [INTERNAL] [internal] 2026-10-14T17:00:20.109455Z initMod: 'dummy' -> greeting:0.6025627, lights:0.47914457, weather:0.41778442
+> [INTERNAL] [internal] 2026-10-14T17:00:20.114956Z initMod: 'dummy' -> weather:0.6165599, lights:0.44204453, greeting:0.44032416
+> [INTERNAL] [internal] 2026-10-14T17:00:20.121180Z initMod: 'dummy' -> greeting:0.63001984, weather:0.4757465, lights:0.3938795
+> [INTERNAL] [internal] 2026-10-14T17:00:20.127403Z initMod: 'dummy' -> greeting:0.59787655, weather:0.54010123, lights:0.36539477
+> [INTERNAL] [internal] 2026-10-14T17:00:20.132922Z initMod: 'dummy' -> weather:0.55560136, greeting:0.51015055, lights:0.43501872
+> [INTERNAL] [internal] 2026-10-14T17:00:20.133162Z ort: session #22 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T17:00:20.136164Z ort: session #23 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T17:00:20.137038Z model dummy (#11): closed after 45 runs
+> [INTERNAL] [internal] 2026-10-14T17:00:20.137561Z validate: 'dummy' on sample-intents.csv: 45 rows, accuracy 0.200, macro F1 0.187
+> [INTERNAL] [internal] 2026-10-14T17:00:20.346657Z source: sample-intents.csv [text=text, label=label, 45 rows]
+> [INTERNAL] [internal] 2026-10-14T17:00:20.347798Z ort: session #24 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T17:00:20.579450Z ort: session #25 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T17:00:20.588120Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T17:00:20.594699Z initMod: 'dummy' -> weather:0.60819036, lights:0.51950234, greeting:0.37319905
+> [INTERNAL] [internal] 2026-10-14T17:00:20.601788Z initMod: 'dummy' -> weather:0.5444942, lights:0.5111637, greeting:0.44434565
+> [INTERNAL] [internal] 2026-10-14T17:00:20.606694Z initMod: 'dummy' -> weather:0.56830585, greeting:0.46856803, lights:0.46316245
+> [INTERNAL] [internal] 2026-10-14T17:00:20.612095Z initMod: 'dummy' -> weather:0.65583366, greeting:0.5421442, lights:0.30875468
+> [INTERNAL] [internal] 2026-10-14T17:00:20.618286Z initMod: 'dummy' -> weather:0.56382513, greeting:0.47702867, lights:0.4592979
+> [INTERNAL] [internal] 2026-10-14T17:00:20.626420Z initMod: 'dummy' -> weather:0.54457355, lights:0.53664476, greeting:0.41896242
+> [INTERNAL] [internal] 2026-10-14T17:00:20.632341Z initMod: 'dummy' -> weather:0.5779325, lights:0.4893945, greeting:0.43255064
+> [INTERNAL] [internal] 2026-10-14T17:00:20.637005Z initMod: 'dummy' -> weather:0.5675384, greeting:0.5071472, lights:0.42616338
+> [INTERNAL] [internal] 2026-10-14T17:00:20.643022Z initMod: 'dummy' -> weather:0.5676954, greeting:0.5421453, lights:0.39240852
+> [INTERNAL] [internal] 2026-10-14T17:00:20.648214Z initMod: 'dummy' -> weather:0.59157056, lights:0.5375975, greeting:0.37224525
+> [INTERNAL] [internal] 2026-10-14T17:00:20.652802Z initMod: 'dummy' -> weather:0.5703034, greeting:0.5320881, lights:0.39947173
+> [INTERNAL] [internal] 2026-10-14T17:00:20.659643Z initMod: 'dummy' -> weather:0.6598409, greeting:0.52861375, lights:0.31654304
+> [INTERNAL] [internal] 2026-10-14T17:00:20.664409Z initMod: 'dummy' -> weather:0.6067637, greeting:0.47965434, lights:0.41364455
+> [INTERNAL] [internal] 2026-10-14T17:00:20.669027Z initMod: 'dummy' -> weather:0.5603754, lights:0.5435235, greeting:0.3967769
+> [INTERNAL] [internal] 2026-10-14T17:00:20.674978Z initMod: 'dummy' -> weather:0.5403451, lights:0.5160137, greeting:0.44363323
+> [INTERNAL] [internal] 2026-10-14T17:00:20.680829Z initMod: 'dummy' -> lights:0.57225937, weather:0.4760027, greeting:0.45070234
+> [INTERNAL] [internal] 2026-10-14T17:00:20.687662Z initMod: 'dummy' -> weather:0.62326646, greeting:0.51100385, lights:0.36767507
+> [INTERNAL] [internal] 2026-10-14T17:00:20.694648Z initMod: 'dummy' -> weather:0.57715964, greeting:0.4749579, lights:0.44797686
+> [INTERNAL] [internal] 2026-10-14T17:00:20.700758Z initMod: 'dummy' -> weather:0.61063355, greeting:0.4989282, lights:0.39140496
+> [INTERNAL] [internal] 2026-10-14T17:00:20.706838Z initMod: 'dummy' -> weather:0.6301832, lights:0.4793232, greeting:0.38949236
+> [INTERNAL] [internal] 2026-10-14T17:00:20.712575Z initMod: 'dummy' -> lights:0.51302916, greeting:0.5071778, weather:0.4796745
+> [INTERNAL] [internal] 2026-10-14T17:00:20.719106Z initMod: 'dummy' -> greeting:0.55405325, weather:0.4748808, lights:0.47118658
+> [INTERNAL] [internal] 2026-10-14T17:00:20.726065Z initMod: 'dummy' -> weather:0.5880185, greeting:0.46884602, lights:0.44305187
+> [INTERNAL] [internal] 2026-10-14T17:00:20.737050Z initMod: 'dummy' -> weather:0.5189152, greeting:0.5037301, lights:0.4775781
+> [INTERNAL] [internal] 2026-10-14T17:00:20.744483Z initMod: 'dummy' -> weather:0.6112888, lights:0.4810947, greeting:0.40700948
+> [INTERNAL] [internal] 2026-10-14T17:00:20.749229Z initMod: 'dummy' -> lights:0.5770103, greeting:0.48156136, weather:0.44035205
+> [INTERNAL] [internal] 2026-10-14T17:00:20.755863Z initMod: 'dummy' -> weather:0.6410107, lights:0.4394682, greeting:0.4172495
+> [INTERNAL] [internal] 2026-10-14T17:00:20.763942Z initMod: 'dummy' -> greeting:0.542123, lights:0.52671754, weather:0.43121356
+> [INTERNAL] [internal] 2026-10-14T17:00:20.772096Z initMod: 'dummy' -> weather:0.6575374, lights:0.49142423, greeting:0.35030463
+> [INTERNAL] [internal] 2026-10-14T17:00:20.778953Z initMod: 'dummy' -> weather:0.61360717, greeting:0.45403558, lights:0.4315691
+> [INTERNAL] [internal] 2026-10-14T17:00:20.787195Z initMod: 'dummy' -> greeting:0.6440654, weather:0.4722571, lights:0.3828802
+> [INTERNAL] [internal] 2026-10-14T17:00:20.793297Z initMod: 'dummy' -> lights:0.5262529, weather:0.50282085, greeting:0.470681
+> [INTERNAL] [internal] 2026-10-14T17:00:20.799157Z initMod: 'dummy' -> lights:0.5049359, greeting:0.49776712, weather:0.49724907
+> [INTERNAL] [internal] 2026-10-14T17:00:20.805413Z initMod: 'dummy' -> greeting:0.57907873, weather:0.50702584, lights:0.4148949
+> [INTERNAL] [internal] 2026-10-14T17:00:20.813002Z initMod: 'dummy' -> weather:0.5891823, lights:0.47635207, greeting:0.43413353
+> [INTERNAL] [internal] 2026-10-14T17:00:20.820565Z initMod: 'dummy' -> weather:0.56308436, greeting:0.52268094, lights:0.41552565
+> [INTERNAL] [internal] 2026-10-14T17:00:20.827577Z initMod: 'dummy' -> greeting:0.5975436, weather:0.5000462, lights:0.403325
+> [INTERNAL] [internal] 2026-10-14T17:00:20.833741Z initMod: 'dummy' -> weather:0.5804657, lights:0.4762677, greeting:0.44305706
+> [INTERNAL] [internal] 2026-10-14T17:00:20.839301Z initMod: 'dummy' -> greeting:0.57255584, weather:0.49809897, lights:0.42997587
+> [INTERNAL] [internal] 2026-10-14T17:00:20.844705Z initMod: 'dummy' -> weather:0.6009335, greeting:0.4799606, lights:0.41921514
+> [INTERNAL] [internal] 2026-10-14T17:00:20.850572Z initMod: 'dummy' -> greeting:0.6025627, lights:0.47914457, weather:0.41778442
+> [INTERNAL] [internal] 2026-10-14T17:00:20.856706Z initMod: 'dummy' -> weather:0.6165599, lights:0.44204453, greeting:0.44032416
+> [INTERNAL] [internal] 2026-10-14T17:00:20.863531Z initMod: 'dummy' -> greeting:0.63001984, weather:0.4757465, lights:0.3938795
+> [INTERNAL] [internal] 2026-10-14T17:00:20.869569Z initMod: 'dummy' -> greeting:0.59787655, weather:0.54010123, lights:0.36539477
+> [INTERNAL] [internal] 2026-10-14T17:00:20.875195Z initMod: 'dummy' -> weather:0.55560136, greeting:0.51015055, lights:0.43501872
+> [INTERNAL] [internal] 2026-10-14T17:00:20.875466Z ort: session #24 'module:dummy' cancelled
+> [INTERNAL] [internal] 2026-10-14T17:00:20.880335Z ort: session #25 'bert:bge' cancelled
+> [INTERNAL] [internal] 2026-10-14T17:00:20.881212Z model dummy (#12): closed after 45 runs
+> [INTERNAL] [internal] 2026-10-14T17:00:20.881652Z validate: 'dummy' on sample-intents.csv: 45 rows, accuracy 0.200, macro F1 0.187
+> [ERROR] [internal] 2026-10-14T17:00:25.172542Z auth: couldn't refresh the session of 123 (Keycloak is not reachable at http://localhost:8080: ConnectException); kept, will retry

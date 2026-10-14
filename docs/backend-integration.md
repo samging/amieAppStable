@@ -12,11 +12,13 @@ the website shows, and what you publish from the app appears on the website's da
 ```json
 {
   "baseUrl": "http://192.168.1.114:8080",
-  "siteUrl": "http://192.168.1.114:8081"
+  "siteUrl": "http://192.168.1.114:8081",
+  "s3ServiceUrl": "http://192.168.1.114:8088"
 }
 ```
 
-`AMIE_BACKEND_URL` and `AMIE_SITE_URL` override the file. `BackendConfig.load()` (`backend/BackendConfig.kt`) is
+`AMIE_BACKEND_URL`, `AMIE_SITE_URL` and `AMIE_S3_URL` override the file. The S3 service is only asked for a
+package jar the website cannot serve. `BackendConfig.load()` (`backend/BackendConfig.kt`) is
 the single place the addresses come from; nothing else in the app hardcodes a host.
 
 On a machine where Keycloak already listens on 8080, start the backend on another port (it reads
@@ -27,7 +29,7 @@ On a machine where Keycloak already listens on 8080, start the backend on anothe
 | Code | Endpoint | Token | Used by |
 |---|---|---|---|
 | `render/templates/Client.kt` `rest()` | `/get-device-status`, `/update-device-status`, `/fetch-endpoints`, `/list-github`, `/list-github-metadata`, `/handle-login-error` | bearer when signed in | device dashboard, endpoints, plugins, device terminal |
-| `backend/AmieBackend.kt` | `/me`, `/user-packages`, `/upload` | bearer, required | Models page: backend card and **Publish** |
+| `backend/AmieBackend.kt` | `/me`, `/user-packages`, `/upload` | bearer, required | Models page: **Publish** on a model component |
 | `util/DownloadService.kt` | `/list-github` | none | package list text |
 
 `Client.rest()` attaches `Authorization: Bearer <Keycloak access token>` through `AuthState.accessToken()`, which
@@ -39,19 +41,19 @@ server answered are reported to `/handle-login-error`.
 Keycloak username whenever the session changes, so the backend sees the real user instead of a guest id. When the
 backend is unreachable the local `AMP/componentSettings.json` is kept (it used to be overwritten with `{}`).
 
-## Models page
+## Models page and package jars
 
-The **AMIE BACKEND** card on the Models page calls `/me` with the session's token and shows:
+The Models page shows no backend status; it uses the Keycloak session for one thing: **Publish** on a model
+component calls `AmieBackend.publishModule`, which uploads `model.onnx` and `module.json` through `POST /upload`
+with `progLanguage=onnx` (stored as `uploads/<user>/onnx/<file>`; the backend needs a `GITHUB_TOKEN`, without one
+it answers "Error uploading file" and the page shows that). A guest pressing Publish is sent to the sign-in page;
+**Open website** in the header opens `siteUrl/dashboard`.
 
-- the backend address and whether it accepted the token (green), answered but refused it (red, with the reason),
-  or is unreachable;
-- the backend's profile for the user and a link to the website's profile page;
-- the files the backend stores for the user (`/user-packages`, the same list as the website's dashboard);
-- **Open website**, which opens `siteUrl/dashboard` in the browser.
-
-**Publish** on an expanded model uploads the module's `model.onnx` and `module.json` through `POST /upload` with
-`progLanguage=onnx`, which the backend stores as `uploads/<user>/onnx/<file>` in its GitHub repository. The backend
-needs a `GITHUB_TOKEN` for that; without one it answers "Error uploading file" and the app shows that message.
+Package jars flow the other way and need no token. `initMod("name.jar")` in the sandbox fetches a jar the server
+lists (the website's `/api/jars` and `/api/jar-download?name=`, else the S3 service's `/api/aws/jars` and
+`/api/aws/jars/<name>`) into `AMP/pluginDir` and opens a new instance of it; `packages.available()` lists what the
+server offers. The S3 service address is `s3ServiceUrl` in `AMP/backend.json` (`AMIE_S3_URL` overrides it; default
+`http://192.168.1.114:8088`). See [Packages](sandbox-scripting.md#packages).
 
 ## Backend side (Amie repository)
 

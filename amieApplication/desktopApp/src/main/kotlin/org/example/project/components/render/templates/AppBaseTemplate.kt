@@ -76,6 +76,7 @@ fun AppBaseTemplate() {
             org.example.project.components.terminal.window.controller.modules.ModelServer.restore()
         }
     }
+    val restoring by org.example.project.auth.AuthState.restoring.collectAsState()
 
     val windowChrome = LocalAppChrome.current
     val chrome = windowChrome.copy(
@@ -89,7 +90,18 @@ fun AppBaseTemplate() {
 
     CompositionLocalProvider(LocalAppChrome provides chrome) {
     Box(modifier = Modifier.fillMaxSize()) {
-        NavHost(navController = navController, startDestination = "welcome") {
+        NavHost(navController = navController, startDestination = "start") {
+
+            // Nothing is drawn until the saved session has been checked: a valid one goes straight to the
+            // dashboard, anything else to the welcome screen. Neither can be returned to with Back.
+            composable("start") {
+                Box(modifier = Modifier.fillMaxSize().background(UnifiedBodyBackground))
+                LaunchedEffect(restoring) {
+                    if (restoring) return@LaunchedEffect
+                    val signedIn = org.example.project.auth.AuthState.signedIn
+                    navController.navigate(if (signedIn) "home1/" else "welcome") { popUpTo("start") { inclusive = true } }
+                }
+            }
 
             composable("welcome") {
                 Column(modifier = Modifier.fillMaxSize()) {
