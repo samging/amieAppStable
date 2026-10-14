@@ -27,6 +27,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
+import androidx.compose.runtime.collectAsState
+import org.example.project.settings.AppSettings
+import androidx.compose.ui.window.WindowScope
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -82,6 +91,9 @@ fun main() = application {
             },
             onClose = ::exitApplication,
         )
+        // The UI scale from Settings multiplies the system density, so everything inside draws larger or smaller
+        val settings by AppSettings.current.collectAsState()
+        val systemDensity = LocalDensity.current
         CompositionLocalProvider(LocalAppChrome provides chrome) {
             Box(
                 modifier = Modifier
@@ -90,8 +102,59 @@ fun main() = application {
                     .background(ChromeBackground)
                     .border(1.dp, UnifiedBorderColor, windowShape)
             ) {
-                AppBaseTemplate()
+                CompositionLocalProvider(LocalDensity provides Density(systemDensity.density * settings.uiScale, systemDensity.fontScale)) {
+                    AppBaseTemplate()
+                }
+                if (windowState.placement == WindowPlacement.Floating) ResizeEdges()
             }
         }
+    }
+}
+
+/**
+ * The window is undecorated, so the system gives it no resize border; these are its edges and corners instead:
+ * thin strips along every side that drag the window's bounds, the cursor saying which way. The minimum size of
+ * the window holds. Only while floating; a maximized window has nothing to resize.
+ */
+@Composable
+private fun WindowScope.ResizeEdges() {
+    val density = LocalDensity.current.density
+    val frame = window
+    val edge = 6.dp
+    val corner = 14.dp
+
+    @Composable
+    fun Handle(modifier: Modifier, cursor: Int, left: Boolean = false, right: Boolean = false, top: Boolean = false, bottom: Boolean = false) {
+        Box(
+            modifier
+                .pointerHoverIcon(PointerIcon(java.awt.Cursor(cursor)))
+                .pointerInput(Unit) {
+                    detectDragGestures { change, drag ->
+                        change.consume()
+                        // Pointer deltas are in pixels, the frame's bounds in screen points
+                        val dx = (drag.x / density).toInt()
+                        val dy = (drag.y / density).toInt()
+                        val b = frame.bounds
+                        val min = frame.minimumSize
+                        var x = b.x; var y = b.y; var w = b.width; var h = b.height
+                        if (right) w = (w + dx).coerceAtLeast(min.width)
+                        if (bottom) h = (h + dy).coerceAtLeast(min.height)
+                        if (left) { val nw = (w - dx).coerceAtLeast(min.width); x += w - nw; w = nw }
+                        if (top) { val nh = (h - dy).coerceAtLeast(min.height); y += h - nh; h = nh }
+                        frame.setBounds(x, y, w, h)
+                    }
+                }
+        )
+    }
+
+    Box(Modifier.fillMaxSize()) {
+        Handle(Modifier.align(Alignment.CenterStart).fillMaxHeight().width(edge), java.awt.Cursor.W_RESIZE_CURSOR, left = true)
+        Handle(Modifier.align(Alignment.CenterEnd).fillMaxHeight().width(edge), java.awt.Cursor.E_RESIZE_CURSOR, right = true)
+        Handle(Modifier.align(Alignment.TopCenter).fillMaxWidth().height(edge), java.awt.Cursor.N_RESIZE_CURSOR, top = true)
+        Handle(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(edge), java.awt.Cursor.S_RESIZE_CURSOR, bottom = true)
+        Handle(Modifier.align(Alignment.TopStart).size(corner), java.awt.Cursor.NW_RESIZE_CURSOR, left = true, top = true)
+        Handle(Modifier.align(Alignment.TopEnd).size(corner), java.awt.Cursor.NE_RESIZE_CURSOR, right = true, top = true)
+        Handle(Modifier.align(Alignment.BottomStart).size(corner), java.awt.Cursor.SW_RESIZE_CURSOR, left = true, bottom = true)
+        Handle(Modifier.align(Alignment.BottomEnd).size(corner), java.awt.Cursor.SE_RESIZE_CURSOR, right = true, bottom = true)
     }
 }

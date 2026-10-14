@@ -148,6 +148,14 @@ fun AppBaseTemplate() {
                 }
             }
 
+            // The app's settings: the UI scale
+            composable(route = "settings") {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    WindowHeader(name = "Settings", showOnBack = true, onBack = { navController.popBackStack() })
+                    org.example.project.settings.SettingsPage(navController = navController)
+                }
+            }
+
             composable(route = "home1/") {
                 var selectedIndex by remember { mutableStateOf(1) }
                 androidx.compose.runtime.LaunchedEffect(Unit) {
@@ -172,7 +180,9 @@ fun AppBaseTemplate() {
                             onIndexSelected = { 
                                 selectedIndex = it 
                                 if (it == 1) navController.navigate("codingSandbox")
-                            }
+                            },
+                            settingsSelected = false,
+                            onSettings = { navController.navigate("settings") },
                         )
                     val configMap = configReader.configuredDevicesStatic
                     println("DEBUG ${configMap.size} | ${configMap}")

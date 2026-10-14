@@ -961,3 +961,19 @@
 2026-10-14T18:31:54.661800Z dummy #8 run   "this is something" -> lights:0.6714898, weather:0.49647042, greeting:0.3300981 (97 ms)
 2026-10-14T18:32:27.920588Z dummy #9 open  opened as session #9
 2026-10-14T18:32:27.997112Z dummy #9 run   "this is something" -> lights:0.6714898, weather:0.49647042, greeting:0.3300981 (76 ms)
+2026-10-14T18:58:28.786232Z dummy #1 open  opened as session #1
+2026-10-14T18:58:28.810496Z dummy #1 run   "this is something" -> lights:0.6714898, weather:0.49647042, greeting:0.3300981 (22 ms)
+2026-10-14T19:05:13.857135Z dummy #1 open  opened as session #1
+2026-10-14T19:05:13.879484Z dummy #1 run   "this is something" -> lights:0.6714898, weather:0.49647042, greeting:0.3300981 (21 ms)
+2026-10-14T19:17:05.291384Z dummy #1 open  opened as session #1
+2026-10-14T19:17:05.316540Z dummy #1 run   "this is something" -> lights:0.6714898, weather:0.49647042, greeting:0.3300981 (23 ms)
+2026-10-14T19:18:18.181317Z dummy #1 open  reused: a model has one session
+2026-10-14T19:18:18.248391Z dummy #1 run   "this is something" -> lights:0.6714898, weather:0.49647042, greeting:0.3300981 (62 ms)
+2026-10-14T19:18:19.542661Z dummy #1 open  reused: a model has one session
+2026-10-14T19:18:19.549446Z dummy #1 run   "this is something" -> lights:0.6714898, weather:0.49647042, greeting:0.3300981 (6 ms)
+2026-10-14T19:18:20.300516Z dummy #1 open  reused: a model has one session
+2026-10-14T19:18:20.306919Z dummy #1 run   "this is something" -> lights:0.6714898, weather:0.49647042, greeting:0.3300981 (6 ms)
+2026-10-14T19:18:20.933032Z dummy #1 open  reused: a model has one session
+2026-10-14T19:18:20.940091Z dummy #1 run   "this is something" -> lights:0.6714898, weather:0.49647042, greeting:0.3300981 (6 ms)
+2026-10-14T19:18:35.697268Z dummy #1 open  reused: a model has one session
+2026-10-14T19:18:35.705687Z dummy #1 run   "sunny" -> greeting:0.65430593, weather:0.4820101, lights:0.36340934 (6 ms)

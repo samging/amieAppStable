@@ -248,6 +248,8 @@ fun CodingSandbox(navController: NavController) {
                 showPlay = true,
                 modelsSelected = false,
                 onModels = { navController.navigate("models") },
+                settingsSelected = false,
+                onSettings = { navController.navigate("settings") },
                 running = running,
                 runProgress = build?.fraction,
 

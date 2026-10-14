@@ -1,2 +1,3 @@
 val model = initMod("dummy")
-model.inference("this is something")
+val res = model.inference("sunny")
+//log(inference)

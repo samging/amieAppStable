@@ -124,9 +124,9 @@ object AmieBackend {
         return body
     }
 
-    /** Publishes a trained module: its ONNX model and manifest, so it shows on the website under `onnx` */
+    /** Publishes a trained module: its ONNX model, manifest and guide, so it shows on the website under `onnx` */
     suspend fun publishModule(name: String, dir: File, username: String): List<String> {
-        val files = listOf(File(dir, "module.json"), File(dir, "model.onnx")).filter { it.isFile }
+        val files = listOf(File(dir, "module.json"), File(dir, "model.onnx"), File(dir, "guide.md")).filter { it.isFile }
         if (files.isEmpty()) throw BackendException("Module '$name' has no module.json or model.onnx in ${dir.path}")
         return files.map { upload(it, "onnx", username) }
     }
@@ -134,7 +134,7 @@ object AmieBackend {
     /** Removes a published module's files from the website again (`DELETE /upload`); returns how many were there */
     suspend fun unpublishModule(name: String, username: String): Int {
         var removed = 0
-        listOf("module.json", "model.onnx").forEach { fileName ->
+        listOf("module.json", "model.onnx", "guide.md").forEach { fileName ->
             val response = http.delete(config.url("upload")) {
                 bearerAuth(token())
                 parameter("filename", fileName)

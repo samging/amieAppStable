@@ -34,7 +34,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
@@ -43,6 +42,36 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Checklist
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.FactCheck
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.LinkOff
+import androidx.compose.material.icons.filled.Memory
+import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.Notes
+import androidx.compose.material.icons.filled.OpenInNew
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Sensors
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.StopCircle
+import androidx.compose.material.icons.filled.TableChart
+import androidx.compose.material.icons.filled.Terminal
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -59,6 +88,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalDensity
@@ -108,6 +138,8 @@ import org.example.project.components.terminal.window.controller.modules.Validat
 import org.example.project.components.terminal.window.controller.modules.deleteModule
 import org.example.project.components.terminal.window.controller.modules.ensureDummyModule
 import org.example.project.components.terminal.window.controller.modules.ensureSampleData
+import org.example.project.components.terminal.window.controller.modules.defaultGuide
+import org.example.project.components.terminal.window.controller.modules.guideFile
 import org.example.project.components.terminal.window.controller.modules.modulesDir
 import org.example.project.components.terminal.window.controller.modules.readMetricsHistory
 import org.example.project.components.terminal.window.controller.modules.readModule
@@ -168,7 +200,7 @@ import java.util.Locale
 
 /* ---------- what the page shows, read off the UI thread ---------- */
 
-private enum class PageTab(val title: String) { MODELS("Models"), PACKAGES("Packages"), SESSIONS("Sessions"), GUIDE("Guide") }
+private enum class PageTab(val title: String, val icon: ImageVector) { MODELS("Models", Icons.Default.Memory), PACKAGES("Packages", Icons.Default.Inventory2), SESSIONS("Sessions", Icons.Default.Sensors), GUIDE("Help", Icons.Default.HelpOutline) }
 
 /** Any open session on this page, named after its owner: an intent model, a package jar or a bare ONNX file */
 private data class SessionInfo(
@@ -303,7 +335,9 @@ private fun readSnapshot(remote: Boolean): ModelsSnapshot {
 
     val found = (readRegistry().modules.keys + (modulesDir.listFiles()?.filter { File(it, "module.json").isFile }?.map { it.name } ?: emptyList())).distinct()
     // A fresh checkout gets the dummy model so there is a component to configure right away
-    val names = (if (found.isEmpty()) listOfNotNull(ensureDummyModule()?.name) else found).sorted()
+    // The dummy is written on a fresh checkout and topped up (description, guide) on an old one, so it's always current
+    val dummy = ensureDummyModule()?.name
+    val names = (if (found.isEmpty()) listOfNotNull(dummy) else found).sorted()
     ensureSampleData()
     val models = names.mapNotNull { name ->
         val (dir, manifest) = readModule(name) ?: return@mapNotNull null
@@ -361,6 +395,8 @@ fun ModelsPage(navController: NavController) {
             showPlay = false,
             modelsSelected = true,
             onModels = {},
+            settingsSelected = false,
+            onSettings = { navController.navigate("settings") },
         )
         ModelsContent(user = session?.username, onLogin = { navController.navigate("login") { launchSingleTop = true } })
     }
@@ -416,7 +452,7 @@ private fun ModelsContent(user: String?, onLogin: () -> Unit) {
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .padding(horizontal = 16.dp, vertical = 10.dp)
+                .padding(horizontal = 10.dp, vertical = 6.dp)
         ) {
             notice?.let {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
@@ -429,7 +465,7 @@ private fun ModelsContent(user: String?, onLogin: () -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
                     Meta("destroy $name? its folder AMP/modules/$name, every run and its logs go; a session or listener on it is closed first")
                     Spacer(Modifier.width(8.dp))
-                    DangerButton("Destroy $name") {
+                    DangerButton("Destroy $name", icon = Icons.Default.Delete) {
                         destroying = null
                         if (selectedModel == name) selectedModel = null
                         background { if (!deleteModule(name)) error("$name could not be removed entirely; see the console") }
@@ -539,8 +575,8 @@ private fun MemoryFooter(openSessions: Int) {
         Row(modifier = Modifier.fillMaxWidth().height(30.dp).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("RAM", color = if (tight) DangerColor else MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.SansSerif, letterSpacing = 1.sp)
             Spacer(Modifier.width(12.dp))
-            Box(modifier = Modifier.width(140.dp).height(6.dp).clip(RoundedCornerShape(3.dp)).background(PanelBorder)) {
-                if (share >= 0) Box(modifier = Modifier.fillMaxHeight().fillMaxWidth(share.toFloat().coerceIn(0f, 1f)).clip(RoundedCornerShape(3.dp)).background(if (tight) DangerColor else ChartAccent))
+            Box(modifier = Modifier.width(140.dp).height(6.dp).clip(RectangleShape).background(PanelBorder)) {
+                if (share >= 0) Box(modifier = Modifier.fillMaxHeight().fillMaxWidth(share.toFloat().coerceIn(0f, 1f)).clip(RectangleShape).background(if (tight) DangerColor else ChartAccent))
             }
             Spacer(Modifier.width(12.dp))
             if (s == null) Meta("reading…")
@@ -557,7 +593,7 @@ private fun MemoryFooter(openSessions: Int) {
                 )
                 Spacer(Modifier.width(16.dp))
                 if (tight) Meta("close sessions and stop listeners you don't need; the heap limit is the JVM's -Xmx")
-                else if (openSessions > 0) Meta("sessions on the same encoder share it; close() the ones a script no longer needs")
+                else if (openSessions > 0) Meta("sessions share the encoder; close() what a script no longer needs")
             }
         }
     }
@@ -568,7 +604,7 @@ private fun MemoryFooter(openSessions: Int) {
 private fun PageTabs(tab: PageTab, counts: Map<PageTab, Int?>, signedIn: Boolean, onTab: (PageTab) -> Unit, onWebsite: () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth().background(TabBarBackground)) {
         Row(modifier = Modifier.fillMaxWidth().height(32.dp), verticalAlignment = Alignment.CenterVertically) {
-            PageTab.entries.forEach { t -> TabCell(t.title, counts[t], selected = t == tab) { onTab(t) } }
+            PageTab.entries.forEach { t -> TabCell(t.title, t.icon, counts[t], selected = t == tab) { onTab(t) } }
             Spacer(Modifier.weight(1f))
             if (signedIn) {
                 SmallButton("Open website", onClick = onWebsite)
@@ -580,7 +616,7 @@ private fun PageTabs(tab: PageTab, counts: Map<PageTab, Int?>, signedIn: Boolean
 }
 
 @Composable
-private fun TabCell(title: String, count: Int?, selected: Boolean, onClick: () -> Unit) {
+private fun TabCell(title: String, icon: ImageVector?, count: Int?, selected: Boolean, onClick: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val hovered by interactionSource.collectIsHoveredAsState()
     Column(
@@ -592,7 +628,11 @@ private fun TabCell(title: String, count: Int?, selected: Boolean, onClick: () -
             .clickable(interactionSource = interactionSource, indication = null) { onClick() }
     ) {
         Box(modifier = Modifier.fillMaxWidth().height(2.dp).background(if (selected) TabActiveIndicator else Color.Transparent))
-        Row(modifier = Modifier.weight(1f).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(modifier = Modifier.weight(1f).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (icon != null) {
+                Icon(icon, contentDescription = null, tint = if (selected || hovered) FontColor else MutedFontColor, modifier = Modifier.size(13.dp))
+                Spacer(Modifier.width(6.dp))
+            }
             Text(title, color = if (selected || hovered) FontColor else MutedFontColor, fontSize = 12.sp, fontFamily = FontFamily.SansSerif)
             if (count != null) {
                 Spacer(Modifier.width(8.dp))
@@ -628,7 +668,7 @@ private fun ColumnScope.ModelsTab(
 ) {
     val clipboard = LocalClipboardManager.current
     SectionTitle("INTENT MODELS", snapshot.models.size) {
-        if (build == null) AccentButton(if (creating) "Close" else "+ New model") { onCreating(!creating) }
+        if (build == null) AccentButton(if (creating) "Close" else "New model", icon = if (creating) Icons.Default.Close else Icons.Default.Add) { onCreating(!creating) }
     }
     build?.let { BuildCard(it); Spacer(Modifier.height(8.dp)) }
     if (creating && build == null) {
@@ -665,6 +705,7 @@ private fun ColumnScope.ModelsTab(
                                 ).joinToString(" · "),
                                 status = model.status,
                                 underline = model.running,
+                                icon = Icons.Default.Memory,
                                 menu = listOfNotNull(
                                     if (model.sessions.isEmpty()) ContextMenuItem("Open session") { onOpen(model) } else null,
                                     ContextMenuItem(if (model.listening) "Stop listening" else "Listen on :${model.serving.port}") { onListen(model, !model.listening, model.serving) },
@@ -748,7 +789,7 @@ private fun NewModelForm(onBuild: (String, File, File?, String) -> Unit) {
     }
 }
 
-private enum class DetailTab(val title: String) { ABOUT("About"), METRICS("Metrics"), DATA("Data"), REQUIREMENTS("Requirements"), CONSOLE("Console"), SESSIONS("Sessions") }
+private enum class DetailTab(val title: String, val icon: ImageVector) { ABOUT("About", Icons.Default.Info), GUIDE("Guide", Icons.Default.MenuBook), METRICS("Metrics", Icons.Default.BarChart), DATA("Data", Icons.Default.TableChart), REQUIREMENTS("Requirements", Icons.Default.Checklist), CONSOLE("Console", Icons.Default.Terminal), SESSIONS("Sessions", Icons.Default.Sensors) }
 
 /**
  * The selected model: name, status and actions in the header; the serving settings when Configure is on; then
@@ -797,14 +838,15 @@ private fun ModelDetail(
                 "trained on ${model.dataName}",
             ).joinToString(" · "),
         ) {
-            SmallButton("Configure") { configuring = !configuring }
-            SmallButton(if (model.listening) "Stop" else "Listen") { onListen(!model.listening, settings) }
-            if (model.sessions.isEmpty()) AccentButton("Open session", onClick = onOpen)
-            else DangerButton("Terminate session") { model.sessions.forEach(onTerminate) }
-            SmallButton(if (signedIn) "Publish" else "Publish (sign in)", onClick = onPublish)
+            SmallButton("Configure", icon = Icons.Default.Tune) { configuring = !configuring }
+            if (model.listening) DangerButton("Stop", icon = Icons.Default.Stop) { onListen(false, settings) }
+            else SmallButton("Listen", icon = Icons.Default.Sensors) { onListen(true, settings) }
+            if (model.sessions.isEmpty()) AccentButton("Open session", icon = Icons.Default.PlayArrow, onClick = onOpen)
+            else DangerButton("Terminate session", icon = Icons.Default.StopCircle) { model.sessions.forEach(onTerminate) }
+            SmallButton(if (signedIn) "Publish" else "Publish (sign in)", icon = Icons.Default.CloudUpload, onClick = onPublish)
         }
 
-        if (configuring) Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp).padding(bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        if (configuring) Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp).padding(top = 6.dp, bottom = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             SettingField("Host", host) { host = it }
             SettingField("Port", port) { port = it.filter(Char::isDigit).take(5) }
             SettingField("Path", path) { path = it }
@@ -814,7 +856,7 @@ private fun ModelDetail(
                 Spacer(Modifier.width(6.dp))
                 Toggle("GET", allowGet) { allowGet = it }
                 Spacer(Modifier.weight(1f))
-                SmallButton("Save") { onSave(settings) }
+                SmallButton("Save", icon = Icons.Default.Save) { onSave(settings) }
             }
             val url = settings.url(model.name)
             if (allowPost) CopyLine("POST", url, curl = "curl -s -X POST '$url' -H 'Content-Type: application/json' -d '{\"text\": \"turn the lights on\"}'")
@@ -835,9 +877,10 @@ private fun ModelDetail(
             onSelect = { tab = it },
         )
 
-        Column(modifier = Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 12.dp).padding(top = 8.dp, bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 10.dp).padding(top = 6.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             when (tab) {
                 DetailTab.ABOUT -> AboutBlock(model, onDescribe)
+                DetailTab.GUIDE -> GuideBlock(model)
                 DetailTab.METRICS -> MetricsBlock(model, validating, onValidate)
                 DetailTab.DATA -> DataBlock(model)
                 DetailTab.REQUIREMENTS -> RequirementsBlock(model)
@@ -852,7 +895,7 @@ private fun ModelDetail(
 @Composable
 private fun DetailTabs(tabs: List<Pair<DetailTab, Int?>>, selected: DetailTab, onSelect: (DetailTab) -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Row(modifier = Modifier.fillMaxWidth().height(30.dp).padding(horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(modifier = Modifier.fillMaxWidth().height(26.dp).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             tabs.forEach { (t, count) ->
                 val interactionSource = remember { MutableInteractionSource() }
                 val hovered by interactionSource.collectIsHoveredAsState()
@@ -860,10 +903,13 @@ private fun DetailTabs(tabs: List<Pair<DetailTab, Int?>>, selected: DetailTab, o
                 Column(
                     modifier = Modifier
                         .fillMaxHeight()
+                        .width(IntrinsicSize.Max)
                         .hoverable(interactionSource)
                         .clickable(interactionSource = interactionSource, indication = null) { onSelect(t) }
                 ) {
                     Row(modifier = Modifier.weight(1f).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(t.icon, contentDescription = null, tint = if (on || hovered) FontColor else MutedFontColor, modifier = Modifier.size(12.dp))
+                        Spacer(Modifier.width(5.dp))
                         Text(t.title, color = if (on || hovered) FontColor else MutedFontColor, fontSize = 12.sp, fontFamily = FontFamily.SansSerif, fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal)
                         if (count != null) {
                             Spacer(Modifier.width(6.dp))
@@ -890,7 +936,7 @@ private fun AboutBlock(model: ModelInfo, onDescribe: (String) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         SubTitle("ABOUT")
         Spacer(Modifier.weight(1f))
-        if (dirty) AccentButton("Save description") { onDescribe(text) }
+        if (dirty) AccentButton("Save description", icon = Icons.Default.Save) { onDescribe(text) }
     }
     BasicTextField(
         value = text,
@@ -900,8 +946,8 @@ private fun AboutBlock(model: ModelInfo, onDescribe: (String) -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 44.dp)
-            .background(CodeBackground, RoundedCornerShape(6.dp))
-            .border(1.dp, ConsoleBorderColor, RoundedCornerShape(6.dp))
+            .background(CodeBackground, RectangleShape)
+            .border(1.dp, ConsoleBorderColor, RectangleShape)
             .padding(horizontal = 10.dp, vertical = 7.dp),
         decorationBox = { inner ->
             if (text.isEmpty()) Text("no description yet: write what this model is for and what it was trained on", color = MutedFontColor, fontSize = 12.sp, fontFamily = FontFamily.SansSerif)
@@ -915,7 +961,7 @@ private fun AboutBlock(model: ModelInfo, onDescribe: (String) -> Unit) {
             Text(model.dir.absolutePath, color = LogMessageColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         Spacer(Modifier.width(8.dp))
-        SmallButton("Reveal folder") { openInBrowser(model.dir.toURI().toString()) }
+        SmallButton("Reveal folder", icon = Icons.Default.FolderOpen) { openInBrowser(model.dir.toURI().toString()) }
     }
     KeyValues(
         "created" to m.createdAt.take(19).replace('T', ' '),
@@ -943,6 +989,88 @@ private fun AboutBlock(model: ModelInfo, onDescribe: (String) -> Unit) {
 }
 
 /**
+ * The guide that ships inside the model, `AMP/modules/<name>/guide.md`: a downloaded model brings its own, a
+ * built one starts with the default written from its manifest. Read as light markdown (headings, paragraphs,
+ * bullets, fenced code); Edit shows the text itself, Save writes the file, and Publish sends it with the model.
+ */
+@Composable
+private fun GuideBlock(model: ModelInfo) {
+    val file = guideFile(model.dir)
+    val stamp = file.lastModified()
+    val stored = remember(model.name, stamp) { runCatching { file.takeIf { it.isFile }?.readText() }.getOrNull() }
+    var editing by remember(model.name) { mutableStateOf(false) }
+    var text by remember(model.name, stamp) { mutableStateOf(stored ?: defaultGuide(model.manifest)) }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        SubTitle("GUIDE")
+        Spacer(Modifier.width(10.dp))
+        Meta(if (stored == null) "none in the model yet; this is the default, Save keeps it" else file.name)
+        Spacer(Modifier.weight(1f))
+        if (editing) {
+            AccentButton("Save", icon = Icons.Default.Save) { runCatching { file.writeText(text) }.onFailure { logInternal("guide: couldn't write ${file.name}: ${it.message}", LogLevel.ERROR) }; editing = false }
+            Spacer(Modifier.width(6.dp))
+            SmallButton("Cancel") { text = stored ?: defaultGuide(model.manifest); editing = false }
+        } else SmallButton(if (stored == null) "Edit and save" else "Edit") { editing = true }
+    }
+    if (editing) {
+        BasicTextField(
+            value = text,
+            onValueChange = { text = it },
+            textStyle = TextStyle(color = FontColor, fontSize = 12.sp, fontFamily = FontFamily.Monospace, lineHeight = 18.sp),
+            cursorBrush = SolidColor(FontColor),
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 240.dp)
+                .background(CodeBackground, RectangleShape)
+                .border(1.dp, ConsoleBorderColor, RectangleShape)
+                .padding(horizontal = 10.dp, vertical = 7.dp),
+        )
+    } else GuideText(text)
+}
+
+/** Light markdown: # and ## headings, "- " bullets, ``` fences, blank-line paragraphs; everything else is a line of prose */
+@Composable
+private fun GuideText(text: String) {
+    val blocks = remember(text) { guideBlocks(text) }
+    Column(modifier = Modifier.widthIn(max = 860.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        blocks.forEach { (kind, body) ->
+            when (kind) {
+                "h1" -> Text(body, color = FontColor, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.SansSerif, modifier = Modifier.padding(top = 4.dp, bottom = 2.dp))
+                "h2" -> Text(body, color = FontColor, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.6.sp, modifier = Modifier.padding(top = 8.dp, bottom = 2.dp))
+                "code" -> Lines(*body.lines().toTypedArray())
+                "bullet" -> Row(verticalAlignment = Alignment.Top) {
+                    Text("·", color = MutedFontColor, fontSize = 12.sp, modifier = Modifier.width(14.dp))
+                    Text(body, color = LogMessageColor, fontSize = 12.sp, fontFamily = FontFamily.SansSerif, lineHeight = 18.sp)
+                }
+                else -> Para(body)
+            }
+        }
+    }
+}
+
+/** Splits markdown into (kind, text) blocks: h1, h2, code, bullet, para */
+private fun guideBlocks(text: String): List<Pair<String, String>> {
+    val out = ArrayList<Pair<String, String>>()
+    val para = StringBuilder()
+    fun flush() { if (para.isNotBlank()) out += "para" to para.toString().trim(); para.setLength(0) }
+    var code: StringBuilder? = null
+    text.lines().forEach { raw ->
+        val line = raw.trimEnd()
+        when {
+            code != null -> if (line.trim().startsWith("```")) { out += "code" to code.toString().trimEnd(); code = null } else code!!.appendLine(line)
+            line.trim().startsWith("```") -> { flush(); code = StringBuilder() }
+            line.startsWith("## ") -> { flush(); out += "h2" to line.removePrefix("## ").uppercase() }
+            line.startsWith("# ") -> { flush(); out += "h1" to line.removePrefix("# ") }
+            line.startsWith("- ") || line.startsWith("* ") -> { flush(); out += "bullet" to line.drop(2) }
+            line.isBlank() -> flush()
+            else -> { if (para.isNotEmpty()) para.append(' '); para.append(line.trim()) }
+        }
+    }
+    code?.let { out += "code" to it.toString().trimEnd() }
+    flush()
+    return out
+}
+
+/**
  * The charts of one validation run at a time, chosen on the run strip (the latest first), each a figure with a
  * title, the run and its data in the subtitle and a caption that says how to read it: the scores per label and
  * the confusion matrix. Under them, with more than one run, how the scores changed over the runs; and from the
@@ -957,9 +1085,9 @@ private fun MetricsBlock(model: ModelInfo, validating: ValidationProgress?, onVa
         Spacer(Modifier.weight(1f))
         if (validating != null) Meta("validating ${validating.done}/${validating.total}")
         else {
-            AccentButton("Validate on sample data") { onValidate(ensureSampleData()) }
+            AccentButton("Validate on sample data", icon = Icons.Default.FactCheck) { onValidate(ensureSampleData()) }
             Spacer(Modifier.width(6.dp))
-            AccentButton("Validate on file") { chooseFile("Validation data", listOf("csv"))?.let(onValidate) }
+            AccentButton("Validate on file", icon = Icons.Default.FactCheck) { chooseFile("Validation data", listOf("csv"))?.let(onValidate) }
         }
     }
     fun plot(name: String) = model.plots.firstOrNull { it.file.name == name }
@@ -1039,7 +1167,7 @@ private fun DataBlock(model: ModelInfo) {
             Spacer(Modifier.width(10.dp))
             Meta(facts?.let { "${it.rows.size} rows · ${it.labels.size} labels" } ?: "no text and label columns")
             Spacer(Modifier.weight(1f))
-            AccentButton("Open in viewer") { openFile(file) }
+            AccentButton("Open in viewer", icon = Icons.Default.OpenInNew) { openFile(file) }
         }
         if (facts != null) {
             val known = model.manifest.labels.toSet()
@@ -1093,8 +1221,8 @@ private fun BarRows(rows: List<BarRow>) {
         rows.forEach { row ->
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(row.label, color = FontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.width(labelWidth))
-                Box(modifier = Modifier.weight(1f).height(8.dp).clip(RoundedCornerShape(4.dp)).background(PanelBorder)) {
-                    Box(modifier = Modifier.fillMaxHeight().fillMaxWidth(row.value.toFloat() / max).clip(RoundedCornerShape(4.dp)).background(ChartAccent))
+                Box(modifier = Modifier.weight(1f).height(8.dp).clip(RectangleShape).background(PanelBorder)) {
+                    Box(modifier = Modifier.fillMaxHeight().fillMaxWidth(row.value.toFloat() / max).clip(RectangleShape).background(ChartAccent))
                 }
                 Spacer(Modifier.width(10.dp))
                 Text(row.value.toString(), color = FontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.width(40.dp))
@@ -1121,11 +1249,13 @@ private fun RequirementsBlock(model: ModelInfo) {
         checks.forEachIndexed { i, r ->
             if (i > 0) Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(PanelBorder))
             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.Top) {
-                Text(
-                    when (r.ok) { true -> "✓"; false -> "✗"; null -> "·" },
-                    color = when (r.ok) { true -> SuccessColor; false -> DangerColor; null -> MutedFontColor },
-                    fontSize = 12.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.width(18.dp),
-                )
+                Box(modifier = Modifier.width(18.dp).height(16.dp), contentAlignment = Alignment.CenterStart) {
+                    when (r.ok) {
+                        true -> Icon(Icons.Default.CheckCircle, contentDescription = "met", tint = SuccessColor, modifier = Modifier.size(12.dp))
+                        false -> Icon(Icons.Default.Cancel, contentDescription = "not met", tint = DangerColor, modifier = Modifier.size(12.dp))
+                        null -> Icon(Icons.Default.Info, contentDescription = "information", tint = MutedFontColor, modifier = Modifier.size(12.dp))
+                    }
+                }
                 Text(r.name, color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.width(110.dp))
                 SelectionContainer(modifier = Modifier.weight(1f)) {
                     Text(r.detail, color = if (r.ok == false) LogErrorTextColor else LogMessageColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp)
@@ -1167,9 +1297,9 @@ private fun ConsoleBlock(name: String, mine: List<ResponseDto>) {
         modifier = Modifier
             .fillMaxWidth()
             .height(height.dp)
-            .clip(RoundedCornerShape(6.dp))
+            .clip(RectangleShape)
             .background(CodeBackground)
-            .border(1.dp, ConsoleBorderColor, RoundedCornerShape(6.dp))
+            .border(1.dp, ConsoleBorderColor, RectangleShape)
             .verticalScroll(scroll)
             .padding(horizontal = 10.dp, vertical = 6.dp)
     ) {
@@ -1199,7 +1329,7 @@ private fun CsvPreview(file: File) {
     val widths = (0 until (table.maxOfOrNull { it.size } ?: 0)).map { c -> table.take(21).maxOf { row -> (row.getOrNull(c) ?: "").length }.coerceIn(4, 40) }
     fun line(row: List<String>) = row.mapIndexed { c, v -> v.replace('\n', ' ').take(widths[c]).padEnd(widths[c]) }.joinToString("  ")
     SelectionContainer {
-        Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(CodeBackground).border(1.dp, ConsoleBorderColor, RoundedCornerShape(6.dp)).padding(8.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().clip(RectangleShape).background(CodeBackground).border(1.dp, ConsoleBorderColor, RectangleShape).padding(8.dp)) {
             Text(line(table.first()), color = FontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp, maxLines = 1)
             table.drop(1).take(20).forEach { Text(line(it), color = LogMessageColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp, maxLines = 1) }
             if (table.size > 21) Meta("… ${table.size - 21} more rows, Open in viewer for all")
@@ -1243,7 +1373,7 @@ private fun PlotImage(plot: MetricsPlot) {
     Image(
         bitmap = bitmap,
         contentDescription = plot.title,
-        modifier = Modifier.width(plot.width.dp).height(plot.height.dp).clip(RoundedCornerShape(8.dp))
+        modifier = Modifier.width(plot.width.dp).height(plot.height.dp).clip(RectangleShape)
     )
 }
 
@@ -1262,9 +1392,9 @@ private fun ColumnScope.PackagesTab(
 ) {
     var newCollection by remember { mutableStateOf(false) }
     SectionTitle("PACKAGES", snapshot.jars.size) {
-        AccentButton(if (newCollection) "Close" else "+ New collection") { newCollection = !newCollection }
+        AccentButton(if (newCollection) "Close" else "New collection", icon = if (newCollection) Icons.Default.Close else Icons.Default.Add) { newCollection = !newCollection }
         Spacer(Modifier.width(6.dp))
-        AccentButton("+ Add jar", onClick = onAdd)
+        AccentButton("Add jar", icon = Icons.Default.Add, onClick = onAdd)
     }
     if (newCollection) {
         NewCollectionForm(snapshot.jars, onCreate = { name, jars -> onCollection { PackageCollections.create(name, jars) }; newCollection = false })
@@ -1326,6 +1456,7 @@ private fun JarRow(jar: JarInfo, selected: Boolean, onDetach: (() -> Unit)? = nu
         meta = listOfNotNull(jar.contents?.minJava?.let { "java $it+" }, jar.version?.let { "v$it" }).joinToString(" · "),
         status = jar.status,
         underline = jar.open > 0,
+        icon = Icons.Default.Inventory2,
         onDetach = onDetach,
         menu = jarMenu(jar, onFetch, onDetach),
         onSelect = onSelect,
@@ -1349,8 +1480,8 @@ private fun CollectionFolder(
     Fold(collection.name, collection.jars.size, open = true, key = "collection:${collection.name}") {
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(bottom = 2.dp)) {
-                AccentButton(if (adding) "Close" else "+ Add") { adding = !adding }
-                SmallButton("Delete folder") { onCollection { PackageCollections.delete(collection.name) } }
+                AccentButton(if (adding) "Close" else "Add", icon = if (adding) Icons.Default.Close else Icons.Default.Add) { adding = !adding }
+                SmallButton("Delete folder", icon = Icons.Default.Delete) { onCollection { PackageCollections.delete(collection.name) } }
             }
             if (adding) {
                 val candidates = all.filter { it.name !in collection.jars }
@@ -1423,12 +1554,12 @@ private fun JarDetail(jar: JarInfo, modifier: Modifier = Modifier, onFetch: () -
                 jar.collections.takeIf { it.isNotEmpty() }?.let { "in ${it.joinToString()}" },
             ).joinToString(" · "),
         ) {
-            SmallButton("Open page") { openInBrowser(jar.page) }
-            if (!jar.local) AccentButton("Fetch", onClick = onFetch)
-            jar.file?.let { f -> SmallButton("Reveal file") { openInBrowser(f.parentFile.toURI().toString()) } }
+            SmallButton("Open page", icon = Icons.Default.Language) { openInBrowser(jar.page) }
+            if (!jar.local) AccentButton("Fetch", icon = Icons.Default.Download, onClick = onFetch)
+            jar.file?.let { f -> SmallButton("Reveal file", icon = Icons.Default.FolderOpen) { openInBrowser(f.parentFile.toURI().toString()) } }
         }
 
-        Column(modifier = Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 12.dp).padding(bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 10.dp).padding(top = 6.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             KeyValues("opens with" to "initMod(\"${jar.name}\"), a fresh instance per call")
 
             Fold("SOURCE", null, open = false, key = "${jar.name}:source") { KeyValues(
@@ -1473,7 +1604,7 @@ private fun JarDetail(jar: JarInfo, modifier: Modifier = Modifier, onFetch: () -
 
 @Composable
 private fun SessionsTab(sessions: List<SessionInfo>, onTerminate: (SessionInfo) -> Unit, onTerminateAll: () -> Unit) {
-    SectionTitle("SESSIONS", sessions.size) { if (sessions.isNotEmpty()) DangerButton("Terminate all", onClick = onTerminateAll) }
+    SectionTitle("SESSIONS", sessions.size) { if (sessions.isNotEmpty()) DangerButton("Terminate all", icon = Icons.Default.StopCircle, onClick = onTerminateAll) }
     if (sessions.isEmpty()) {
         Hint("no open sessions")
         return
@@ -1494,7 +1625,7 @@ private fun SessionsOf(sessions: List<SessionInfo>, onTerminate: (SessionInfo) -
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
         SubTitle("SESSIONS  ${sessions.size}")
         Spacer(Modifier.weight(1f))
-        if (sessions.size > 1) DangerButton("Terminate all") { sessions.forEach(onTerminate) }
+        if (sessions.size > 1) DangerButton("Terminate all", icon = Icons.Default.StopCircle) { sessions.forEach(onTerminate) }
     }
     if (sessions.isEmpty()) Hint("none open")
     else SessionList(sessions, showOwner = false, onTerminate)
@@ -1531,10 +1662,10 @@ private fun SessionRow(session: SessionInfo, showOwner: Boolean, onTerminate: ()
             Meta(listOfNotNull(if (showOwner) session.kind else null, if (session.running) "inferring" else "idle", "${session.runs} runs", uptime(Duration.between(session.openedAt, Instant.now()))).joinToString(" · "))
             Spacer(Modifier.weight(1f))
             if (session.hasLog) {
-                SmallButton(if (showLog) "Hide log" else "Log ${session.log.size}") { showLog = !showLog }
+                SmallButton(if (showLog) "Hide log" else "Log ${session.log.size}", icon = Icons.Default.Notes) { showLog = !showLog }
                 Spacer(Modifier.width(6.dp))
             }
-            DangerButton("Terminate", onClick = onTerminate)
+            DangerButton("Terminate", icon = Icons.Default.StopCircle, onClick = onTerminate)
         }
         if (showLog) {
             Spacer(Modifier.height(6.dp))
@@ -1549,9 +1680,9 @@ private fun LogBox(entries: List<SessionLogEntry>) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(6.dp))
+            .clip(RectangleShape)
             .background(CodeBackground)
-            .border(1.dp, ConsoleBorderColor, RoundedCornerShape(6.dp))
+            .border(1.dp, ConsoleBorderColor, RectangleShape)
             .padding(horizontal = 10.dp, vertical = 6.dp)
     ) {
         if (entries.isEmpty()) Meta("nothing yet")
@@ -1588,9 +1719,9 @@ private fun Lines(vararg lines: String) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(6.dp))
+                .clip(RectangleShape)
                 .background(CodeBackground)
-                .border(1.dp, ConsoleBorderColor, RoundedCornerShape(6.dp))
+                .border(1.dp, ConsoleBorderColor, RectangleShape)
                 .padding(horizontal = 10.dp, vertical = 6.dp)
         ) { lines.forEach { Text(it, color = LogMessageColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp) } }
     }
@@ -1604,7 +1735,7 @@ private fun Lines(vararg lines: String) {
  */
 @Composable
 private fun GuideTab() {
-    SectionTitle("GUIDE", null)
+    SectionTitle("HELP", null)
     Column(modifier = Modifier.widthIn(max = 860.dp).verticalScroll(rememberScrollState()).padding(bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Fold("What an intent model is", null, open = true, key = "guide:model") {
             Para("An intent model turns a sentence into one of a few labels, like greeting, lights or weather. It has two parts: the encoder, a BERT model (bge) that turns the text into 768 numbers, and the head, a small dense network trained on your rows that turns those numbers into a score per label. Only the head is yours: it lives in AMP/modules/<name>/ as model.onnx with module.json (name, labels, encoder, how it was trained), metrics.json (every validation), serving.json and sessions.log. The encoder is shared by every model and loaded once.")
@@ -1705,25 +1836,29 @@ private fun pct(value: Double) = "${(value * 100).toInt()}%"
  * underlined in green; a stopped one is not. With onDetach, a Detach button appears while the pointer is over it.
  */
 @Composable
-private fun ListRow(name: String, active: Boolean, selected: Boolean, meta: String, status: String, underline: Boolean = false, onDetach: (() -> Unit)? = null, menu: List<ContextMenuItem> = emptyList(), onSelect: () -> Unit) {
+private fun ListRow(name: String, active: Boolean, selected: Boolean, meta: String, status: String, underline: Boolean = false, icon: ImageVector? = null, onDetach: (() -> Unit)? = null, menu: List<ContextMenuItem> = emptyList(), onSelect: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val hovered by interactionSource.collectIsHoveredAsState()
     ContextMenuArea(items = { menu }) { Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(6.dp))
+            .clip(RectangleShape)
             .background(when { selected -> PanelSurfaceSelected; hovered -> PanelSurface; else -> Color.Transparent })
             .hoverable(interactionSource)
             .clickable(interactionSource = interactionSource, indication = null) { onSelect() }
     ) {
-        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (icon != null) {
+                Icon(icon, contentDescription = null, tint = if (active) FontColor else MutedFontColor, modifier = Modifier.size(13.dp))
+                Spacer(Modifier.width(7.dp))
+            }
             Column(modifier = Modifier.weight(1f)) {
                 Text(name, color = FontColor, fontSize = 12.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal, fontFamily = FontFamily.SansSerif, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (meta.isNotEmpty()) Meta(meta)
             }
             Spacer(Modifier.width(6.dp))
             if (hovered && onDetach != null) {
-                SmallButton("Detach", onClick = onDetach)
+                SmallButton("Detach", icon = Icons.Default.LinkOff, onClick = onDetach)
             } else {
                 Text(status, color = if (active) FontColor else MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, maxLines = 1)
             }
@@ -1746,10 +1881,10 @@ private fun CopyLine(label: String, shown: String, copy: String = shown, curl: S
         }
         Spacer(Modifier.width(8.dp))
         copied?.let { Meta(it); Spacer(Modifier.width(6.dp)) }
-        SmallButton("Copy") { clipboard.setText(AnnotatedString(copy)); copied = "copied" }
+        SmallButton("Copy", icon = Icons.Default.ContentCopy) { clipboard.setText(AnnotatedString(copy)); copied = "copied" }
         if (curl != null) {
             Spacer(Modifier.width(4.dp))
-            SmallButton("Copy curl") { clipboard.setText(AnnotatedString(curl)); copied = "copied curl" }
+            SmallButton("Copy curl", icon = Icons.Default.ContentCopy) { clipboard.setText(AnnotatedString(curl)); copied = "copied curl" }
         }
     }
 }
@@ -1797,7 +1932,7 @@ private fun HeightHandle(height: Float, min: Float, max: Float, onHeight: (Float
             .draggable(drag, Orientation.Vertical),
         contentAlignment = Alignment.Center,
     ) {
-        Box(modifier = Modifier.width(36.dp).height(2.dp).clip(RoundedCornerShape(1.dp)).background(if (hovered) PanelBorderSelected else PanelBorder))
+        Box(modifier = Modifier.width(36.dp).height(2.dp).clip(RectangleShape).background(if (hovered) PanelBorderSelected else PanelBorder))
     }
 }
 
@@ -1806,9 +1941,9 @@ private fun HeightHandle(height: Float, min: Float, max: Float, onHeight: (Float
 private fun DetailPanel(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RectangleShape)
             .background(PanelSurface)
-            .border(1.dp, PanelBorder, RoundedCornerShape(8.dp))
+            .border(1.dp, PanelBorder, RectangleShape)
     ) { content() }
 }
 
@@ -1816,7 +1951,7 @@ private fun DetailPanel(modifier: Modifier = Modifier, content: @Composable Colu
 @Composable
 private fun DetailHeader(name: String, active: Boolean, status: String, actions: @Composable () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
@@ -1829,7 +1964,6 @@ private fun DetailHeader(name: String, active: Boolean, status: String, actions:
         actions()
     }
     Box(modifier = Modifier.fillMaxWidth().height(if (active) 2.dp else 1.dp).background(if (active) SuccessColor else PanelBorder))
-    Spacer(Modifier.height(4.dp))
 }
 
 /** A small bordered label; strong is white text, the rest gray */
@@ -1842,8 +1976,8 @@ private fun BadgeLabel(text: String, strong: Boolean = false) {
         fontFamily = FontFamily.Monospace,
         maxLines = 1,
         modifier = Modifier
-            .clip(RoundedCornerShape(4.dp))
-            .border(1.dp, if (strong) PanelBorderSelected else PanelBorder, RoundedCornerShape(4.dp))
+            .clip(RectangleShape)
+            .border(1.dp, if (strong) PanelBorderSelected else PanelBorder, RectangleShape)
             .padding(horizontal = 5.dp, vertical = 1.dp)
     )
 }
@@ -1872,7 +2006,7 @@ private fun Fold(title: String, count: Int?, open: Boolean, key: Any, content: @
     var expanded by remember(key) { mutableStateOf(open) }
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(4.dp)).clickable { expanded = !expanded }.padding(vertical = 3.dp),
+            modifier = Modifier.fillMaxWidth().clip(RectangleShape).clickable { expanded = !expanded }.padding(vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
@@ -1888,7 +2022,7 @@ private fun Fold(title: String, count: Int?, open: Boolean, key: Any, content: @
                 Text(count.toString(), color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
             }
         }
-        if (expanded) Column(modifier = Modifier.fillMaxWidth().padding(start = 18.dp, top = 2.dp, bottom = 4.dp)) { content() }
+        if (expanded) Column(modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 1.dp, bottom = 3.dp)) { content() }
     }
 }
 
@@ -1899,8 +2033,8 @@ private fun SearchField(value: String, onChange: (String) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(CodeBackground, RoundedCornerShape(6.dp))
-            .border(1.dp, if (focused || value.isNotEmpty()) PageAccent else PanelBorderSelected, RoundedCornerShape(6.dp))
+            .background(CodeBackground, RectangleShape)
+            .border(1.dp, if (focused || value.isNotEmpty()) PageAccent else PanelBorderSelected, RectangleShape)
             .padding(horizontal = 8.dp, vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -1984,7 +2118,7 @@ private fun ContentLine(name: String, mark: String?, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RectangleShape)
             .background(if (hovered) PanelSurfaceSelected else Color.Transparent)
             .hoverable(interactionSource)
             .clickable(interactionSource = interactionSource, indication = null) { onClick() }
@@ -2011,8 +2145,8 @@ private fun FileField(label: String, file: File?, hint: String, onClear: (() -> 
             modifier = Modifier
                 .widthIn(max = 420.dp)
                 .weight(1f, fill = false)
-                .background(CodeBackground, RoundedCornerShape(6.dp))
-                .border(1.dp, ConsoleBorderColor, RoundedCornerShape(6.dp))
+                .background(CodeBackground, RectangleShape)
+                .border(1.dp, ConsoleBorderColor, RectangleShape)
                 .padding(horizontal = 8.dp, vertical = 5.dp)
         )
         Spacer(Modifier.width(6.dp))
@@ -2031,7 +2165,7 @@ private fun FileField(label: String, file: File?, hint: String, onClear: (() -> 
 @Composable
 private fun SectionTitle(title: String, count: Int?, action: @Composable () -> Unit = {}) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 6.dp),
+        modifier = Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(if (count == null) title else "$title  $count", color = FontColor, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.6.sp, modifier = Modifier.weight(1f))
@@ -2041,7 +2175,7 @@ private fun SectionTitle(title: String, count: Int?, action: @Composable () -> U
 
 @Composable
 private fun SubTitle(title: String) {
-    Text(title, color = FontColor, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.6.sp, modifier = Modifier.padding(top = 2.dp))
+    Text(title, color = FontColor, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.6.sp)
 }
 
 @Composable
@@ -2049,9 +2183,9 @@ private fun Card(content: @Composable () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RectangleShape)
             .background(PanelSurface)
-            .border(1.dp, PanelBorder, RoundedCornerShape(8.dp))
+            .border(1.dp, PanelBorder, RectangleShape)
             .padding(10.dp)
     ) { content() }
 }
@@ -2084,8 +2218,8 @@ private fun SettingField(label: String, value: String, onChange: (String) -> Uni
             modifier = Modifier
                 .widthIn(max = 420.dp)
                 .fillMaxWidth()
-                .background(CodeBackground, RoundedCornerShape(6.dp))
-                .border(1.dp, ConsoleBorderColor, RoundedCornerShape(6.dp))
+                .background(CodeBackground, RectangleShape)
+                .border(1.dp, ConsoleBorderColor, RectangleShape)
                 .padding(horizontal = 8.dp, vertical = 5.dp)
         )
     }
@@ -2099,9 +2233,9 @@ private fun Toggle(label: String, on: Boolean, onChange: (Boolean) -> Unit) {
         fontSize = 11.sp,
         fontFamily = FontFamily.Monospace,
         modifier = Modifier
-            .clip(RoundedCornerShape(6.dp))
+            .clip(RectangleShape)
             .background(if (on) PageAccent.copy(alpha = 0.35f) else CodeBackground)
-            .border(1.dp, if (on) PageAccent else ConsoleBorderColor, RoundedCornerShape(6.dp))
+            .border(1.dp, if (on) PageAccent else ConsoleBorderColor, RectangleShape)
             .clickable { onChange(!on) }
             .padding(horizontal = 8.dp, vertical = 3.dp)
     )
@@ -2109,62 +2243,62 @@ private fun Toggle(label: String, on: Boolean, onChange: (Boolean) -> Unit) {
 
 /** The accent chip for the actions that create, build, validate, open or add: a dark blue that stays quiet */
 @Composable
-private fun AccentButton(label: String, enabled: Boolean = true, onClick: () -> Unit) {
+private fun AccentButton(label: String, enabled: Boolean = true, icon: ImageVector? = null, onClick: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val hovered by interactionSource.collectIsHoveredAsState()
-    Text(
-        label,
-        color = if (enabled) Color.White else Color.White.copy(alpha = 0.5f),
-        fontSize = 11.sp,
-        fontWeight = FontWeight.SemiBold,
-        maxLines = 1,
+    val colour = if (enabled) Color.White else Color.White.copy(alpha = 0.5f)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
-            .clip(RoundedCornerShape(6.dp))
+            .clip(RectangleShape)
             .background(when { !enabled -> PageAccent.copy(alpha = 0.35f); hovered -> AccentButtonHover; else -> PageAccent })
             .hoverable(interactionSource)
             .clickable(enabled = enabled, interactionSource = interactionSource, indication = null) { onClick() }
-            .padding(horizontal = 10.dp, vertical = 4.dp)
-    )
+            .padding(horizontal = 8.dp, vertical = 3.dp)
+    ) {
+        if (icon != null) { Icon(icon, contentDescription = null, tint = colour, modifier = Modifier.size(12.dp)); Spacer(Modifier.width(5.dp)) }
+        Text(label, color = colour, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+    }
 }
 
 /** The chip of the actions that end something: Terminate, Destroy. A dark red that brightens on hover */
 @Composable
-private fun DangerButton(label: String, enabled: Boolean = true, onClick: () -> Unit) {
+private fun DangerButton(label: String, enabled: Boolean = true, icon: ImageVector? = null, onClick: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val hovered by interactionSource.collectIsHoveredAsState()
-    Text(
-        label,
-        color = if (enabled) FontColor else MutedFontColor.copy(alpha = 0.5f),
-        fontSize = 11.sp,
-        fontWeight = FontWeight.Medium,
-        maxLines = 1,
+    val colour = if (enabled) FontColor else MutedFontColor.copy(alpha = 0.5f)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
-            .clip(RoundedCornerShape(6.dp))
+            .clip(RectangleShape)
             .background(when { !enabled -> DangerButton.copy(alpha = 0.4f); hovered -> DangerButtonHover; else -> DangerButton })
-            .border(1.dp, if (enabled) DangerButtonBorder else PanelBorder, RoundedCornerShape(6.dp))
+            .border(1.dp, if (enabled) DangerButtonBorder else PanelBorder, RectangleShape)
             .hoverable(interactionSource)
             .clickable(enabled = enabled, interactionSource = interactionSource, indication = null) { onClick() }
-            .padding(horizontal = 9.dp, vertical = 4.dp)
-    )
+            .padding(horizontal = 8.dp, vertical = 3.dp)
+    ) {
+        if (icon != null) { Icon(icon, contentDescription = null, tint = colour, modifier = Modifier.size(12.dp)); Spacer(Modifier.width(5.dp)) }
+        Text(label, color = colour, fontSize = 11.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+    }
 }
 
 /** A gray chip like the editor's tabs; it brightens on hover instead of carrying a colour of its own */
 @Composable
-private fun SmallButton(label: String, enabled: Boolean = true, onClick: () -> Unit) {
+private fun SmallButton(label: String, enabled: Boolean = true, icon: ImageVector? = null, onClick: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val hovered by interactionSource.collectIsHoveredAsState()
-    Text(
-        label,
-        color = if (enabled) FontColor else MutedFontColor.copy(alpha = 0.5f),
-        fontSize = 11.sp,
-        fontWeight = FontWeight.Medium,
-        maxLines = 1,
+    val colour = if (enabled) FontColor else MutedFontColor.copy(alpha = 0.5f)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
-            .clip(RoundedCornerShape(6.dp))
+            .clip(RectangleShape)
             .background(if (enabled && hovered) ChipHoverBackground else ChipBackground)
-            .border(1.dp, if (enabled) ChipBorderColor else PanelBorder, RoundedCornerShape(6.dp))
+            .border(1.dp, if (enabled) ChipBorderColor else PanelBorder, RectangleShape)
             .hoverable(interactionSource)
             .clickable(enabled = enabled, interactionSource = interactionSource, indication = null) { onClick() }
-            .padding(horizontal = 9.dp, vertical = 4.dp)
-    )
+            .padding(horizontal = 8.dp, vertical = 3.dp)
+    ) {
+        if (icon != null) { Icon(icon, contentDescription = null, tint = colour, modifier = Modifier.size(12.dp)); Spacer(Modifier.width(5.dp)) }
+        Text(label, color = colour, fontSize = 11.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+    }
 }

@@ -60,11 +60,60 @@ fun moduleDir(name: String): File = File(modulesDir, name.replace(Regex("""[^A-Z
 fun readRegistry(): ModuleRegistry =
     runCatching { moduleJson.decodeFromString<ModuleRegistry>(registryFile.readText()) }.getOrElse { ModuleRegistry() }
 
+/** The guide that ships inside a module: `guide.md` next to its manifest, what a downloaded model comes with */
+fun guideFile(dir: File): File = File(dir, "guide.md")
+
+/**
+ * The guide a freshly built module starts with, from its manifest: what it is, its labels, how to open and ask
+ * it from a script and over HTTP, how to validate it, and its files. Whoever builds the model edits it on the page.
+ */
+fun defaultGuide(m: ModuleManifest): String = buildString {
+    appendLine("# ${m.name}")
+    appendLine()
+    appendLine(m.description ?: "An intent model: it turns a sentence into one of its labels.")
+    appendLine()
+    appendLine("## Labels")
+    appendLine()
+    m.labels.forEach { appendLine("- $it") }
+    appendLine()
+    appendLine("## From a script")
+    appendLine()
+    appendLine("```")
+    appendLine("val model = initMod(\"${m.name}\")")
+    appendLine("model.inference(\"your sentence\")   // [\"label:score\", ...], best first")
+    appendLine("model.close()")
+    appendLine("```")
+    appendLine()
+    appendLine("A model has one session: initMod gives the open one when there is one. Terminate it on the Models page or close() it.")
+    appendLine()
+    appendLine("## Over HTTP")
+    appendLine()
+    appendLine("Listen on the Models page, then POST {\"text\": \"...\"} or GET ?text=... to its /predict address; Configure shows the address and a curl call.")
+    appendLine()
+    appendLine("## Validating")
+    appendLine()
+    appendLine("Validate on a csv with a text and a label column (the labels above). Every validation is a run on the Metrics tab.")
+    appendLine()
+    appendLine("## How it works")
+    appendLine()
+    appendLine("The text goes through the ${File(m.encoder).name} encoder (${m.inputDim} numbers, ${m.pooling} pooled), then through this model's head" +
+        (m.architecture?.let { " ($it)" } ?: "") + ", which gives one score per label.")
+    m.epochs?.let { appendLine("Trained for $it epochs on ${m.trainRows ?: "?"} rows of ${m.data ?: "its data"}; validated on ${m.validationRows ?: "?"} rows of ${m.validation ?: "a split"}.") }
+    appendLine()
+    appendLine("## Files")
+    appendLine()
+    appendLine("- module.json: name, labels, encoder, how it was trained")
+    appendLine("- ${m.model}: the head")
+    appendLine("- metrics.json: every validation run")
+    appendLine("- guide.md: this guide")
+}
+
 fun writeModule(manifest: ModuleManifest, onnxBytes: ByteArray): File {
     val dir = moduleDir(manifest.name).apply { mkdirs() }
     val modelFile = File(dir, manifest.model)
     modelFile.writeBytes(onnxBytes)
     File(dir, "module.json").writeText(moduleJson.encodeToString(manifest))
+    guideFile(dir).takeIf { !it.isFile }?.writeText(defaultGuide(manifest))
     val registry = readRegistry()
     registryFile.writeText(moduleJson.encodeToString(registry.copy(modules = registry.modules + (manifest.name to dir.name))))
     logInternal("module '${manifest.name}' exported to ${modelFile.absolutePath}")
@@ -156,8 +205,9 @@ fun ensureSampleData(): File {
 fun ensureDummyModule(encoder: String = DEFAULT_ENCODER): File? {
     val dir = moduleDir(DUMMY_MODEL)
     if (File(dir, "module.json").isFile) {
-        // A dummy written before the description was kept gets it now
+        // A dummy written before the description and the guide were kept gets them now
         runCatching { updateModule(DUMMY_MODEL) { m -> if (m.description != null) m else m.copy(description = dummyDescription(m.encoder), architecture = m.architecture ?: "dense[${m.inputDim} -> ${m.labels.size}] sigmoid over mean-pooled ${File(m.encoder).name}") } }
+        runCatching { readModule(DUMMY_MODEL)?.let { (d, m) -> guideFile(d).takeIf { !it.isFile }?.writeText(defaultGuide(m)) } }
         return dir
     }
     return runCatching {

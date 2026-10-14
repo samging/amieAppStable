@@ -2485,3 +2485,76 @@ Waiting for logs...
 > [INTERNAL] [internal] 2026-10-14T18:55:33.351031Z initMod: 'yourmamma' session ready (embedding [768] -> score [3])
 > [INTERNAL] [internal] 2026-10-14T18:55:33.353094Z initMod: 'yourmamma' is already open as session #1, that one is used
 > [INTERNAL] [internal] 2026-10-14T18:55:33.353596Z initMod: 'yourmamma' is already open as session #1, that one is used
+> [INFO] [sandbox] 2026-10-14T18:58:26.640961Z Running pluginDir/main.kts
+> [INTERNAL] [internal] 2026-10-14T18:58:26.645194Z env 'default': sourcing no new imports
+> [INTERNAL] [internal] 2026-10-14T18:58:26.646681Z env 'default': sourced 1 packages, 1 in environment
+> [INTERNAL] [internal] 2026-10-14T18:58:28.157327Z ort: session #1 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:58:28.445211Z ort: session #2 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T18:58:28.784353Z encoder: loaded bge (415.6 MB on disk)
+> [INTERNAL] [internal] 2026-10-14T18:58:28.785440Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T18:58:28.810001Z initMod: 'dummy' -> lights:0.6714898, weather:0.49647042, greeting:0.3300981
+> [INFO] [sandbox] 2026-10-14T18:58:28.811333Z Finished in 2s
+> [INTERNAL] [internal] 2026-10-14T19:02:47.871624Z ort: session #1 'module:yourmamma' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/yourmamma/model.onnx
+> [INTERNAL] [internal] 2026-10-14T19:02:48.204906Z ort: session #2 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T19:02:52.493491Z encoder: loaded bge (415.6 MB on disk)
+> [INTERNAL] [internal] 2026-10-14T19:02:52.494999Z initMod: 'yourmamma' session ready (embedding [768] -> score [3])
+> [INFO] [sandbox] 2026-10-14T19:05:10.704105Z Running pluginDir/main.kts
+> [INTERNAL] [internal] 2026-10-14T19:05:10.710200Z env 'default': sourcing no new imports
+> [INTERNAL] [internal] 2026-10-14T19:05:10.711544Z env 'default': sourced 1 packages, 1 in environment
+> [INTERNAL] [internal] 2026-10-14T19:05:12.223064Z ort: session #1 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T19:05:12.535179Z ort: session #2 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T19:05:13.855414Z encoder: loaded bge (415.6 MB on disk)
+> [INTERNAL] [internal] 2026-10-14T19:05:13.856335Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T19:05:13.879018Z initMod: 'dummy' -> lights:0.6714898, weather:0.49647042, greeting:0.3300981
+> [INFO] [sandbox] 2026-10-14T19:05:13.880311Z Finished in 3s
+> [INTERNAL] [internal] 2026-10-14T19:06:28.892312Z module 'yourmamma' destroyed: /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/yourmamma removed
+> [INFO] [sandbox] 2026-10-14T19:16:59.217802Z Running pluginDir/main.kts
+> [INTERNAL] [internal] 2026-10-14T19:16:59.224445Z env 'default': sourcing no new imports
+> [INTERNAL] [internal] 2026-10-14T19:16:59.225731Z env 'default': sourced 1 packages, 1 in environment
+> [INTERNAL] [internal] 2026-10-14T19:17:00.630465Z ort: session #1 'module:dummy' opened from /Users/samuel/Documents/GitHub/amieAppStable/amieApplication/desktopApp/AMP/modules/dummy/model.onnx
+> [INTERNAL] [internal] 2026-10-14T19:17:00.939236Z ort: session #2 'bert:bge' opened from /Users/samuel/Documents/onnx/bert/bge/model.onnx
+> [INTERNAL] [internal] 2026-10-14T19:17:05.289491Z encoder: loaded bge (415.6 MB on disk)
+> [INTERNAL] [internal] 2026-10-14T19:17:05.290516Z initMod: 'dummy' session ready (embedding [768] -> score [3])
+> [INTERNAL] [internal] 2026-10-14T19:17:05.316059Z initMod: 'dummy' -> lights:0.6714898, weather:0.49647042, greeting:0.3300981
+> [INFO] [sandbox] 2026-10-14T19:17:05.317371Z Finished in 6s
+> [INFO] [sandbox] 2026-10-14T19:18:11.236297Z Running pluginDir/main.kts
+> [INTERNAL] [internal] 2026-10-14T19:18:11.237096Z env 'default': sourcing no new imports
+> [INTERNAL] [internal] 2026-10-14T19:18:11.237661Z env 'default': sourced 1 packages, 1 in environment
+> [ERROR] [sandbox] 2026-10-14T19:18:11.513191Z Error: ERROR Unresolved reference: inference (ScriptingHost5610562_Line_0.kts:36:5)
+> [ERROR] [sandbox] 2026-10-14T19:18:11.513297Z Failed after 0s
+> [INFO] [sandbox] 2026-10-14T19:18:12.699080Z Running pluginDir/main.kts
+> [INTERNAL] [internal] 2026-10-14T19:18:12.699373Z env 'default': sourcing no new imports
+> [INTERNAL] [internal] 2026-10-14T19:18:12.699773Z env 'default': sourced 1 packages, 1 in environment
+> [ERROR] [sandbox] 2026-10-14T19:18:12.823857Z Error: ERROR Unresolved reference: inference (ScriptingHost42229f6_Line_0.kts:36:5)
+> [ERROR] [sandbox] 2026-10-14T19:18:12.823919Z Failed after 0s
+> [INFO] [sandbox] 2026-10-14T19:18:17.973176Z Running pluginDir/main.kts
+> [INTERNAL] [internal] 2026-10-14T19:18:17.973327Z env 'default': sourcing no new imports
+> [INTERNAL] [internal] 2026-10-14T19:18:17.973526Z env 'default': sourced 1 packages, 1 in environment
+> [INTERNAL] [internal] 2026-10-14T19:18:18.185526Z initMod: 'dummy' is already open as session #1, that one is used
+> [INTERNAL] [internal] 2026-10-14T19:18:18.248314Z initMod: 'dummy' -> lights:0.6714898, weather:0.49647042, greeting:0.3300981
+> [INFO] [sandbox] 2026-10-14T19:18:18.248844Z Finished in 0s
+> [INFO] [sandbox] 2026-10-14T19:18:19.367438Z Running pluginDir/main.kts
+> [INTERNAL] [internal] 2026-10-14T19:18:19.367755Z env 'default': sourcing no new imports
+> [INTERNAL] [internal] 2026-10-14T19:18:19.368160Z env 'default': sourced 1 packages, 1 in environment
+> [INTERNAL] [internal] 2026-10-14T19:18:19.542806Z initMod: 'dummy' is already open as session #1, that one is used
+> [INTERNAL] [internal] 2026-10-14T19:18:19.549365Z initMod: 'dummy' -> lights:0.6714898, weather:0.49647042, greeting:0.3300981
+> [INFO] [sandbox] 2026-10-14T19:18:19.549730Z Finished in 0s
+> [INFO] [sandbox] 2026-10-14T19:18:20.131093Z Running pluginDir/main.kts
+> [INTERNAL] [internal] 2026-10-14T19:18:20.131328Z env 'default': sourcing no new imports
+> [INTERNAL] [internal] 2026-10-14T19:18:20.131580Z env 'default': sourced 1 packages, 1 in environment
+> [INTERNAL] [internal] 2026-10-14T19:18:20.300699Z initMod: 'dummy' is already open as session #1, that one is used
+> [INTERNAL] [internal] 2026-10-14T19:18:20.306866Z initMod: 'dummy' -> lights:0.6714898, weather:0.49647042, greeting:0.3300981
+> [INFO] [sandbox] 2026-10-14T19:18:20.307184Z Finished in 0s
+> [INFO] [sandbox] 2026-10-14T19:18:20.777655Z Running pluginDir/main.kts
+> [INTERNAL] [internal] 2026-10-14T19:18:20.778047Z env 'default': sourcing no new imports
+> [INTERNAL] [internal] 2026-10-14T19:18:20.778389Z env 'default': sourced 1 packages, 1 in environment
+> [INTERNAL] [internal] 2026-10-14T19:18:20.933207Z initMod: 'dummy' is already open as session #1, that one is used
+> [INTERNAL] [internal] 2026-10-14T19:18:20.940004Z initMod: 'dummy' -> lights:0.6714898, weather:0.49647042, greeting:0.3300981
+> [INFO] [sandbox] 2026-10-14T19:18:20.940407Z Finished in 0s
+> [INFO] [sandbox] 2026-10-14T19:18:35.567582Z Running pluginDir/main.kts
+> [INTERNAL] [internal] 2026-10-14T19:18:35.567813Z env 'default': sourcing no new imports
+> [INTERNAL] [internal] 2026-10-14T19:18:35.568030Z env 'default': sourced 1 packages, 1 in environment
+> [INTERNAL] [internal] 2026-10-14T19:18:35.699432Z initMod: 'dummy' is already open as session #1, that one is used
+> [INTERNAL] [internal] 2026-10-14T19:18:35.705588Z initMod: 'dummy' -> greeting:0.65430593, weather:0.4820101, lights:0.36340934
+> [INFO] [sandbox] 2026-10-14T19:18:35.705991Z Finished in 0s
+> [INTERNAL] [internal] 2026-10-14T19:20:16.598213Z auth: signed out

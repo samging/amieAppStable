@@ -200,7 +200,7 @@ class InitMod(private val moduleName: String? = null) {
 
             override fun inference(text: String): List<String> {
                 val res = inst.sayHello(text)
-                logInternal(res.joinToString ("\n"))
+                logInternal("amie ${quoteForLog(text)} -> ${res.joinToString(" ")}", LogLevel.DATA)
                 return res
             }
 
@@ -251,7 +251,15 @@ class InitMod(private val moduleName: String? = null) {
                 val res = scores.mapIndexed { i, score -> (manifest.labels.getOrNull(i) ?: i.toString()) to score }
                     .sortedByDescending { it.second }
                     .map { (label, score) -> "$label:$score" }
-                logInternal("initMod: '$name' -> ${res.joinToString()}")
+                // The answer is data the script asked for, so it shows as a DATA line: the text, then every label with its score
+                logInternal(
+                    "$name ${quoteForLog(text)} -> " + res.joinToString { entry ->
+                        val label = entry.substringBeforeLast(':')
+                        val score = entry.substringAfterLast(':').toDoubleOrNull()
+                        if (score == null) entry else "$label ${"%.3f".format(java.util.Locale.US, score)}"
+                    },
+                    LogLevel.DATA,
+                )
                 return res
             }
 
@@ -262,6 +270,12 @@ class InitMod(private val moduleName: String? = null) {
         }
     }
 
+}
+
+/** The text of an inference as it is logged: one line, quoted, cut at 60 characters */
+private fun quoteForLog(text: String): String {
+    val one = text.replace('\n', ' ').trim()
+    return "\"" + (if (one.length > 60) one.take(57) + "..." else one) + "\""
 }
 
 fun initContext(text: String, tokens: (matrix: LongArray) -> Unit = {}): Array<Array<FloatArray>>? {

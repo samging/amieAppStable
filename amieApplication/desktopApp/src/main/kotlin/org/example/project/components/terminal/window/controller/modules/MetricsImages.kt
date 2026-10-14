@@ -24,7 +24,6 @@ import java.awt.RenderingHints
 import java.awt.geom.Ellipse2D
 import java.awt.geom.Path2D
 import java.awt.geom.Rectangle2D
-import java.awt.geom.RoundRectangle2D
 import java.awt.image.BufferedImage
 import java.io.File
 import java.util.Locale
@@ -136,9 +135,9 @@ object MetricsImages {
         g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE)
         g.scale(SCALE.toDouble(), SCALE.toDouble())
         g.color = surface
-        g.fillRoundRect(0, 0, plot.width, plot.height, 8, 8)
+        g.fillRect(0, 0, plot.width, plot.height)
         g.color = border
-        g.drawRoundRect(0, 0, plot.width - 1, plot.height - 1, 8, 8)
+        g.drawRect(0, 0, plot.width - 1, plot.height - 1)
         body(g)
         g.dispose()
         ImageIO.write(image, "png", plot.file)
@@ -210,7 +209,7 @@ object MetricsImages {
     /** A heat cell with its text, inset so a 2px surface gap separates neighbours */
     private fun Graphics2D.cell(x: Float, y: Float, w: Float, h: Float, t: Double, big: String?, small: String? = null) {
         color = heat(t)
-        fill(RoundRectangle2D.Float(x + 1f, y + 1f, w - 2f, h - 2f, 3f, 3f))
+        fill(Rectangle2D.Float(x + 1f, y + 1f, w - 2f, h - 2f))
         val ink = inkOn(t)
         when {
             big != null && small != null -> {
@@ -225,7 +224,7 @@ object MetricsImages {
     /** A gradient strip with its ends named, so the ramp reads as a scale */
     private fun Graphics2D.scaleBar(x: Float, y: Float, w: Float, low: String, high: String) {
         paint = GradientPaint(x, y, heat(0.0), x + w, y, heat(1.0))
-        fill(RoundRectangle2D.Float(x, y, w, 7f, 3f, 3f))
+        fill(Rectangle2D.Float(x, y, w, 7f))
         paint = null
         label(low, x, y + 17f, muted, monoSmall)
         label(high, x + w - width(high, monoSmall), y + 17f, muted, monoSmall)
@@ -357,7 +356,7 @@ object MetricsImages {
             if (r == c) {
                 g.color = Color(text.red, text.green, text.blue, 120)
                 g.stroke = BasicStroke(1f)
-                g.draw(RoundRectangle2D.Float(x + 1f, y + 1f, cell - 2f, cell - 2f, 3f, 3f))
+                g.draw(Rectangle2D.Float(x + 1f, y + 1f, cell - 2f, cell - 2f))
             }
         }
         val totalsX = ox + headLeft + n * cell + 10f
@@ -480,7 +479,7 @@ object MetricsImages {
         counts.forEachIndexed { i, count ->
             val h = (bottom - plotTop) * count / max
             g.color = accent
-            g.fill(RoundRectangle2D.Float(left + i * barW + 2f, bottom - h, barW - 4f, maxOf(h, if (count > 0) 2f else 0f), 4f, 4f))
+            g.fill(Rectangle2D.Float(left + i * barW + 2f, bottom - h, barW - 4f, maxOf(h, if (count > 0) 2f else 0f)))
             val from = i * step
             g.centred(if (i == bars - 1) "$from+" else "$from", left + i * barW + barW / 2, bottom + 12f, muted, monoSmall)
             if (count > 0 && bars <= 12) g.centred(count.toString(), left + i * barW + barW / 2, bottom - h - 4f, muted, monoSmall)

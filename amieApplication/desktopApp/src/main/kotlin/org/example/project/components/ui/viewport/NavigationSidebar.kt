@@ -11,6 +11,7 @@ import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -47,6 +48,9 @@ fun NavigationSidebar(
     // Non-null shows the Models button; true while the models page is open
     modelsSelected: Boolean? = null,
     onModels: () -> Unit = {},
+    // Non-null shows the Settings gear at the bottom; true while the settings page is open
+    settingsSelected: Boolean? = null,
+    onSettings: (() -> Unit)? = null,
 ) {
     Row(modifier = Modifier.fillMaxHeight()) {
         Column(
@@ -89,8 +93,8 @@ fun NavigationSidebar(
                 )
             }
 
+            Spacer(modifier = Modifier.weight(1f))
             if (showPlay) {
-                Spacer(modifier = Modifier.weight(1f))
                 if (running) {
                     RunningItem(progress = runProgress, onClick = showPlayCallback)
                 } else {
@@ -107,6 +111,14 @@ fun NavigationSidebar(
                         }
                     )
                 }
+            }
+            if (onSettings != null) {
+                SidebarItem(
+                    painter = rememberVectorPainter(Icons.Default.Settings),
+                    contentDescription = "Settings",
+                    selected = settingsSelected == true,
+                    onClick = onSettings
+                )
             }
         }
 
