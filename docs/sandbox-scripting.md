@@ -43,7 +43,7 @@ Defined in `ScriptLogger.kt`. The most used calls (prefix `amie.` optional):
 | `sourceFile("file.csv", column = "")` | Raw rows keyed by index, optionally one column |
 | `modelBuilder("name", data)` | Trains and exports an intent classifier (below) |
 | `modelBuilder("name") { ... }` | Same, the lambda returns the data |
-| `initMod("name")` | Opens an exported model as a session (listed on the Models page, terminable there); `.inference("text")` returns `label:probability` sorted best first; `.close()`. `initMod("dummy")` works on a fresh checkout |
+| `initMod("name")` | The session of an exported model: the one already open, else a new one (listed on the Models page, terminable there); `.inference("text")` returns `label:probability` sorted best first; `.close()`. `initMod("dummy")` works on a fresh checkout. How sessions live and die: [Running sessions](sessions.md) |
 | `initMod()` | The bundled BERT NER model |
 | `initMod("name.jar")` | A new instance of a package jar behind the same interface: `.inference("text")` calls its `run(text)`, `.close()` its `close()`. Looked up in the env, `AMP/pluginDir`, as a path, then fetched from the Amie server (below) |
 | `validateMetrics("name", labels = listOf(...))` | Prints the stored validation table of a model |
@@ -106,6 +106,8 @@ the jar's class loader as context loader, and what it returns is shown one line 
 also appear under **Sessions** on the [Models page](models-page.md).
 
 ### Session logs
+
+(How to work with sessions day to day, keep them warm between runs and close them is in [Running sessions](sessions.md).)
 
 Every session of a model or a package keeps a log of what it was asked and answered: an `open` line, one `run`
 line per `inference` call with the text, the first answers and the time it took, an `error` line when the call

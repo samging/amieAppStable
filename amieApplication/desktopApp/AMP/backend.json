@@ -1,4 +1,5 @@
 {
-    "baseUrl": "http://192.168.1.114:8080",
-    "siteUrl": "http://192.168.1.114:8081"
+    "baseUrl": "http://localhost:8080",
+    "siteUrl": "http://localhost:8081",
+    "s3ServiceUrl": "http://localhost:8088"
 }

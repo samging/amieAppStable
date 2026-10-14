@@ -140,7 +140,10 @@ docs/                               this project's documentation
 - **"The backend rejected the Keycloak token (401)"** on the Models page: the backend was started without the
   Keycloak verifier settings, or its `KEYCLOAK_ISSUER` doesn't match the realm's frontend URL. See
   [docs/backend-integration.md](docs/backend-integration.md).
-- **"Connection refused: ensure the Amie backend is running"**: the address in `AMP/backend.json` has nothing
-  listening. With Keycloak on 8080, run the backend with `AMIE_BACKEND_PORT=8090` and set `baseUrl` accordingly.
+- **"Connection refused: ensure the Amie backend is running"**, or **Publish** saying the backend is unreachable
+  (**"Host is down"** is the JDK's message for an address on the LAN that nothing answers at): the address in
+  `AMP/backend.json` has nothing listening; being signed in cannot help. With the Amie project running locally the
+  website is `http://localhost:8081` and the backend `http://localhost:8080`, or `http://localhost:8090` when Keycloak
+  holds 8080 (`AMIE_BACKEND_PORT=8090`); set `baseUrl` and `siteUrl` accordingly, or `AMIE_BACKEND_URL` / `AMIE_SITE_URL`.
 - **Port in use when signing in with the browser**: change `redirectPort` in `AMP/keycloak.json` and add
   `http://localhost:<port>/*` to the client's redirect URIs in Keycloak.

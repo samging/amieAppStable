@@ -445,7 +445,7 @@ private fun ModelsContent(user: String?, onLogin: () -> Unit) {
             counts = mapOf(PageTab.MODELS to snapshot.models.size, PageTab.PACKAGES to snapshot.jars.size, PageTab.SESSIONS to snapshot.sessions.size),
             signedIn = user != null,
             onTab = { tab = it },
-            onWebsite = { openInBrowser(AmieBackend.config.siteDashboardUrl) },
+            onWebsite = { openInBrowser(AmieBackend.config.siteDashboardUrl(user)) },
         )
 
         Column(
@@ -520,8 +520,12 @@ private fun ModelsContent(user: String?, onLogin: () -> Unit) {
                         if (signedIn == null) onLogin()
                         else background {
                             val (dir, _) = readModule(model.name) ?: error("module '${model.name}' not found")
-                            AmieBackend.publishModule(model.name, dir, signedIn)
-                            notice = "${model.name} published to ${AmieBackend.config.base}"
+                            val published = AmieBackend.publishModule(model.name, dir, signedIn)
+                            notice = when (published.onWebsite) {
+                                true -> "${model.name} published (${published.files.joinToString(", ")}); the website lists it at ${published.dashboardUrl}"
+                                false -> "${model.name} published to ${AmieBackend.config.base}, but the website does not list it yet; see ${published.dashboardUrl}"
+                                null -> "${model.name} published to ${AmieBackend.config.base}; the website at ${AmieBackend.config.site} could not be asked, see ${published.dashboardUrl}"
+                            }
                         }
                     },
                 )

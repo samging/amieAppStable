@@ -64,7 +64,7 @@ data class BackendStatus(
 @Serializable
 data class BackendError(val time: String = "", val error: String = "", val message: String = "")
 
-class BackendException(message: String, val status: Int? = null) : Exception(message)
+class BackendException(message: String, val status: Int? = null, cause: Throwable? = null) : Exception(message, cause)
 
 /**
  * Typed calls to the Amie backend for the signed-in Keycloak user. Every call sends the Keycloak access
@@ -89,27 +89,49 @@ object AmieBackend {
     private suspend fun token(): String =
         AuthState.accessToken() ?: throw BackendException("Sign in with Keycloak first")
 
+    /**
+     * Runs one backend call and turns a connection failure (the JDK's "Host is down", "Connection refused",
+     * an unknown host or a timeout) into a [BackendException] without a status, naming the address that was
+     * tried and where to change it. Being signed in cannot help with these, so the message says what can.
+     */
+    private suspend fun <T> reach(what: String, block: suspend () -> T): T = try {
+        block()
+    } catch (e: BackendException) {
+        throw e
+    } catch (e: java.io.IOException) {
+        throw BackendException(unreachable(what, e), cause = e)
+    } catch (e: io.ktor.client.plugins.HttpRequestTimeoutException) {
+        throw BackendException(unreachable(what, e), cause = e)
+    }
+
+    private fun unreachable(what: String, e: Exception): String {
+        val reason = (e.message ?: e.javaClass.simpleName).substringAfterLast(": ").ifBlank { e.javaClass.simpleName }
+        return "Couldn't $what: the backend at ${config.base} is unreachable ($reason). " +
+            "Check the address in ${BackendConfig.file.path} (AMIE_BACKEND_URL overrides it); " +
+            "the Amie backend listens on 8080, or 8090 when Keycloak holds 8080"
+    }
+
     /** Who the backend says the current token belongs to; creates the backend user on first call */
-    suspend fun me(): BackendProfile {
+    suspend fun me(): BackendProfile = reach("reach the backend") {
         val response = http.get(config.url("me")) { bearerAuth(token()) }
         val body = response.bodyAsText()
         if (!response.status.isSuccess()) throw BackendException(describe(response.status, body), response.status.value)
-        return json.decodeFromString(body)
+        json.decodeFromString(body)
     }
 
     /** The files the backend stored for [username] (what the website's dashboard lists) */
-    suspend fun packages(username: String): List<BackendPackage> {
+    suspend fun packages(username: String): List<BackendPackage> = reach("list the packages") {
         val response = http.get(config.url("user-packages")) { parameter("username", username) }
         val body = response.bodyAsText()
         if (!response.status.isSuccess()) throw BackendException(describe(response.status, body), response.status.value)
-        return runCatching { json.decodeFromString<List<BackendPackage>>(body) }.getOrDefault(emptyList())
+        runCatching { json.decodeFromString<List<BackendPackage>>(body) }.getOrDefault(emptyList())
     }
 
     /**
      * Uploads a file to the signed-in user's package folder (`uploads/<user>/<language>/<name>` in the
      * backend's S3 bucket) through `POST /upload`. The website's dashboard lists it afterwards.
      */
-    suspend fun upload(file: File, language: String, username: String): String {
+    suspend fun upload(file: File, language: String, username: String): String = reach("publish ${file.name}") {
         if (!file.isFile) throw BackendException("${file.name} is not a file")
         val response = http.post(config.url("upload")) {
             bearerAuth(token())
@@ -135,18 +157,55 @@ object AmieBackend {
         // the store is unreachable; an "Error ..." body on a 2xx is kept as a failure in case an older backend answers
         if (body.trimStart().startsWith("Error", ignoreCase = true)) throw BackendException("The backend couldn't store ${file.name}: ${body.take(200)}", response.status.value)
         logInternal("backend: uploaded ${file.name} (${file.length()} bytes) for $username as $language")
-        return body
+        body
     }
 
-    /** Publishes a trained module: its ONNX model, manifest and guide, so it shows on the website under `onnx` */
-    suspend fun publishModule(name: String, dir: File, username: String): List<String> {
+    /**
+     * What publishing a module came to: the files the backend took, whether the website lists them on
+     * `/dashboard?username=` (null when the site could not be asked) and that page's address.
+     */
+    data class Published(val files: List<String>, val onWebsite: Boolean?, val dashboardUrl: String)
+
+    /**
+     * Publishes a trained module: its ONNX model, manifest and guide, so it shows on the website under `onnx`.
+     * Afterwards the website is told to forget its cached listing for [username] (as its own upload page does)
+     * and asked whether it now lists the files, so the caller can say where they are, or that they are not there yet.
+     */
+    suspend fun publishModule(name: String, dir: File, username: String): Published {
         val files = listOf(File(dir, "module.json"), File(dir, "model.onnx"), File(dir, "guide.md")).filter { it.isFile }
         if (files.isEmpty()) throw BackendException("Module '$name' has no module.json or model.onnx in ${dir.path}")
-        return files.map { upload(it, "onnx", username) }
+        files.forEach { upload(it, "onnx", username) }
+        val names = files.map { it.name }
+        val listed = websiteLists(username, names)
+        return Published(names, listed, config.siteDashboardUrl(username))
+    }
+
+    /**
+     * Asks the website (not the backend) for [username]'s packages with its cache refreshed, and tells whether
+     * every name in [files] is among them. Null when the site is down or answered something else: publishing
+     * went through the backend already, so a silent website is reported, never treated as a failure.
+     */
+    suspend fun websiteLists(username: String, files: List<String>): Boolean? {
+        val url = config.siteUserPackagesUrl(username, refresh = true)
+        return try {
+            val response = http.get(url)
+            val body = response.bodyAsText()
+            if (!response.status.isSuccess()) {
+                logInternal("website: $url answered ${response.status.value}", LogLevel.ERROR)
+                return null
+            }
+            val listed = runCatching { json.decodeFromString<List<BackendPackage>>(body) }.getOrNull() ?: return null
+            val names = listed.map { it.name }.toSet()
+            // Site listings carry the stored name; a file may be listed by its full key as well
+            files.all { f -> names.contains(f) || listed.any { it.path.endsWith("/$f") } }
+        } catch (e: Exception) {
+            logInternal("website: ${config.site} unreachable: ${e.message}", LogLevel.ERROR)
+            null
+        }
     }
 
     /** Removes a published module's files from the website again (`DELETE /upload`); returns how many were there */
-    suspend fun unpublishModule(name: String, username: String): Int {
+    suspend fun unpublishModule(name: String, username: String): Int = reach("remove '$name' from the website") {
         var removed = 0
         listOf("module.json", "model.onnx", "guide.md").forEach { fileName ->
             val response = http.delete(config.url("upload")) {
@@ -160,7 +219,9 @@ object AmieBackend {
             if (body.trim() == "removed") removed++
         }
         logInternal("backend: '$name' removed from the website for $username ($removed files)")
-        return removed
+        // The website caches an author's listing for a minute; make it look again so the dashboard is current
+        if (removed > 0) runCatching { http.get(config.siteUserPackagesUrl(username, refresh = true)) }
+        removed
     }
 
     /**
@@ -260,7 +321,7 @@ object AmieBackend {
     private fun describe(status: HttpStatusCode, body: String): String = when (status.value) {
         401 -> "The backend at ${config.base} rejected the Keycloak token (401). It needs the Keycloak verifier and the realm issuer in its application.properties"
         403 -> "The backend refused this account (403)"
-        404 -> "The backend at ${config.base} has no such endpoint (404); is it the Amie packageRepository?"
+        404 -> "The backend at ${config.base} has no such endpoint (404); is it the Amie packageRepository? When Keycloak holds 8080 the backend listens on 8090"
         else -> "The backend answered ${status.value}: ${body.replace(Regex("<[^>]+>"), " ").replace(Regex("\\s+"), " ").trim().take(200)}"
     }
 }

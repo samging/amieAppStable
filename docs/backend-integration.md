@@ -17,9 +17,9 @@ endpoint names the app calls did not change (`/list-github` is kept as an alias 
 
 ```json
 {
-  "baseUrl": "http://192.168.1.114:8080",
-  "siteUrl": "http://192.168.1.114:8081",
-  "s3ServiceUrl": "http://192.168.1.114:8088"
+  "baseUrl": "http://localhost:8080",
+  "siteUrl": "http://localhost:8081",
+  "s3ServiceUrl": "http://localhost:8088"
 }
 ```
 
@@ -62,7 +62,7 @@ Package jars flow the other way and need no token. `initMod("name.jar")` in the 
 lists (the website's `/api/jars` and `/api/jar-download?name=`, else the S3 service's `/api/aws/jars` and
 `/api/aws/jars/<name>`) into `AMP/pluginDir` and opens a new instance of it; `packages.available()` lists what the
 server offers. The S3 service address is `s3ServiceUrl` in `AMP/backend.json` (`AMIE_S3_URL` overrides it; default
-`http://192.168.1.114:8088`). See [Packages](sandbox-scripting.md#packages).
+`http://localhost:8088`). See [Packages](sandbox-scripting.md#packages).
 
 ## Error reports
 

@@ -37,15 +37,16 @@ nav:
   - Start here:
       - Overview: index.md
       - Getting started: getting-started.md
-      - Signing in: sign-in.md
   - Working in the app:
       - The sandbox: sandbox.md
+      - Running sessions: sessions.md
       - Scripting API: sandbox-scripting.md
       - Models and metrics: models.md
       - Serving a model: serving.md
       - Devices: devices.md
   - Reference:
       - The AMP folder: amp-folder.md
+      - Signing in: sign-in.md
       - Keycloak setup: authentication.md
       - Amie backend: backend-integration.md
       - Models page: models-page.md

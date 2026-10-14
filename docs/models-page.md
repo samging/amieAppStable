@@ -16,8 +16,8 @@ flat rows; only the selected item has a panel.
 ## Layout
 
 Under the window header sits a tab strip like the sandbox's panel tabs, with three tabs and their counts:
-**Models**, **Packages** and **Sessions**, and **Open website** (the site's dashboard) at its right end when
-signed in. Signing in happens in the window header (**Log in**) and is only needed for **Publish**; everything
+**Models**, **Packages** and **Sessions**, and **Open website** (the site's `/dashboard?username=<you>`, the page
+that lists what you published; without the parameter the site shows nothing) at its right end when signed in. Signing in happens in the window header (**Log in**) and is only needed for **Publish**; everything
 else works without an account. Each tab is a list on the left and one detail panel on the right for the selected
 item, both with a filter box (the sessions list once it is long).
 
@@ -42,7 +42,7 @@ at the right of the header:
 | **Configure** | Shows the serving settings: **Host / Port / Path / Methods** and **Save** write `AMP/modules/<name>/serving.json`; the POST and GET URLs are listed under them |
 | **Listen / Stop** | Starts or stops the HTTP listener (`modules/ModelServer.kt`) with the settings as saved |
 | **Open session** | Loads the model (encoder and head) as a session, the same as `initMod("name")` in the sandbox |
-| **Publish** | Uploads `model.onnx` and `module.json` to the Amie backend (`POST /upload`, `progLanguage=onnx`) with the Keycloak token; a guest is sent to the sign-in page |
+| **Publish** | Uploads `model.onnx`, `module.json` and `guide.md` to the Amie backend (`POST /upload`, `progLanguage=onnx`) with the Keycloak token, then asks the website to refresh its listing (`/api/repo-by-username?refresh=1`) and says whether `/dashboard?username=<you>` shows the files; a guest is sent to the sign-in page. A backend that cannot be reached ("Host is down", "Connection refused") is an address problem in `AMP/backend.json`, not a sign-in one |
 
 Under the header: the labels, the encoder, when it was built and, while listening, the serving line with its
 request count, errors, average latency and uptime. Then **METRICS** from `AMP/modules/<name>/metrics.json`: the run
@@ -122,6 +122,8 @@ buttons: a package is a bottle, not something the page controls. A script opens 
 `AMP/pluginDir` on first open (see [Packages](sandbox-scripting.md#packages)).
 
 ## Sessions
+
+(What a session is and how to use one from a script is in [Running sessions](sessions.md); this is the tab.)
 
 The tab lists everything that is open as flat rows named after the owner (`dummy  #3`, `echo-1.0.jar  #1`) with
 what it is (intent model, package, ONNX session), idle or inferring, how many runs it has done and for how long

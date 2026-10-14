@@ -78,11 +78,12 @@ val modelsDir: String = (findProperty("amie.modelsDir") as String?)
     ?: "/Users/samuel/Documents/onnx/bert"
 val appResourcesDir = layout.buildDirectory.dir("appResources")
 
-// The AMP folder a packaged app seeds its own from on the first start: the shipped settings, plugin dir and sample
-// data, but not this machine's logs, sign-in, UI scale or exported models
+// The AMP folder a packaged app seeds its own from on the first start: the shipped settings, plugin dir, sample
+// data and keycloak.json (the amie client is confidential, so the app cannot sign in without its secret), but not
+// this machine's logs, signed-in session, UI scale or exported models
 val prepareBundledAmp by tasks.registering(Sync::class) {
     from("AMP") {
-        exclude("logs.txt", "session.json", "keycloak.json", "settings.json", "modules/**", "**/.DS_Store")
+        exclude("logs.txt", "session.json", "settings.json", "modules/**", "**/.DS_Store")
     }
     into(appResourcesDir.map { it.dir("common/AMP") })
 }
