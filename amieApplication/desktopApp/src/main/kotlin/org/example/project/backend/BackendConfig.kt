@@ -3,6 +3,8 @@ package org.example.project.backend
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.example.project.components.terminal.window.controller.LogLevel
+import org.example.project.components.terminal.window.controller.logInternal
 import org.example.project.getDirectory
 import java.io.File
 
@@ -28,12 +30,17 @@ data class BackendConfig(
      * The website page that lists what [username] uploaded. The site's `/dashboard` shows nothing without
      * `?username=` (only a hint to pick an author), so the parameter is sent whenever the user is known.
      */
-    fun siteDashboardUrl(username: String?): String =
-        if (username.isNullOrBlank()) "$site/dashboard" else "$site/dashboard?username=${enc(username)}"
+    fun siteDashboardUrl(username: String?): String = site + siteDashboardPath(username)
+
+    /** The dashboard as a path on the site, for the signed-in handoff (`AmieBackend.websiteUrl`) */
+    fun siteDashboardPath(username: String?): String =
+        if (username.isNullOrBlank()) "/dashboard" else "/dashboard?username=${enc(username)}"
 
     /** The website's upload page (`/navigateto`), where a signed-in user publishes a package jar by hand */
-    fun siteUploadUrl(username: String?): String =
-        if (username.isNullOrBlank()) "$site/navigateto" else "$site/navigateto?username=${enc(username)}"
+    fun siteUploadUrl(username: String?): String = site + siteUploadPath(username)
+
+    fun siteUploadPath(username: String?): String =
+        if (username.isNullOrBlank()) "/navigateto" else "/navigateto?username=${enc(username)}"
 
     val siteProfileUrl: String get() = "$site/profile"
 
@@ -75,6 +82,61 @@ data class BackendConfig(
             file.parentFile?.mkdirs()
             file.writeText(json.encodeToString(config))
             cached = config
+        }
+
+        @Volatile private var probed = false
+
+        /**
+         * Makes sure [BackendConfig.baseUrl] is the Amie backend and not Keycloak, once per run. On a machine that
+         * runs both, Keycloak holds 8080 and the backend moves to 8090 (`run.sh` does this by itself), but a
+         * `backend.json` written with the defaults still says 8080: every call then lands on Keycloak and answers
+         * 404. When the address answers like a Keycloak realm and the same host answers on 8090 like the backend,
+         * the config is switched to 8090 and saved, and the console says so. Nothing happens when the address is
+         * right, unreachable, or set through `AMIE_BACKEND_URL`.
+         */
+        suspend fun resolve(): BackendConfig {
+            val current = load()
+            if (probed) return current
+            probed = true
+            if (System.getenv("AMIE_BACKEND_URL")?.isNotBlank() == true) return current
+            val base = runCatching { java.net.URI(current.base) }.getOrNull() ?: return current
+            if (base.port != 8080) return current
+            return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                if (!looksLikeKeycloak(current.base)) return@withContext current
+                val alternative = "${base.scheme}://${base.host}:8090"
+                if (!looksLikeBackend(alternative)) {
+                    logInternal("backend: ${current.base} is Keycloak, not the Amie backend, and nothing answers on $alternative; set baseUrl in ${file.path}", LogLevel.ERROR)
+                    return@withContext current
+                }
+                val fixed = current.copy(baseUrl = alternative)
+                runCatching { save(fixed) }
+                    .onFailure { logInternal("backend: couldn't save ${file.path}: ${it.message}", LogLevel.ERROR) }
+                logInternal("backend: ${current.base} is Keycloak; using the Amie backend on $alternative (saved in ${file.path})")
+                fixed
+            }
+        }
+
+        private val probe: java.net.http.HttpClient by lazy {
+            java.net.http.HttpClient.newBuilder().connectTimeout(java.time.Duration.ofSeconds(2)).build()
+        }
+
+        private fun fetch(url: String): Pair<Int, String>? = runCatching {
+            val request = java.net.http.HttpRequest.newBuilder(java.net.URI(url)).timeout(java.time.Duration.ofSeconds(3)).GET().build()
+            val response = probe.send(request, java.net.http.HttpResponse.BodyHandlers.ofString())
+            response.statusCode() to response.body()
+        }.getOrNull()
+
+        /** A Keycloak server answers `/realms/<realm>` with the realm's public key */
+        private fun looksLikeKeycloak(base: String): Boolean {
+            val realm = org.example.project.auth.KeycloakConfig.load().realm
+            val (status, body) = fetch("$base/realms/$realm") ?: return false
+            return status == 200 && body.contains("\"public_key\"")
+        }
+
+        /** The Amie backend answers `/packages` with a JSON list */
+        private fun looksLikeBackend(base: String): Boolean {
+            val (status, body) = fetch("$base/packages") ?: return false
+            return status == 200 && body.trimStart().startsWith("[")
         }
     }
 }

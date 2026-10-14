@@ -22,6 +22,8 @@ import io.ktor.http.isSuccess
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import org.example.project.auth.AuthState
 import org.example.project.components.terminal.window.controller.LogLevel
@@ -95,6 +97,7 @@ object AmieBackend {
      * tried and where to change it. Being signed in cannot help with these, so the message says what can.
      */
     private suspend fun <T> reach(what: String, block: suspend () -> T): T = try {
+        BackendConfig.resolve()
         block()
     } catch (e: BackendException) {
         throw e
@@ -161,10 +164,69 @@ object AmieBackend {
     }
 
     /**
-     * What publishing a module came to: the files the backend took, whether the website lists them on
+     * What publishing came to: the files the backend took, whether the website lists them on
      * `/dashboard?username=` (null when the site could not be asked) and that page's address.
      */
     data class Published(val files: List<String>, val onWebsite: Boolean?, val dashboardUrl: String)
+
+    /**
+     * Publishes a package jar from this machine under the signed-in user (`POST /upload`, `progLanguage=jar`), the
+     * same as the website's upload page: the backend checks that the jar exposes `run(String): List` and `close()`
+     * and refuses it with the reasons otherwise. Afterwards the website is told to re-read its jar listing, so the
+     * jar shows under "On the server" and on `/downloads` at once instead of after its minute of caching.
+     */
+    suspend fun publishJar(file: File, username: String): Published {
+        if (!file.name.endsWith(".jar", ignoreCase = true)) throw BackendException("${file.name} is not a jar")
+        upload(file, "jar", username)
+        runCatching { http.get("${config.site}/api/jars?refresh=1") }
+        val listed = websiteLists(username, listOf(file.name))
+        return Published(listOf(file.name), listed, config.siteDashboardUrl(username))
+    }
+
+    /** The signed-in session's tokens the way Keycloak's token endpoint answers them; null when signed out */
+    private suspend fun tokenJson(): String? {
+        val access = AuthState.accessToken() ?: return null
+        val session = AuthState.session.value ?: return null
+        return buildJsonObject {
+            put("access_token", access)
+            session.refreshToken?.let { put("refresh_token", it) }
+            session.idToken?.let { put("id_token", it) }
+            put("expires_in", (session.expiresAt - Instant.now().epochSecond).coerceAtLeast(1))
+            put("token_type", "Bearer")
+        }.toString()
+    }
+
+    /**
+     * The website address to open for [path] (for example `/dashboard?username=sam`) signed in as the app's user.
+     * The browser the app opens has no Keycloak session, so the app hands its tokens to the site's server
+     * (`POST /api/sso/handoff`), which answers a one-time code; the site's `/sso` page claims the code, verifies the
+     * tokens like any sign-in and continues to [path]. Signed out, or when the site cannot take the handoff, the plain
+     * address is returned so the button always opens the page, if only as a guest.
+     */
+    suspend fun websiteUrl(path: String): String {
+        val relative = "/" + path.trimStart('/')
+        val plain = config.site + relative
+        val tokens = tokenJson() ?: return plain
+        return try {
+            val response = http.post("${config.site}/api/sso/handoff") {
+                contentType(ContentType.Application.Json)
+                setBody(tokens)
+            }
+            val body = response.bodyAsText()
+            if (!response.status.isSuccess()) {
+                logInternal("website: ${config.site} did not take the sign-in handoff (${response.status.value}); opening it signed out", LogLevel.ERROR)
+                return plain
+            }
+            val code = runCatching { json.parseToJsonElement(body).jsonObject["code"]?.jsonPrimitive?.content }.getOrNull()
+                ?: return plain
+            "${config.site}/sso?code=${enc(code)}&next=${enc(relative)}"
+        } catch (e: Exception) {
+            logInternal("website: ${config.site} unreachable for the sign-in handoff (${e.message}); opening it signed out", LogLevel.ERROR)
+            plain
+        }
+    }
+
+    private fun enc(value: String): String = java.net.URLEncoder.encode(value, Charsets.UTF_8)
 
     /**
      * Publishes a trained module: its ONNX model, manifest and guide, so it shows on the website under `onnx`.

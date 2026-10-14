@@ -80,6 +80,8 @@ fun main() = application {
         state = windowState
     ) {
         window.minimumSize = Dimension(960, 640)
+        // A backend.json that still points at Keycloak's port is corrected before the first backend call
+        androidx.compose.runtime.LaunchedEffect(Unit) { org.example.project.backend.BackendConfig.resolve() }
         // Each page's WindowHeader is the top bar; it gets dragging and the window controls from here
         val chrome = AppChrome(
             dragArea = { content -> WindowDraggableArea { content() } },

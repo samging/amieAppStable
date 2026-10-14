@@ -445,7 +445,7 @@ private fun ModelsContent(user: String?, onLogin: () -> Unit) {
             counts = mapOf(PageTab.MODELS to snapshot.models.size, PageTab.PACKAGES to snapshot.jars.size, PageTab.SESSIONS to snapshot.sessions.size),
             signedIn = user != null,
             onTab = { tab = it },
-            onWebsite = { openInBrowser(AmieBackend.config.siteDashboardUrl(user)) },
+            onWebsite = { background { openInBrowser(AmieBackend.websiteUrl(AmieBackend.config.siteDashboardPath(user))) } },
         )
 
         Column(
@@ -538,6 +538,24 @@ private fun ModelsContent(user: String?, onLogin: () -> Unit) {
                         background { addJar(chosen); selectedJar = chosen.name }
                     },
                     onFetch = { jar -> background { JarPackages.fetch(jar.name) ?: error("${jar.name} is not on the server") } },
+                    onPublish = { jar ->
+                        val signedIn = user
+                        val file = jar.file
+                        when {
+                            signedIn == null -> onLogin()
+                            file == null -> notice = "${jar.name} is on the server already; Fetch it first to publish a copy"
+                            else -> background {
+                                val published = AmieBackend.publishJar(file, signedIn)
+                                JarPackages.available(refresh = true)
+                                notice = when (published.onWebsite) {
+                                    true -> "${jar.name} published; the website lists it at ${published.dashboardUrl}"
+                                    false -> "${jar.name} published to ${AmieBackend.config.base}, but the website does not list it yet; see ${published.dashboardUrl}"
+                                    null -> "${jar.name} published to ${AmieBackend.config.base}; the website at ${AmieBackend.config.site} could not be asked, see ${published.dashboardUrl}"
+                                }
+                            }
+                        }
+                    },
+                    signedIn = user != null,
                     onTerminate = { session -> background { session.terminate() } },
                     onCollection = { action -> background { action() } },
                 )
@@ -603,17 +621,18 @@ private fun MemoryFooter(openSessions: Int) {
     }
 }
 
-/** The strip under the window header: one tab per section with its count, and the website when signed in */
+/**
+ * The strip under the window header: one tab per section with its count, and the website at the right end. Signed
+ * in, the website opens signed in as the same account (the app hands its session over); a guest gets the public page.
+ */
 @Composable
 private fun PageTabs(tab: PageTab, counts: Map<PageTab, Int?>, signedIn: Boolean, onTab: (PageTab) -> Unit, onWebsite: () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth().background(TabBarBackground)) {
         Row(modifier = Modifier.fillMaxWidth().height(32.dp), verticalAlignment = Alignment.CenterVertically) {
             PageTab.entries.forEach { t -> TabCell(t.title, t.icon, counts[t], selected = t == tab) { onTab(t) } }
             Spacer(Modifier.weight(1f))
-            if (signedIn) {
-                SmallButton("Open website", onClick = onWebsite)
-                Spacer(Modifier.width(10.dp))
-            }
+            SmallButton(if (signedIn) "Open website" else "Open website (as guest)", icon = Icons.Default.Language, onClick = onWebsite)
+            Spacer(Modifier.width(10.dp))
         }
         Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(UnifiedBorderColor))
     }
@@ -1390,6 +1409,9 @@ private fun ColumnScope.PackagesTab(
     onSelect: (String) -> Unit,
     onAdd: () -> Unit,
     onFetch: (JarInfo) -> Unit,
+    /** Uploads a jar from this machine to the website under the signed-in account */
+    onPublish: (JarInfo) -> Unit,
+    signedIn: Boolean,
     onTerminate: (SessionInfo) -> Unit,
     /** Runs a change to the collections in the background */
     onCollection: (suspend () -> Unit) -> Unit,
@@ -1428,31 +1450,32 @@ private fun ColumnScope.PackagesTab(
                 val jars = groups[location] ?: return@forEach
                 Fold(location, jars.size, open = location != "On the server" || query.isNotBlank() || jars.any { it.name == selected?.name }, key = location) {
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        jars.forEach { jar -> JarRow(jar, selected = jar.name == selected?.name, onFetch = { onFetch(jar) }, onSelect = { onSelect(jar.name) }) }
+                        jars.forEach { jar -> JarRow(jar, selected = jar.name == selected?.name, onFetch = { onFetch(jar) }, onPublish = { onPublish(jar) }, signedIn = signedIn, onSelect = { onSelect(jar.name) }) }
                     }
                 }
             }
         }
         VerticalSeparator { listWidth = it; ModelsCache.listWidth = it }
-        if (selected != null) JarDetail(selected, Modifier.weight(1f).fillMaxHeight(), onFetch = { onFetch(selected) }, onTerminate = onTerminate)
+        if (selected != null) JarDetail(selected, Modifier.weight(1f).fillMaxHeight(), onFetch = { onFetch(selected) }, onPublish = { onPublish(selected) }, signedIn = signedIn, onTerminate = onTerminate)
     }
 }
 
 /** The right-click actions of a package: the same as its detail panel's buttons, plus the copy of the call that opens it */
 @Composable
-private fun jarMenu(jar: JarInfo, onFetch: (() -> Unit)? = null, onDetach: (() -> Unit)? = null): List<ContextMenuItem> {
+private fun jarMenu(jar: JarInfo, onFetch: (() -> Unit)? = null, onDetach: (() -> Unit)? = null, onPublish: (() -> Unit)? = null, signedIn: Boolean = true): List<ContextMenuItem> {
     val clipboard = LocalClipboardManager.current
     return listOfNotNull(
         ContextMenuItem("Copy initMod(\"${jar.name}\")") { clipboard.setText(AnnotatedString("initMod(\"${jar.name}\")")) },
         ContextMenuItem("Open page") { openInBrowser(jar.page) },
         if (!jar.local && onFetch != null) ContextMenuItem("Fetch", onFetch) else null,
+        if (jar.local && onPublish != null) ContextMenuItem(if (signedIn) "Publish to the website" else "Publish to the website (sign in)", onPublish) else null,
         jar.file?.let { f -> ContextMenuItem("Reveal file") { openInBrowser(f.parentFile.toURI().toString()) } },
         onDetach?.let { ContextMenuItem("Detach from collection", it) },
     )
 }
 
 @Composable
-private fun JarRow(jar: JarInfo, selected: Boolean, onDetach: (() -> Unit)? = null, onFetch: (() -> Unit)? = null, onSelect: () -> Unit) {
+private fun JarRow(jar: JarInfo, selected: Boolean, onDetach: (() -> Unit)? = null, onFetch: (() -> Unit)? = null, onPublish: (() -> Unit)? = null, signedIn: Boolean = true, onSelect: () -> Unit) {
     ListRow(
         name = jar.name,
         active = jar.open > 0,
@@ -1462,7 +1485,7 @@ private fun JarRow(jar: JarInfo, selected: Boolean, onDetach: (() -> Unit)? = nu
         underline = jar.open > 0,
         icon = Icons.Default.Inventory2,
         onDetach = onDetach,
-        menu = jarMenu(jar, onFetch, onDetach),
+        menu = jarMenu(jar, onFetch, onDetach, onPublish, signedIn),
         onSelect = onSelect,
     )
 }
@@ -1544,7 +1567,7 @@ private fun NewCollectionForm(jars: List<JarInfo>, onCreate: (String, List<Strin
  * from, what built it, what it contains, and its sessions. A script opens it with initMod("name.jar").
  */
 @Composable
-private fun JarDetail(jar: JarInfo, modifier: Modifier = Modifier, onFetch: () -> Unit, onTerminate: (SessionInfo) -> Unit) {
+private fun JarDetail(jar: JarInfo, modifier: Modifier = Modifier, onFetch: () -> Unit, onPublish: () -> Unit, signedIn: Boolean, onTerminate: (SessionInfo) -> Unit) {
     val contents = jar.contents
     DetailPanel(modifier) {
         DetailHeader(
@@ -1560,6 +1583,7 @@ private fun JarDetail(jar: JarInfo, modifier: Modifier = Modifier, onFetch: () -
         ) {
             SmallButton("Open page", icon = Icons.Default.Language) { openInBrowser(jar.page) }
             if (!jar.local) AccentButton("Fetch", icon = Icons.Default.Download, onClick = onFetch)
+            if (jar.local) SmallButton(if (signedIn) "Publish" else "Publish (sign in)", icon = Icons.Default.CloudUpload, onClick = onPublish)
             jar.file?.let { f -> SmallButton("Reveal file", icon = Icons.Default.FolderOpen) { openInBrowser(f.parentFile.toURI().toString()) } }
         }
 
@@ -1755,7 +1779,7 @@ private fun GuideTab() {
         }
         Fold("Serving it", null, open = false, key = "guide:serve") {
             Para("Listen starts an HTTP server for the model on the host, port and path in Configure (loopback by default), with POST {\"text\": \"…\"} or GET ?text=… returning the scores as JSON. Copy and Copy curl in Configure give the address and a working call. What it answers is appended to incoming.jsonl, so it can be reviewed and labeled later. Listening resumes when the app starts again, until Stop.")
-            Para("Publish sends the module to the Amie server under your account (sign in first); Open website opens its page there.")
+            Para("Publish sends the module to the Amie server under your account (sign in first). Open website opens the site signed in as that account: the app hands its session to the browser, so the dashboard, uploads and profile are yours there without signing in again. A jar on the Packages tab has Publish too; the server only takes a jar with run(String): List and close().")
         }
         Fold("From a script", null, open = false, key = "guide:script") {
             Para("In the sandbox, amie is the API; every name below is also reachable without the prefix. initMod(name) gives the session of an exported model. A model has one session at most: the one already open is returned, so running a script again, or Open session on the page, never opens another. inference(text) returns \"label:score\" strings, best first. close() closes it; the Sessions tab can terminate it too.")

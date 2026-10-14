@@ -16,8 +16,9 @@ flat rows; only the selected item has a panel.
 ## Layout
 
 Under the window header sits a tab strip like the sandbox's panel tabs, with three tabs and their counts:
-**Models**, **Packages** and **Sessions**, and **Open website** (the site's `/dashboard?username=<you>`, the page
-that lists what you published; without the parameter the site shows nothing) at its right end when signed in. Signing in happens in the window header (**Log in**) and is only needed for **Publish**; everything
+**Models**, **Packages** and **Sessions**, and **Open website** at its right end: the site's
+`/dashboard?username=<you>`, the page that lists what you published, opened signed in as the app's account (the
+app hands its session to the browser through the site's `/sso` page); a guest gets the public page. Signing in happens in the window header (**Log in**) and is only needed for **Publish**; everything
 else works without an account. Each tab is a list on the left and one detail panel on the right for the selected
 item, both with a filter box (the sessions list once it is long).
 
@@ -106,7 +107,9 @@ collection but keeps the jars. A jar can be in several collections, and its pane
 
 The detail panel describes the selected jar without running anything (`pluginEngine/JarInspector.kt`, read once
 per file version). Its header has the status line (status, `java 17+`, `kotlin` or `java`, version) and the
-buttons **Open page** (the website page that lists and describes the jar), **Fetch** for a jar still on the
+buttons **Open page** (the website page that lists and describes the jar), **Publish** for a jar on this
+machine (uploads it to the website under your account; the server refuses a jar without `run(String): List` and
+`close()`, with the reasons in the notice), **Fetch** for a jar still on the
 server and **Reveal file** for a local one. Under it the `initMod("name.jar")` call, then folding sections,
 closed until opened:
 

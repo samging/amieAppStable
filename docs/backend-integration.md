@@ -28,14 +28,24 @@ package jar the website cannot serve. `BackendConfig.load()` (`backend/BackendCo
 the single place the addresses come from; nothing else in the app hardcodes a host.
 
 On a machine where Keycloak already listens on 8080, start the backend on another port (it reads
-`AMIE_BACKEND_PORT`) and point `baseUrl` there, for example `http://localhost:8090`.
+`AMIE_BACKEND_PORT`; the Amie repo's `run.sh` picks 8090 by itself) and point `baseUrl` there, for example
+`http://localhost:8090`. The app checks this once per run (`BackendConfig.resolve()`, at start-up and before the
+first backend call): when `baseUrl` answers like a Keycloak realm and the same host answers on 8090 like the
+backend, it switches to 8090, saves the file and says so in the console. `AMIE_BACKEND_URL` is never changed.
+
+The backend must accept the issuer the app's tokens carry. The realm has no fixed frontend URL, so the issuer is
+the address the app reached Keycloak on (`http://localhost:8080/realms/master` with the default `keycloak.json`);
+the backend's `amie.keycloak.issuer` (`KEYCLOAK_ISSUER`) is a comma-separated list and `run.sh` includes
+localhost, 127.0.0.1 and the machine's LAN address. A 401 from the backend with "Expected iss claim" or "issuer
+... is none of" in its log is this list missing the app's address.
 
 ## What talks to the backend
 
 | Code | Endpoint | Token | Used by |
 |---|---|---|---|
 | `render/templates/Client.kt` `rest()` | `/get-device-status`, `/update-device-status`, `/fetch-endpoints`, `/list-github`, `/list-github-metadata`, `/handle-login-error` | bearer when signed in | device dashboard, endpoints, plugins, device terminal |
-| `backend/AmieBackend.kt` | `/me`, `/user-packages`, `/upload` | bearer, required | Models page: **Publish** on a model component |
+| `backend/AmieBackend.kt` | `/me`, `/user-packages`, `/upload` (`POST`, `DELETE`) | bearer, required | Models page: **Publish** on a model or a jar, **Remove from the website** |
+| `backend/AmieBackend.kt` | site `/api/sso/handoff` | the session's tokens, in the body | **Open website**: the signed-in handoff to the browser |
 | `backend/AmieBackend.kt` | `/errors` (`POST`, `GET`) | bearer; a guest's report goes to `/handle-login-error` | `ErrorReporter`: every ERROR console line |
 | `backend/AmieBackend.kt` | `/state`, `/state/{name}` (`GET`, `PUT`, `DELETE`) | bearer, required | the sandbox's `saveState` / `loadState` / `listStates` |
 | `util/DownloadService.kt` | `/list-github` | none | package list text |
@@ -56,7 +66,20 @@ component calls `AmieBackend.publishModule`, which uploads `model.onnx` and `mod
 with `progLanguage=onnx` (stored as `uploads/<user>/onnx/<file>` in the S3 bucket). The backend answers 200
 "File uploaded successfully", 400 with the reasons it refused a jar (a package jar must have `run(String): List`
 and `close()`) or 502 when the store is unreachable; the page shows the reason. A guest pressing Publish is sent to
-the sign-in page; **Open website** in the header opens `siteUrl/dashboard`.
+the sign-in page.
+
+**Open website** (always in the tab strip) opens `siteUrl/dashboard?username=<you>` signed in as the app's account.
+The browser has no Keycloak session of its own, so `AmieBackend.websiteUrl(path)` hands the app's tokens to the
+site's server (`POST /api/sso/handoff`, the token JSON as Keycloak answers it), gets a one-time code back (dies
+after two minutes or its first use) and opens `siteUrl/sso?code=<code>&next=<path>`. The site's `/sso` page claims
+the code (`POST /api/sso/claim`), verifies the tokens the way its own sign-in does (signature against the realm's
+JWKS, issuer, expiry) and keeps the session, then continues to `next`. The tokens never appear in a URL. When
+signed out, or when the site does not answer the handoff, the plain address opens and the page shows as a guest.
+
+**Publish** on a jar in the Packages tab (a jar on this machine: in `AMP/pluginDir` or an env) uploads it with
+`progLanguage=jar` through `AmieBackend.publishJar`, like the website's upload page; the backend refuses a jar
+without `run(String): List` and `close()` and the reasons show in the notice. Afterwards the site is asked to
+re-read its jar listing (`/api/jars?refresh=1`) so the jar appears under "On the server" and on `/downloads`.
 
 Package jars flow the other way and need no token. `initMod("name.jar")` in the sandbox fetches a jar the server
 lists (the website's `/api/jars` and `/api/jar-download?name=`, else the S3 service's `/api/aws/jars` and
