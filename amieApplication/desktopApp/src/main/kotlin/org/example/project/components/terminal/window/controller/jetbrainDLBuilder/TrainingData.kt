@@ -82,6 +82,7 @@ fun checkEmbeddingSpread(pooled: List<FloatArray>): String? {
 
 // Stratified split so every label is present in validation; fixed seed keeps runs comparable
 fun stratifiedSplit(labelIndex: IntArray, validationFraction: Double = 0.2, seed: Int = 42): Pair<List<Int>, List<Int>> {
+    require(validationFraction > 0.0 && validationFraction < 1.0) { "validationFraction must be between 0 and 1" }
     val random = Random(seed)
     val train = mutableListOf<Int>()
     val validation = mutableListOf<Int>()

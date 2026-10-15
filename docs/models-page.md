@@ -88,6 +88,11 @@ Under the header the panel has its own tabs, each with a tooltip that says what 
 
 ### New model
 
+**Check data** next to **Build** runs the preprocessor on the chosen file without training and shows its report
+under the fields: what it would clean, drop (with the reason) and refuse, and whether a build could start. The
+reasons are explained in [Models and metrics](models.md#before-training-the-preprocessor).
+
+
 **New model** beside the filter box opens the form in the place of the detail panel (it is open on its own when
 there are no models): **Name**, **About** (a sentence kept in `module.json`), **Data** (Choose a csv with a text
 column and a label column, or **Sample data** for `AMP/sample-intents.csv`, 45 rows over `greeting`, `lights` and

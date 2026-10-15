@@ -43,9 +43,12 @@ class DenseNet(val inputDim: Int, val hidden: List<Int>, val outputDim: Int, val
         batchSize: Int = 16,
         learningRate: Float = 0.01f,
         seed: Int = 42,
+        /** One weight per class; the loss and gradient of a row are multiplied by its class's weight */
+        classWeights: FloatArray? = null,
         onEpoch: (EpochResult) -> Unit = {},
     ): EpochResult {
         require(x.size == y.size && x.isNotEmpty()) { "fit needs the same number of inputs and labels" }
+        require(classWeights == null || classWeights.size == outputDim) { "classWeights needs one weight per class" }
         val params = layers.flatMap { listOf(it.w, it.b) }
         val adam = Adam(params, learningRate)
         val random = Random(seed)
@@ -61,9 +64,10 @@ class DenseNet(val inputDim: Int, val hidden: List<Int>, val outputDim: Int, val
                 for (i in batch) {
                     val pass = forward(x[i])
                     val p = pass.activations.last()
-                    lossSum += -ln(p[y[i]].toDouble().coerceAtLeast(1e-9))
+                    val weight = classWeights?.get(y[i]) ?: 1f
+                    lossSum += -ln(p[y[i]].toDouble().coerceAtLeast(1e-9)) * weight
                     if (argmax(p) == y[i]) correct++
-                    backward(pass, y[i], grads, 1f / batch.size)
+                    backward(pass, y[i], grads, weight / batch.size)
                 }
                 adam.step(grads.flatMap { listOf(it.w, it.b) })
             }

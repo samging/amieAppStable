@@ -83,12 +83,35 @@ label column works (the columns are found by their headers: `text`, `label`, `in
 val train = source("sample-intents.csv")           // looked up as given, then in AMP/, then AMP/pluginDir/
 relate(train, "intents-test.csv")                  // optional: validate on this file instead of a 20% split
 
-val built = modelBuilder("intents", train)         // embeds every text with BERT, trains a small head, exports ONNX
+val built = modelBuilder("intents", train)         // cleans the rows, embeds them, tries four heads, keeps the best, exports ONNX
 built.modelStatus()                                // the validation table: precision, recall, F1 per label
 built.modelChart()                                 // the same as ASCII bars, the build history, the confusion matrix
 
 val m = initMod("intents")
 log(m.predict("switch off the kitchen light"))     // lights
+```
+
+Before building, `checkData(train)` prints what the preprocessor would clean, drop and refuse, and whether a build
+could start. The console tells you what the preprocessor did to the rows (what it dropped and why), how every
+candidate head scored, which one was kept, and what the validation says about it (a head that memorises, one
+that barely beats the majority label, labels it confuses). When the data cannot give a classifier the build stops with the reason in red
+(`label 'weather' has 3 rows after cleaning, at least 5 are needed…`); the reasons and what to do about each are
+in [Models and metrics](models.md#before-training-the-preprocessor). Your own heads instead of the four defaults:
+
+```kotlin
+val train = source("sample-intents.csv")
+val options = buildOptions(
+    candidates = listOf(
+        architecture(hidden = listOf(32, 16), epochs = 200, learningRate = 0.005),
+        architecture(hidden = emptyList(), epochs = 100),             // a linear head
+        architecture(hidden = listOf(64), activation = "Tanh"),
+    ),
+    pickBy = "accuracy",
+    balanceClasses = true,          // a rare label weighs as much as a frequent one
+    seed = 7,                       // the same data and seed always give the same model
+)
+val built = modelBuilder("intents-custom", train, options)
+built.modelStatus()
 ```
 
 Later, without rebuilding:

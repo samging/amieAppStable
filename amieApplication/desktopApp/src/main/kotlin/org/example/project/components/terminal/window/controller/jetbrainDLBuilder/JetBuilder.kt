@@ -104,17 +104,31 @@ private fun buildClassifierPhases(
     val warnings = prep.warnings.toMutableList()
     val preprocessing = prep.notes + prep.dropped.groupBy { it.reason }.map { (reason, rows) -> "dropped ${rows.size}: $reason" }
 
-    // Test rows can only be scored on labels the model trains on; they are cleaned the same way
+    // Test rows can only be scored on labels the model trains on; they are cleaned the same way, and a test row
+    // that is also a training row is left out: it would be scored on what was memorised, not learned
+    val trainingTexts = samples.map { it.text.lowercase() }.toSet()
     val testSamples = validation?.let { test ->
         val cleaned = if (options.preprocess) Preprocessor.run(test).samples else test
-        val known = cleaned.filter { it.label in labels }
-        if (known.size < cleaned.size) warnings += "${cleaned.size - known.size} rows of $validationName have labels the training data doesn't have"
+        val unseen = cleaned.filter { it.text.lowercase() !in trainingTexts }
+        if (unseen.size < cleaned.size) warnings += "${cleaned.size - unseen.size} rows of $validationName also appear in the training data; they were left out of the validation, as they would inflate its scores"
+        val known = unseen.filter { it.label in labels }
+        if (known.size < unseen.size) warnings += "${unseen.size - known.size} rows of $validationName have labels the training data doesn't have"
         known.ifEmpty {
             warnings += "$validationName has no rows with trained labels, falling back to a ${(options.validationFraction * 100).toInt()}% split"
             null
         }
     }
     warnings.drop(prep.warnings.size).forEach { say("warning: $it") }
+    // The rows that were dropped, for fixing: AMP/modules/<name>/dropped.csv
+    if (prep.dropped.isNotEmpty()) runCatching {
+        val dir = org.example.project.components.terminal.window.controller.modules.moduleDir(modelName).apply { mkdirs() }
+        val file = File(dir, "dropped.csv")
+        file.writeText(buildString {
+            appendLine("text,label,reason")
+            prep.dropped.forEach { d -> appendLine(listOf(d.text, d.label, d.reason).joinToString(",") { "\"" + it.replace("\"", "\"\"") + "\"" }) }
+        })
+        say("the ${prep.dropped.size} dropped rows are in ${file.path}")
+    }.onFailure { logInternal("modelBuilder: couldn't write dropped.csv: ${it.message}", LogLevel.ERROR) }
 
     // ---- 2. every text through the encoder, once
     val all = samples + testSamples.orEmpty()
@@ -134,10 +148,17 @@ private fun buildClassifierPhases(
 
     val (trainIdx, validationIdx) =
         if (testSamples != null) samples.indices.toList() to (samples.size until all.size).toList()
-        else stratifiedSplit(labelIndex, options.validationFraction)
+        else stratifiedSplit(labelIndex, options.validationFraction, options.seed)
     val trainX = trainIdx.map { pooled[it] }.toTypedArray()
     val trainY = IntArray(trainIdx.size) { labelIndex[trainIdx[it]] }
     val truth = validationIdx.map { i -> labelIndex[i] }.toIntArray()
+    Diagnostics.aboutValidation(labels, truth).forEach { warnings += it; say("warning: $it") }
+    // Balanced: a row of a rare label weighs more, so the head cannot settle for the frequent labels
+    val classWeights = if (options.balanceClasses) {
+        val counts = trainY.toList().groupingBy { it }.eachCount()
+        FloatArray(labels.size) { c -> (trainY.size.toDouble() / (labels.size * (counts[c] ?: 1))).toFloat() }
+            .also { w -> say("balancing the labels: weights " + labels.indices.joinToString { "${labels[it]} ${fmt3(w[it].toDouble())}" }) }
+    } else null
     say("training on ${trainIdx.size} rows, validating on ${validationIdx.size} (${if (testSamples != null) validationName ?: "test set" else "a ${(options.validationFraction * 100).toInt()}% split"}); ${options.candidates.size} ${if (options.candidates.size == 1) "head" else "heads to compare"}")
 
     // ---- 3. every candidate head on the same rows, scored on the same validation rows
@@ -146,10 +167,10 @@ private fun buildClassifierPhases(
     ModelBuildProgress.phase(BuildPhase.TRAINING, steps = totalEpochs, detail = "${trainIdx.size} samples")
     var epochsDone = 0
     val trained = candidates.map { arch ->
-        val model = DenseNet(inputDim.toInt(), arch.hidden, labels.size, arch.activation)
+        val model = DenseNet(inputDim.toInt(), arch.hidden, labels.size, arch.activation, seed = options.seed)
         val batchSize = minOf(arch.batchSize, trainX.size)
         logInternal("modelBuilder: fitting ${arch.label} (${model.parameters} parameters) for ${arch.epochs} epochs")
-        val last = model.fit(trainX, trainY, epochs = arch.epochs, batchSize = batchSize, learningRate = arch.learningRate.toFloat()) { epoch ->
+        val last = model.fit(trainX, trainY, epochs = arch.epochs, batchSize = batchSize, learningRate = arch.learningRate.toFloat(), seed = options.seed, classWeights = classWeights) { epoch ->
             val summary = "${arch.label} epoch ${epoch.epoch} loss ${fmt4(epoch.loss)} accuracy ${fmt3(epoch.accuracy)}"
             ModelBuildProgress.step(epochsDone + epoch.epoch, summary)
             if (epoch.epoch % EPOCH_LOG_EVERY == 0 && epoch.epoch < arch.epochs) logInternal("modelBuilder: $summary")
@@ -172,8 +193,15 @@ private fun buildClassifierPhases(
     // ---- 4. the chosen head's validation, kept with the model
     ModelBuildProgress.phase(BuildPhase.VALIDATING, steps = validationIdx.size, detail = "${validationIdx.size} samples")
     val prediction = validationIdx.mapIndexed { n, i -> model.predict(pooled[i]).also { ModelBuildProgress.step(n + 1) } }.toIntArray()
-    val metrics = computeMetrics(labels, truth, prediction, trainIdx.size, warnings)
-        .copy(validation = if (testSamples != null) validationName ?: "test set" else "split ${(options.validationFraction * 100).toInt()}%", candidates = candidateResults, preprocessing = preprocessing)
+    val scored = computeMetrics(labels, truth, prediction, trainIdx.size, warnings)
+    val diagnostics = Diagnostics.aboutModel(scored, labels, last.accuracy)
+    diagnostics.forEach { say("warning: $it") }
+    val metrics = scored.copy(
+        warnings = warnings + diagnostics,
+        validation = if (testSamples != null) validationName ?: "test set" else "split ${(options.validationFraction * 100).toInt()}%",
+        candidates = candidateResults,
+        preprocessing = preprocessing,
+    )
 
     // ---- 5. export
     ModelBuildProgress.phase(BuildPhase.EXPORTING, detail = "AMP/modules/$modelName")

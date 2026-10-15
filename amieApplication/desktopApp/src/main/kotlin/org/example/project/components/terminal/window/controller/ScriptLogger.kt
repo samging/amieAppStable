@@ -114,8 +114,16 @@ interface ScriptLogger {
     fun architecture(hidden: List<Int> = listOf(16), epochs: Int = 150, batchSize: Int = 16, learningRate: Double = 0.01, activation: String = "Relu"): Architecture =
         Architecture(hidden, epochs, batchSize, learningRate, activation)
     // How a build goes: the heads to compare (the four defaults unless given), macroF1 or accuracy to pick by, preprocessing on or off, the validation share
-    fun buildOptions(candidates: List<Architecture> = Architecture.DEFAULT_CANDIDATES, pickBy: String = "macroF1", preprocess: Boolean = true, validationFraction: Double = 0.2): BuildOptions =
-        BuildOptions(candidates, pickBy, preprocess, validationFraction)
+    fun buildOptions(candidates: List<Architecture> = Architecture.DEFAULT_CANDIDATES, pickBy: String = "macroF1", preprocess: Boolean = true, validationFraction: Double = 0.2, seed: Int = 42, balanceClasses: Boolean = false): BuildOptions =
+        BuildOptions(candidates, pickBy, preprocess, validationFraction, seed, balanceClasses)
+    // The preprocessor alone, without training: prints what it would clean, drop and refuse; true when a build could start
+    fun checkData(data: Any?): Boolean {
+        val samples = org.example.project.components.terminal.window.controller.jetbrainDLBuilder.parseLabeledData(data)
+        val result = org.example.project.components.terminal.window.controller.jetbrainDLBuilder.Preprocessor.run(samples)
+        result.lines().forEach { log("checkData: $it", if (it.startsWith("error:")) LogLevel.ERROR else LogLevel.DATA) }
+        log(if (result.ok) "checkData: a build can start on these ${result.samples.size} rows" else "checkData: a build would stop; fix the ${result.errors.size} ${if (result.errors.size == 1) "reason" else "reasons"} above", if (result.ok) LogLevel.INFO else LogLevel.ERROR)
+        return result.ok
+    }
 
     // A database from AMP/databases.json: database("main").query("select …"); the same object while the app runs
     fun database(name: String = "main"): Database = Databases.open(name)

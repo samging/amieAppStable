@@ -56,6 +56,10 @@ data class BuildOptions(
     val preprocess: Boolean = true,
     /** The share of the rows held out when there is no related test file */
     val validationFraction: Double = 0.2,
+    /** The seed of the split, the weights and the shuffles: the same data and seed give the same model */
+    val seed: Int = 42,
+    /** Weight the loss so every label counts the same, for imbalanced data (a rare label is otherwise learned last) */
+    val balanceClasses: Boolean = false,
 ) {
     init {
         require(candidates.isNotEmpty()) { "at least one architecture is needed" }

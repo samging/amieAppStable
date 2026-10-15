@@ -47,6 +47,8 @@ Defined in `ScriptLogger.kt`. The most used calls (prefix `amie.` optional):
 | `sourceFile("file.csv", column = "")` | Raw rows keyed by index, optionally one column |
 | `modelBuilder("name", data)` | Trains and exports an intent classifier (below) |
 | `modelBuilder("name") { ... }` | Same, the lambda returns the data |
+| `modelBuilder("name", data, buildOptions(...))` | The same build with your own options: `architecture(hidden, epochs, batchSize, learningRate, activation)` candidates, `pickBy` (`macroF1` or `accuracy`), `preprocess`, `validationFraction`, `seed`, `balanceClasses`. See [Models and metrics](models.md#your-own-head) |
+| `checkData(data)` | The preprocessor alone, without training: what it would clean, drop and refuse, and whether a build could start (returns true then) |
 | `initMod("name")` | The session of an exported model: the one already open, else a new one (listed on the Models page, terminable there); `.predict("text")` returns the predicted label, `.scores("text")` every label with its score (best first), `.inference("text")` the raw `label:probability` lines sorted best first; `.close()`. `initMod("dummy")` works on a fresh checkout. How sessions live and die: [Running sessions](sessions.md) |
 | `initMod()` | The bundled BERT NER model, kept open: `.inference("text")` is one tag per token |
 | `initAmie("text")` | Named entities in one text with the same NER model, opened and closed for the call: the tags are printed and returned. For many texts use `initMod()` |
@@ -190,12 +192,16 @@ rows of `[text, ..., label]`.
 
 `buildClassifier` in `jetbrainDLBuilder/JetBuilder.kt`:
 
-1. **checking data**: at least 2 labels, 5 samples per label; imbalance, duplicate and conflicting texts become
-   warnings stored with the metrics.
-2. **embedding**: every text goes through the BERT encoder; the hidden states are mean-pooled into one vector each.
-3. **training**: a two-layer network (`dense[16 relu] -> dense[labels] softmax`) trained with Adam for 150 epochs on
-   plain Kotlin arrays (no native TensorFlow needed).
-4. **validating**: on the related test file, or on a stratified 20% split; precision, recall, F1 per label.
+1. **checking data**: the preprocessor (`jetbrainDLBuilder/Preprocessor.kt`) cleans the rows, unifies label
+   spellings, drops empty, junk, repeated and conflicting rows with a reason each, measures the set and refuses one
+   a classifier cannot come out of; every line goes to the console and `metrics.json`. The reasons are listed in
+   [Models and metrics](models.md#before-training-the-preprocessor).
+2. **embedding**: every text goes through the BERT encoder once; the hidden states are mean-pooled into one vector each.
+3. **training**: every candidate head (`Architecture.kt`; by default linear, `dense[16]`, `dense[32]`, `dense[64, 16]`,
+   or what `buildOptions` names) is trained with Adam on plain Kotlin arrays (`DenseNet.kt`, any number of hidden
+   layers, relu or tanh) on the same rows, scored on the same validation rows, and the best by macro F1 (or
+   accuracy) is kept; the comparison is stored with the build.
+4. **validating**: the chosen head on the related test file, or on a stratified 20% split; precision, recall, F1 per label.
 5. **exporting**: the layers are written by hand as ONNX (opset 13) to `AMP/modules/<name>/model.onnx` with
    `module.json` (encoder, dims, labels) and `metrics.json` (one entry per build).
 

@@ -56,6 +56,23 @@ object SandboxExamples {
             |log(m.predict("switch off the kitchen light"))  // lights
             |""".trimMargin()),
 
+        Example("Train with your own heads", "Models", """
+            |// modelBuilder cleans the rows first (the console says what it dropped and why), then tries every head
+            |// in the options on the same rows and keeps the best. Without options it tries linear, dense[16],
+            |// dense[32] and dense[64, 16]; here are three of your own, picked by accuracy.
+            |val train = source("sample-intents.csv")
+            |val options = buildOptions(
+            |    candidates = listOf(
+            |        architecture(hidden = listOf(32, 16), epochs = 200, learningRate = 0.005),
+            |        architecture(hidden = emptyList(), epochs = 100),          // a linear head
+            |        architecture(hidden = listOf(64), activation = "Tanh"),
+            |    ),
+            |    pickBy = "accuracy",
+            |)
+            |val built = modelBuilder("intents-custom", train, options)
+            |built.modelStatus()                             // the chosen head's validation table
+            |""".trimMargin()),
+
         Example("Read a model's metrics", "Models", """
             |// The stored validation of a model, without rebuilding it. "dummy" has numbers after
             |// Models > Metrics > Validate on the sample data; "intents" after the training example.

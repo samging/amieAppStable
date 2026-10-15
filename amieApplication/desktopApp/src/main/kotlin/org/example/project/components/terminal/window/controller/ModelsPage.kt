@@ -868,7 +868,10 @@ private fun NewModelPanel(modifier: Modifier, onBuild: (String, File, File?, Str
     var data by remember { mutableStateOf<File?>(null) }
     var test by remember { mutableStateOf<File?>(null) }
     var preview by remember { mutableStateOf<String?>(null) }
+    // The preprocessor's report on the chosen file, on request
+    var report by remember { mutableStateOf<List<String>?>(null) }
     LaunchedEffect(data) {
+        report = null
         preview = data?.let { f ->
             withContext(Dispatchers.IO) {
                 runCatching { DataSource.read(f.absolutePath) }.getOrNull()?.let { s ->
@@ -908,9 +911,21 @@ private fun NewModelPanel(modifier: Modifier, onBuild: (String, File, File?, Str
                 chooseFile("Test data", listOf("csv"))?.let { test = it }
             }
             Spacer(Modifier.height(6.dp))
+            report?.let { lines ->
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.padding(bottom = 6.dp)) {
+                    lines.forEach { line -> Text(line, color = if (line.startsWith("error:")) DangerColor else if (line.startsWith("warning:")) FontColor else MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp) }
+                }
+            }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Hint(missing ?: read ?: "")
                 Spacer(Modifier.weight(1f))
+                if (chosen != null && read != null && !read.startsWith("no ")) SmallButton("Check data", icon = Icons.Default.FactCheck, tip = "Run the preprocessor on the file without training: what it would clean, drop and refuse") {
+                    report = runCatching { DataSource.read(chosen.absolutePath) }.getOrNull()?.let { s ->
+                        val r = org.example.project.components.terminal.window.controller.jetbrainDLBuilder.Preprocessor.run(s.samples())
+                        r.lines() + (if (r.ok) "a build can start on ${r.samples.size} rows" else "a build would stop here")
+                    } ?: listOf("error: ${chosen.name} could not be read")
+                }
+                Spacer(Modifier.width(6.dp))
                 AccentButton(
                     "Build",
                     enabled = ready,
