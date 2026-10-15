@@ -18,6 +18,10 @@ import org.example.project.components.terminal.window.controller.pluginEngine.Ja
 import org.example.project.components.terminal.window.controller.pluginEngine.JarPackages
 import org.example.project.components.terminal.window.controller.modules.MetricsReport
 import org.example.project.components.terminal.window.controller.modules.ModelSessions
+import org.example.project.components.terminal.window.controller.modules.ModelServer
+import org.example.project.components.terminal.window.controller.modules.readServing
+import org.example.project.components.terminal.window.controller.databases.Database
+import org.example.project.components.terminal.window.controller.databases.Databases
 
 /**
  * A stable interface for logging from scripts.
@@ -28,7 +32,9 @@ interface ScriptLogger {
     fun info(message: String) = log(message, LogLevel.INFO)
     fun error(message: String) = log(message, LogLevel.ERROR)
     fun data(message: String) = log(message, LogLevel.DATA)
-    fun initAmie(text: String)
+    // Named entities in the text with the bundled BERT NER model: one tag per token (O, B-PER, I-ORG, …), printed
+    // and returned. A one-off: the model is opened and closed for the call. For many texts open it once with initMod()
+    fun initAmie(text: String): List<String>
     fun initMod() : InteractionModel
     // The session of the ONNX module modelBuilder exported to AMP/modules/<modelName>: the one already open on it
     // when there is one, else a new one. For a name ending in .jar, a new instance of that package jar every
@@ -99,6 +105,25 @@ interface ScriptLogger {
     fun modelBuilder(modelName: String, data: DataSource?): ModelCreationalInterface = modelBuilder(modelName) { data ?: emptyList<String>() }
     fun importPlugin(plugin: String) {}
     fun modelBuilder(modelName: String, it: (Any) -> Any): ModelCreationalInterface = object : ModelCreationalInterface() {}
+
+    // A database from AMP/databases.json: database("main").query("select …"); the same object while the app runs
+    fun database(name: String = "main"): Database = Databases.open(name)
+    // The configured databases: databases.print(), databases.names(), databases.closeAll()
+    val databases: Databases get() = Databases
+
+    // Serves the exported model over HTTP as the Models page's Listen does; null parameters keep what serving.json
+    // says (host 127.0.0.1, port 8765, path /models/<name>, POST and GET). Returns the predict URL, null when it
+    // could not start (the console says why: the model can't load, the port is taken, the path is served already)
+    fun serve(modelName: String, port: Int? = null, host: String? = null, path: String? = null, methods: List<String>? = null): String? {
+        val saved = readServing(modelName)
+        val settings = saved.copy(host = host ?: saved.host, port = port ?: saved.port, path = path ?: saved.path, methods = methods ?: saved.methods)
+        return if (ModelServer.start(modelName, settings)) settings.url(modelName).also { log("serve: '$modelName' answers ${settings.methods.joinToString("/")} at $it") }
+        else null.also { log("serve: '$modelName' could not start; the console has the reason", LogLevel.ERROR) }
+    }
+    // Stops serving the model and remembers that, so it does not resume on the next start
+    fun stopServing(modelName: String) = ModelServer.stop(modelName)
+    // The predict URL of a model that is being served right now, null when it is not
+    fun servingUrl(modelName: String): String? = if (ModelServer.isListening(modelName)) readServing(modelName).url(modelName) else null
 }
 
 abstract class ModelCreationalInterface {

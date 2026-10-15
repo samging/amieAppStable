@@ -74,6 +74,8 @@ object SandboxApi {
     private const val JAR_INTERPRETER = "$PKG.pluginEngine.JarInterpreter"
     private const val JAR_PACKAGES = "$PKG.pluginEngine.JarPackages"
     private const val MODEL_INTERFACE = "$PKG.ModelCreationalInterface"
+    private const val DATABASE = "$PKG.databases.Database"
+    private const val DATABASES = "$PKG.databases.Databases"
 
     private fun fn(name: String, description: String, vararg params: Param, returns: String? = null, target: String? = name, aliasOf: String? = null) =
         Entry(name, Kind.FUNCTION, description, params.toList(), returns, target, aliasOf)
@@ -86,7 +88,7 @@ object SandboxApi {
         fn("info", "Prints an info line in the console", Param("message", STRING)),
         fn("error", "Prints an error line in the console", Param("message", STRING)),
         fn("data", "Prints a data line in the console", Param("message", STRING)),
-        fn("initAmie", "Runs text through the Amie pilot and prints its answer", Param("text", STRING)),
+        fn("initAmie", "Named entities with the bundled BERT NER model: one tag per token (O, B-PER, I-ORG…), printed and returned; a one-off call, initMod() keeps the model open", Param("text", STRING), returns = "List<String>"),
         fn("initMod", "Opens the default interaction model", returns = INTERACTION_MODEL),
         fn("initMod", "The session of the module modelBuilder exported to AMP/modules/<modelName>: the one already open on it, else a new one. A new instance of a package jar when the name ends in .jar (local or fetched from the Amie server). .predict(text) is the label, .scores(text) every label with its score, .inference(text) the raw label:score lines", Param("modelName", STRING), returns = INTERACTION_MODEL),
         prop("packages", JAR_PACKAGES, "Package jar sessions: packages.available(), packages.fetch(\"x.jar\"), packages.print(), packages.closeAll()"),
@@ -119,7 +121,13 @@ object SandboxApi {
         fn("relate", "Gives the model a test file to validate on after training on train", Param("train", "$DATA_SOURCE?"), Param("test", STRING), returns = "$DATA_SOURCE?"),
         fn("modelBuilder", "Trains a classifier on the data source and exports it to AMP/modules/<modelName>",
             Param("modelName", STRING), Param("data", "$DATA_SOURCE?"), returns = MODEL_INTERFACE),
-        fn("importPlugin", "Loads a plugin jar and runs it", Param("plugin", STRING)),
+        fn("importPlugin", "Runs a plugin jar's static run() or main; a missing jar or a failure is one ERROR line, never an exception", Param("plugin", STRING)),
+        fn("database", "A database from AMP/databases.json: .query(sql, params), .execute(sql, params), .print(sql), .scalar(sql), .tables(), .close()", Param("name", STRING, "\"main\""), returns = DATABASE),
+        prop("databases", DATABASES, "The configured databases: databases.print(), databases.names(), databases.closeAll()"),
+        fn("serve", "Serves the model over HTTP like the Models page's Listen; null keeps serving.json's host/port/path/methods. Returns the predict URL, null when it could not start",
+            Param("modelName", STRING), Param("port", "Int?", "null"), Param("host", "String?", "null"), Param("path", "String?", "null"), Param("methods", "List<String>?", "null"), returns = "String?"),
+        fn("stopServing", "Stops serving the model and remembers it", Param("modelName", STRING)),
+        fn("servingUrl", "The predict URL of a model being served now, null when it is not", Param("modelName", STRING), returns = "String?"),
         fn("modelBuilder", "Trains a classifier on the labeled data the lambda supplies", Param("modelName", STRING), Param("it", "(Any) -> Any"), returns = MODEL_INTERFACE),
         // prelude-only aliases: `import` cannot be a top-level function name in a script
         fn("dependency", "Alias of implementation: adds \"group:module:version\" or a jar file name to the environment", Param("notation", STRING), target = "implementation", aliasOf = "implementation"),

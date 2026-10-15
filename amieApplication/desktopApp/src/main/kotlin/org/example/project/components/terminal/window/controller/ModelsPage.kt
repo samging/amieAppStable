@@ -75,6 +75,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -100,6 +105,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
@@ -121,6 +127,8 @@ import org.example.project.components.terminal.integrations.amiePilot.LoadedEnco
 import org.example.project.components.terminal.integrations.amiePilot.SharedEncoders
 import org.example.project.components.terminal.window.controller.envBuilder.DEFAULT_ENV
 import org.example.project.components.terminal.window.controller.envBuilder.ScriptEnvironments
+import org.example.project.components.terminal.window.controller.envBuilder.MavenCentral
+import org.example.project.components.terminal.window.controller.envBuilder.MavenHit
 import org.example.project.components.terminal.window.controller.jetbrainDLBuilder.ModelBuild
 import org.example.project.components.terminal.window.controller.jetbrainDLBuilder.ModelBuildProgress
 import org.example.project.components.terminal.window.controller.jetbrainDLBuilder.buildClassifier
@@ -164,6 +172,9 @@ import org.example.project.components.terminal.window.controller.sourceFile.Data
 import org.example.project.components.terminal.window.controller.sourceFile.inferStructure
 import org.example.project.components.terminal.window.controller.sourceFile.parseCsv
 import org.example.project.components.ui.viewport.AccentButton
+import org.example.project.components.ui.viewport.BelowButton
+import org.example.project.components.ui.viewport.DropButton
+import org.example.project.components.ui.viewport.MenuBox
 import org.example.project.components.ui.viewport.AppTooltip
 import org.example.project.components.ui.viewport.DangerButton
 import org.example.project.components.ui.viewport.IconChip
@@ -292,8 +303,13 @@ private data class JarInfo(
     val contents: JarContents?,
     val collections: List<String>,
     val sessions: List<SessionInfo>,
+    /** group:artifact:version for a library added from Maven Central, null for a package jar */
+    val coordinate: String? = null,
+    /** The version the env actually holds for it, when a dependency asked for a newer one than declared */
+    val resolvedCoordinate: String? = null,
 ) {
     val local: Boolean get() = file != null
+    val maven: Boolean get() = coordinate != null
     val open: Int get() = sessions.size
     val status: String get() = when {
         sessions.any { it.running } -> "inferring"
@@ -303,13 +319,13 @@ private data class JarInfo(
     }
 
     /** Where the jar lives, as a group of the list */
-    val location: String get() = when (source) { "server" -> "On the server"; "env" -> "In the env"; else -> "In AMP/pluginDir" }
+    val location: String get() = when (source) { "server" -> "On the server"; "env" -> "In the env"; "maven" -> "From Maven Central"; else -> "In AMP/pluginDir" }
 
     /** Name, version, Java, collection, entry class, a class or a resource name contain the query */
     fun matches(query: String): Boolean {
         val q = query.trim().lowercase()
         if (q.isEmpty()) return true
-        if (name.lowercase().contains(q) || version?.lowercase()?.contains(q) == true || status.lowercase().contains(q) || collections.any { it.lowercase().contains(q) }) return true
+        if (name.lowercase().contains(q) || version?.lowercase()?.contains(q) == true || status.lowercase().contains(q) || collections.any { it.lowercase().contains(q) } || coordinate?.lowercase()?.contains(q) == true) return true
         val c = contents ?: return false
         return c.javaSupport.lowercase().contains(q) || c.entryClass?.lowercase()?.contains(q) == true ||
             c.classes.any { it.lowercase().contains(q) } || c.resources.any { it.lowercase().contains(q) }
@@ -321,6 +337,8 @@ private data class ModelsSnapshot(
     val jars: List<JarInfo> = emptyList(),
     val sessions: List<SessionInfo> = emptyList(),
     val collections: List<PackageCollection> = emptyList(),
+    /** What the env declares from Maven Central, jar or not (a BOM has no jar and so no row) */
+    val mavenDeclared: Set<String> = emptySet(),
 )
 
 /**
@@ -369,7 +387,8 @@ private fun readSnapshot(remote: Boolean): ModelsSnapshot {
         )
     }
 
-    val env = ScriptEnvironments.current
+    // The page reads the default env when no script has opened one yet, so Maven libraries are listed before the first run
+    val env = ScriptEnvironments.current ?: ScriptEnvironments.open(DEFAULT_ENV)
     val envJars = env?.libsDir?.listFiles { f -> f.extension == "jar" }?.toList() ?: emptyList()
     val pluginJars = File(getDirectory().toString(), "pluginDir").listFiles { f -> f.extension == "jar" }?.toList() ?: emptyList()
     val local = (envJars.map { it to "env" } + pluginJars.map { it to "pluginDir" }).distinctBy { it.first.name }
@@ -381,15 +400,22 @@ private fun readSnapshot(remote: Boolean): ModelsSnapshot {
     val page = JarPackages.downloadsPage()
     val collections = PackageCollections.all()
     fun collectionsOf(jar: String) = collections.filter { jar in it.jars }.map { it.name }
+    // Libraries the env declares from Maven Central: listed by their jar so they can be inspected like any other
+    val mavenJars = env.mavenPackages().mapNotNull { pkg ->
+        val file = pkg.jar ?: return@mapNotNull null
+        if (local.any { it.first.name == file.name }) return@mapNotNull null
+        val shown = pkg.resolved ?: pkg.declared
+        JarInfo(file.name, "maven", null, MavenCentral.page(shown), MavenCentral.page(shown) ?: page, pkg.resolvedVersion, file, JarInspector.inspect(file), collectionsOf(file.name), sessions.filter { it.kind == KIND_PACKAGE && it.owner == file.name }, coordinate = pkg.declared, resolvedCoordinate = pkg.resolved)
+    }
     val jars = (local.map { (file, source) ->
         val origin = JarPackages.origin(file.name)
         val contents = JarInspector.inspect(file)
         JarInfo(file.name, source, origin, origin?.url, origin?.page ?: page, origin?.version ?: contents?.implementationVersion, file, contents, collectionsOf(file.name), sessions.filter { it.kind == KIND_PACKAGE && it.owner == file.name })
-    } + remoteJars.map {
+    } + mavenJars + remoteJars.map {
         JarInfo(it.name, "server", null, JarPackages.downloadUrl(it.name), page, it.version, null, null, collectionsOf(it.name), sessions.filter { s -> s.kind == KIND_PACKAGE && s.owner == it.name })
     }).sortedBy { it.name }
 
-    return ModelsSnapshot(models, jars, sessions, collections)
+    return ModelsSnapshot(models, jars, sessions, collections, env.mavenPackages().map { it.declared }.toSet())
 }
 
 /* ---------- page ---------- */
@@ -413,7 +439,6 @@ fun ModelsPage(navController: NavController) {
         NavigationSidebar(
             selectedIndex = -1,
             onIndexSelected = { if (it == 1) navController.navigate("codingSandbox") },
-            showPlay = false,
             modelsSelected = true,
             onModels = {},
             settingsSelected = false,
@@ -558,6 +583,32 @@ private fun ModelsContent(user: String?, onLogin: () -> Unit) {
                         background("addjar") { addJar(chosen); selectedJar = chosen.name }
                     },
                     onFetch = { jar -> background("fetch:${jar.name}") { JarPackages.fetch(jar.name) ?: error("${jar.name} is not on the server") } },
+                    onMaven = { coordinate ->
+                        background("maven:$coordinate") {
+                            val env = ScriptEnvironments.current ?: ScriptEnvironments.open(DEFAULT_ENV)
+                            env.import(coordinate)
+                            val pkg = env.mavenPackages().firstOrNull { it.declared == coordinate }
+                            val added = pkg?.jar
+                            if (added == null) {
+                                // Not on Maven Central: it must not stay declared, or every run would try it again. A POM-only
+                                // artifact (a BOM) did resolve, it just has no jar to list
+                                if (pkg?.resolved == null) env.remove(coordinate)
+                                error(if (pkg?.resolved != null) "$coordinate is in the env but has no jar (a POM-only artifact, such as a BOM)" else "$coordinate could not be resolved from Maven Central; the Console tab has the details")
+                            }
+                            selectedJar = added.name
+                            notice = Notice(
+                                if (pkg.resolved != null && pkg.resolved != coordinate) "$coordinate is in the env as ${pkg.resolvedVersion}: a dependency already asks for that newer version"
+                                else "$coordinate is in the env; a script can import its classes from the next run"
+                            )
+                        }
+                    },
+                    onRemoveMaven = { jar ->
+                        val coordinate = jar.coordinate ?: return@PackagesTab
+                        background("maven-remove:$coordinate") {
+                            val env = ScriptEnvironments.current ?: ScriptEnvironments.open(DEFAULT_ENV)
+                            notice = Notice(if (env.remove(coordinate)) "$coordinate was removed from the env; its files stay in AMP/env/caches" else "$coordinate was not declared in the env")
+                        }
+                    },
                     onPublish = { jar ->
                         val signedIn = user
                         val file = jar.file
@@ -731,9 +782,9 @@ private fun ColumnScope.ModelsTab(
     val shown = snapshot.models.filter { it.matches(query) }
     val ordered = shown.sortedWith(compareByDescending<ModelInfo> { it.running }.thenByDescending { it.accuracy }.thenBy { it.name })
     val selected = snapshot.models.firstOrNull { it.name == selectedName } ?: ordered.firstOrNull()
-    Row(modifier = Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+    Row(modifier = Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         var listWidth by remember { mutableStateOf(ModelsCache.listWidth) }
-        Column(modifier = Modifier.width(listWidth.dp).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(modifier = Modifier.width(listWidth.dp).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             // The filter and the one action of the list on a single line; the form opens in the panel on the right
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Box(modifier = Modifier.weight(1f)) { SearchField(query, tip = "Filter the models by name, label, status, training data or validation file") { query = it } }
@@ -845,7 +896,7 @@ private fun NewModelPanel(modifier: Modifier, onBuild: (String, File, File?, Str
         DetailHeader(name = "New model", active = false, status = "a csv with a text column and a label column", mark = false) {
             SmallButton("Close", icon = Icons.Default.Close, tip = "Close the form; nothing is kept", onClick = onClose)
         }
-        Column(modifier = Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 10.dp).padding(top = 8.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 14.dp).padding(top = 12.dp, bottom = 14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             SettingField("Name", name) { name = it.filter { c -> c.isLetterOrDigit() || c in "._-" } }
             SettingField("About", description) { description = it }
             fun pick(f: File) {
@@ -963,7 +1014,7 @@ private fun ModelDetail(
             )
         }
 
-        if (configuring) Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp).padding(top = 6.dp, bottom = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (configuring) Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp).padding(top = 8.dp, bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             SettingField("Host", host) { host = it }
             SettingField("Port", port) { port = it.filter(Char::isDigit).take(5) }
             val portOk = port.trim().toIntOrNull()?.let { it in 1..65535 } == true
@@ -996,7 +1047,7 @@ private fun ModelDetail(
             onSelect = { tab = it },
         )
 
-        Column(modifier = Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 10.dp).padding(top = 6.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 14.dp).padding(top = 10.dp, bottom = 14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             when (tab) {
                 DetailTab.ABOUT -> AboutBlock(model, onDescribe)
                 DetailTab.GUIDE -> GuideBlock(model)
@@ -1518,16 +1569,21 @@ private fun ColumnScope.PackagesTab(
     onTerminate: (SessionInfo) -> Unit,
     /** Runs a change to the collections in the background */
     onCollection: (suspend () -> Unit) -> Unit,
+    /** Adds a Maven Central coordinate to the env (resolved with its dependencies) */
+    onMaven: (String) -> Unit,
+    /** Takes a Maven library out of the env */
+    onRemoveMaven: (JarInfo) -> Unit,
 ) {
     var newCollection by remember { mutableStateOf(false) }
+    var fromMaven by remember { mutableStateOf(false) }
     // The list is searched by name, Java, collection, class or resource. Collections come first as folders a jar
     // can be added to or detached from; then every jar by where it lives
     var query by remember { mutableStateOf("") }
     val shown = snapshot.jars.filter { it.matches(query) }
     val selected = snapshot.jars.firstOrNull { it.name == selectedName } ?: shown.firstOrNull()
-    Row(modifier = Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+    Row(modifier = Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         var listWidth by remember { mutableStateOf(ModelsCache.listWidth) }
-        Column(modifier = Modifier.width(listWidth.dp).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(modifier = Modifier.width(listWidth.dp).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             // The filter and one Add button that offers both: a jar from this machine, or a new collection
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Box(modifier = Modifier.weight(1f)) { SearchField(query, tip = "Filter the jars by name, version, Java, collection, the class a session opens on, or any class or resource inside") { query = it } }
@@ -1535,14 +1591,15 @@ private fun ColumnScope.PackagesTab(
                     "Add",
                     icon = Icons.Default.Add,
                     enabled = "addjar" !in pending,
-                    tip = if ("addjar" in pending) "copying the jar…" else "Add a jar from this machine (copied into AMP/pluginDir and imported into the env), or make a collection: a folder of jars that belong together",
+                    tip = if ("addjar" in pending) "copying the jar…" else "Add a jar from this machine (copied into AMP/pluginDir and imported into the env), a library from Maven Central (resolved into the env with its dependencies), or make a collection: a folder of jars that belong together",
                     items = listOf(
                         ContextMenuItem("Jar from this machine…") { onAdd() },
-                        ContextMenuItem("New collection…") { newCollection = true },
+                        ContextMenuItem("From Maven Central…") { fromMaven = true; newCollection = false },
+                        ContextMenuItem("New collection…") { newCollection = true; fromMaven = false },
                     ),
                 )
             }
-            if (snapshot.jars.isEmpty()) Hint("no packages yet: Add a jar, or put one in AMP/pluginDir")
+            if (snapshot.jars.isEmpty()) Hint("no packages yet: Add a jar or a Maven library, or put a jar in AMP/pluginDir")
             else if (shown.isEmpty()) NoMatches(query) { query = "" }
             snapshot.collections.forEach { collection ->
                 val members = shown.filter { it.name in collection.jars }
@@ -1550,11 +1607,11 @@ private fun ColumnScope.PackagesTab(
                 CollectionFolder(collection, members, snapshot.jars, selected?.name, onSelect, onCollection)
             }
             val groups = shown.groupBy { it.location }
-            listOf("In AMP/pluginDir", "In the env", "On the server").forEach { location ->
+            listOf("In AMP/pluginDir", "In the env", "From Maven Central", "On the server").forEach { location ->
                 val jars = groups[location] ?: return@forEach
                 Fold(location, jars.size, open = location != "On the server" || query.isNotBlank() || jars.any { it.name == selected?.name }, key = location) {
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        jars.forEach { jar -> JarRow(jar, selected = jar.name == selected?.name, onFetch = { onFetch(jar) }, onPublish = { onPublish(jar) }, signedIn = signedIn, onSelect = { onSelect(jar.name) }) }
+                        jars.forEach { jar -> JarRow(jar, selected = jar.name == selected?.name, onFetch = { onFetch(jar) }, onPublish = { onPublish(jar) }, onRemove = if (jar.maven) ({ onRemoveMaven(jar) }) else null, signedIn = signedIn, onSelect = { onSelect(jar.name) }) }
                     }
                 }
             }
@@ -1563,7 +1620,8 @@ private fun ColumnScope.PackagesTab(
         VerticalSeparator { listWidth = it; ModelsCache.listWidth = it }
         when {
             newCollection -> NewCollectionPanel(snapshot.jars, Modifier.weight(1f).fillMaxHeight(), onCreate = { name, jars -> onCollection { PackageCollections.create(name, jars) }; newCollection = false }, onClose = { newCollection = false })
-            selected != null -> JarDetail(selected, pending, Modifier.weight(1f).fillMaxHeight(), onFetch = { onFetch(selected) }, onPublish = { onPublish(selected) }, signedIn = signedIn, onTerminate = onTerminate)
+            fromMaven -> MavenPanel(pending, Modifier.weight(1f).fillMaxHeight(), declared = snapshot.mavenDeclared, onAdd = onMaven, onClose = { fromMaven = false })
+            selected != null -> JarDetail(selected, pending, Modifier.weight(1f).fillMaxHeight(), onFetch = { onFetch(selected) }, onPublish = { onPublish(selected) }, onRemove = { onRemoveMaven(selected) }, signedIn = signedIn, onTerminate = onTerminate)
             else -> Spacer(Modifier.weight(1f))
         }
     }
@@ -1571,25 +1629,31 @@ private fun ColumnScope.PackagesTab(
 
 /** The right-click actions of a package: the same as its detail panel's buttons, plus the copy of the call that opens it */
 @Composable
-private fun jarMenu(jar: JarInfo, onFetch: (() -> Unit)? = null, onDetach: (() -> Unit)? = null, onPublish: (() -> Unit)? = null, signedIn: Boolean = true): List<ContextMenuItem> {
+private fun jarMenu(jar: JarInfo, onFetch: (() -> Unit)? = null, onDetach: (() -> Unit)? = null, onPublish: (() -> Unit)? = null, onRemove: (() -> Unit)? = null, signedIn: Boolean = true): List<ContextMenuItem> {
     val clipboard = LocalClipboardManager.current
     return listOfNotNull(
-        ContextMenuItem("Copy initMod(\"${jar.name}\")") { clipboard.setText(AnnotatedString("initMod(\"${jar.name}\")")) },
-        ContextMenuItem("Open its page on the website") { openInBrowser(jar.page) },
+        if (jar.maven) ContextMenuItem("Copy implementation(\"${jar.coordinate}\")") { clipboard.setText(AnnotatedString("implementation(\"${jar.coordinate}\")")) }
+        else ContextMenuItem("Copy initMod(\"${jar.name}\")") { clipboard.setText(AnnotatedString("initMod(\"${jar.name}\")")) },
+        ContextMenuItem(if (jar.maven) "Open its page on Maven Central" else "Open its page on the website") { openInBrowser(jar.page) },
+        if (jar.maven && onRemove != null) ContextMenuItem("Remove from the env", onRemove) else null,
         if (!jar.local && onFetch != null) ContextMenuItem("Fetch from the server", onFetch) else null,
-        if (jar.local && onPublish != null) ContextMenuItem(if (signedIn) "Publish to the website" else "Publish to the website (sign in)", onPublish) else null,
+        if (jar.local && !jar.maven && onPublish != null) ContextMenuItem(if (signedIn) "Publish to the website" else "Publish to the website (sign in)", onPublish) else null,
         jar.file?.let { f -> ContextMenuItem("Reveal file") { openInBrowser(f.parentFile.toURI().toString()) } },
         onDetach?.let { ContextMenuItem("Detach from collection", it) },
     )
 }
 
 @Composable
-private fun JarRow(jar: JarInfo, selected: Boolean, onDetach: (() -> Unit)? = null, onFetch: (() -> Unit)? = null, onPublish: (() -> Unit)? = null, signedIn: Boolean = true, onSelect: () -> Unit) {
+private fun JarRow(jar: JarInfo, selected: Boolean, onDetach: (() -> Unit)? = null, onFetch: (() -> Unit)? = null, onPublish: (() -> Unit)? = null, onRemove: (() -> Unit)? = null, signedIn: Boolean = true, onSelect: () -> Unit) {
     ListRow(
         name = jar.name,
         active = jar.open > 0,
         selected = selected,
-        meta = listOfNotNull(jar.contents?.minJava?.let { "java $it+" }, jar.version?.let { "v$it" }).joinToString(" · "),
+        meta = listOfNotNull(
+            jar.contents?.minJava?.let { "java $it+" },
+            jar.version?.let { "v$it" },
+            jar.resolvedCoordinate?.takeIf { it != jar.coordinate }?.let { "declared ${jar.coordinate?.substringAfterLast(':')}" },
+        ).joinToString(" · "),
         status = jar.status,
         statusTip = when {
             jar.sessions.any { it.running } -> "inferring: a session on it is answering right now"
@@ -1600,7 +1664,7 @@ private fun JarRow(jar: JarInfo, selected: Boolean, onDetach: (() -> Unit)? = nu
         underline = jar.open > 0,
         icon = Icons.Default.Inventory2,
         onDetach = onDetach,
-        menu = jarMenu(jar, onFetch, onDetach, onPublish, signedIn),
+        menu = jarMenu(jar, onFetch, onDetach, onPublish, onRemove, signedIn),
         onSelect = onSelect,
     )
 }
@@ -1654,7 +1718,7 @@ private fun NewCollectionPanel(jars: List<JarInfo>, modifier: Modifier, onCreate
         DetailHeader(name = "New collection", active = false, status = "a folder of jars that belong together", mark = false) {
             SmallButton("Close", icon = Icons.Default.Close, tip = "Close the form; nothing is kept", onClick = onClose)
         }
-        Column(modifier = Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 10.dp).padding(top = 8.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 14.dp).padding(top = 12.dp, bottom = 14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             SettingField("Name", name) { name = it }
             if (versions.isNotEmpty()) Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
                 Text("By Java", color = MutedFontColor, fontSize = 11.sp, modifier = Modifier.width(56.dp))
@@ -1686,14 +1750,122 @@ private fun NewCollectionPanel(jars: List<JarInfo>, modifier: Modifier, onCreate
 }
 
 /**
+ * The "From Maven Central…" form, in the place of the detail panel. One box: type a name (gson), a class name,
+ * `group:artifact` for the versions of one artifact, or paste a full `group:artifact:version`; Maven Central is
+ * asked as you type. Every hit has its own Add, which resolves that version with its dependencies into the env
+ * (the same as implementation("g:a:v") in a script). The form closes itself once the library is in the env.
+ */
+@Composable
+private fun MavenPanel(pending: Set<String>, modifier: Modifier, declared: Set<String>, onAdd: (String) -> Unit, onClose: () -> Unit) {
+    var query by remember { mutableStateOf("") }
+    var hits by remember { mutableStateOf<List<MavenHit>>(emptyList()) }
+    var searched by remember { mutableStateOf("") }
+    var searching by remember { mutableStateOf(false) }
+    var searchError by remember { mutableStateOf<String?>(null) }
+    var requested by remember { mutableStateOf<String?>(null) }
+    val typed = query.trim()
+    val exact = MavenCentral.parse(typed)?.let { typed }
+    val adding = pending.firstOrNull { it.startsWith("maven:") }?.removePrefix("maven:")
+
+    // Asked as you type, a moment after the last key; a pasted full coordinate is also searched so its versions show
+    LaunchedEffect(typed) {
+        val q = typed.substringBeforeLast(':').takeIf { exact != null } ?: typed
+        if (q.length < 2) { hits = emptyList(); searched = ""; searchError = null; searching = false; return@LaunchedEffect }
+        delay(350)
+        searching = true
+        searchError = null
+        try {
+            val result = withContext(Dispatchers.IO) { runCatching { MavenCentral.search(q) } }
+            result.onSuccess { hits = it; searched = q }.onFailure { e ->
+                val cause = (e as? java.util.concurrent.CompletionException)?.cause ?: e
+                searchError = "Maven Central could not be searched: ${cause.message ?: cause.javaClass.simpleName}"
+            }
+        } finally {
+            searching = false
+        }
+    }
+    // Done: the library is in the list now, so the form gives way to its detail panel
+    LaunchedEffect(declared, requested) { if (requested != null && requested in declared) onClose() }
+
+    DetailPanel(modifier) {
+        DetailHeader(name = "From Maven Central", active = false, status = "a library resolved into the env with its dependencies", mark = false) {
+            SmallButton("Close", icon = Icons.Default.Close, tip = "Close the form; nothing is kept", onClick = onClose)
+        }
+        Column(modifier = Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 14.dp).padding(top = 12.dp, bottom = 14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Box(modifier = Modifier.fillMaxWidth().widthIn(max = 520.dp)) {
+                SearchField(query, tip = "A name (gson, okhttp), a class name, group:artifact for one artifact's versions, or a full group:artifact:version") { query = it }
+            }
+            Text(
+                when {
+                    adding != null -> "resolving $adding and its dependencies from Maven Central…"
+                    typed.isEmpty() -> "type a name to search Maven Central, or paste a coordinate (group:artifact:version)"
+                    searchError != null -> searchError!!
+                    searching -> "asking Maven Central…"
+                    exact != null -> "Add puts this exact version in the env; the list below has the other versions"
+                    hits.isEmpty() && searched.isNotEmpty() -> "nothing on Maven Central matches \"$searched\""
+                    else -> "${hits.size} hits · Add puts that version in the env; a script can import its classes from the next run"
+                },
+                color = if (searchError != null) DangerColor else MutedFontColor, fontSize = 11.sp, lineHeight = 16.sp,
+            )
+            if (adding != null) LinearProgressIndicator(modifier = Modifier.fillMaxWidth().widthIn(max = 520.dp).height(2.dp), color = ActiveColor, backgroundColor = ActiveColor.copy(alpha = 0.15f), strokeCap = StrokeCap.Square)
+            Spacer(Modifier.height(2.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.fillMaxWidth().widthIn(max = 520.dp)) {
+                // The pasted coordinate itself, first
+                if (exact != null) MavenRow(
+                    name = exact.substringBeforeLast(':'), version = exact.substringAfterLast(':'), meta = "as typed",
+                    page = MavenCentral.page(exact), inEnv = exact in declared, adding = adding == exact, enabled = adding == null,
+                ) { requested = exact; onAdd(exact) }
+                hits.filter { it.coordinate != exact }.forEach { hit ->
+                    MavenRow(
+                        name = "${hit.group}:${hit.artifact}", version = hit.latestVersion,
+                        meta = listOfNotNull(hit.updated?.toString()?.take(10)?.let { "published $it" }, hit.packaging.takeIf { it != "jar" }).joinToString(" · "),
+                        page = hit.page, inEnv = hit.coordinate in declared, adding = adding == hit.coordinate, enabled = adding == null,
+                    ) { requested = hit.coordinate; onAdd(hit.coordinate) }
+                }
+            }
+        }
+    }
+}
+
+/** One artifact Maven Central found: its coordinates, the version Add would put in the env, and Add itself */
+@Composable
+private fun MavenRow(name: String, version: String, meta: String, page: String?, inEnv: Boolean, adding: Boolean, enabled: Boolean, onAdd: () -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
+    val clipboard = LocalClipboardManager.current
+    val coordinate = "$name:$version"
+    ContextMenuArea(items = { listOfNotNull(
+        ContextMenuItem("Copy implementation(\"$coordinate\")") { clipboard.setText(AnnotatedString("implementation(\"$coordinate\")")) },
+        page?.let { ContextMenuItem("Open its page on Maven Central") { openInBrowser(it) } },
+    ) }) {
+        Row(
+            modifier = Modifier.fillMaxWidth().background(if (hovered) PanelSurface else Color.Transparent).hoverable(interactionSource).padding(start = 8.dp, end = 4.dp, top = 3.dp, bottom = 3.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(name, color = FontColor, fontSize = 12.sp, fontFamily = FontFamily.Monospace, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(listOf("v$version", meta).filter { it.isNotBlank() }.joinToString(" · "), color = MutedFontColor, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            Spacer(Modifier.width(8.dp))
+            when {
+                inEnv -> Meta("in the env")
+                adding -> SmallButton("Adding…", enabled = false, tip = "being resolved; the Console tab follows it") {}
+                else -> AccentButton("Add", enabled = enabled, icon = Icons.Default.Add, tip = "Resolve $coordinate and its dependencies into the env", onClick = onAdd)
+            }
+        }
+    }
+}
+
+/**
  * The selected package: what it is (status, Java it needs, language), the collections it is in, where it came
  * from, what built it, what it contains, and its sessions. A script opens it with initMod("name.jar").
  */
 @Composable
-private fun JarDetail(jar: JarInfo, pending: Set<String>, modifier: Modifier = Modifier, onFetch: () -> Unit, onPublish: () -> Unit, signedIn: Boolean, onTerminate: (SessionInfo) -> Unit) {
+private fun JarDetail(jar: JarInfo, pending: Set<String>, modifier: Modifier = Modifier, onFetch: () -> Unit, onPublish: () -> Unit, onRemove: () -> Unit = {}, signedIn: Boolean, onTerminate: (SessionInfo) -> Unit) {
     val contents = jar.contents
     val fetching = "fetch:${jar.name}" in pending
     val publishing = "publish:${jar.name}" in pending
+    val removing = "maven-remove:${jar.coordinate}" in pending
     DetailPanel(modifier) {
         DetailHeader(
             name = jar.name,
@@ -1705,11 +1877,12 @@ private fun JarDetail(jar: JarInfo, pending: Set<String>, modifier: Modifier = M
                 jar.version?.let { "v$it" },
                 jar.collections.takeIf { it.isNotEmpty() }?.let { "in ${it.joinToString()}" },
             ).joinToString(" · "),
-            statusTip = "a script opens it with initMod(\"${jar.name}\"); every call is a fresh instance and its own session",
-            menu = jarMenu(jar, onFetch = onFetch, onPublish = onPublish, signedIn = signedIn),
+            statusTip = if (jar.maven) "a library from Maven Central in the env: a script imports its classes, no initMod needed" else "a script opens it with initMod(\"${jar.name}\"); every call is a fresh instance and its own session",
+            menu = jarMenu(jar, onFetch = onFetch, onPublish = onPublish, onRemove = onRemove, signedIn = signedIn),
         ) {
-            if (!jar.local) AccentButton(if (fetching) "Fetching…" else "Fetch", enabled = !fetching, icon = Icons.Default.Download, tip = "Download the jar from the server into AMP/pluginDir", onClick = onFetch)
-            if (jar.local) SmallButton(
+            if (jar.maven) SmallButton(if (removing) "Removing…" else "Remove", enabled = !removing, icon = Icons.Default.Delete, tip = "Take the library out of the env; its files stay in AMP/env/caches", onClick = onRemove)
+            if (!jar.local && !jar.maven) AccentButton(if (fetching) "Fetching…" else "Fetch", enabled = !fetching, icon = Icons.Default.Download, tip = "Download the jar from the server into AMP/pluginDir", onClick = onFetch)
+            if (jar.local && !jar.maven) SmallButton(
                 when { publishing -> "Publishing…"; signedIn -> "Publish"; else -> "Publish (sign in)" },
                 enabled = !publishing,
                 icon = Icons.Default.CloudUpload,
@@ -1718,16 +1891,22 @@ private fun JarDetail(jar: JarInfo, pending: Set<String>, modifier: Modifier = M
             )
         }
 
-        Column(modifier = Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 10.dp).padding(top = 6.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            KeyValues("opens with" to "initMod(\"${jar.name}\"), a fresh instance per call")
+        Column(modifier = Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 14.dp).padding(top = 10.dp, bottom = 14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            if (jar.maven) KeyValues("used with" to "implementation(\"${jar.coordinate}\") is in the env: the script's import lines can name its classes from the next run")
+            else KeyValues("opens with" to "initMod(\"${jar.name}\"), a fresh instance per call")
 
             Fold("SOURCE", null, open = false, key = "${jar.name}:source") { KeyValues(
                 "where" to when (jar.source) {
+                    "maven" -> "AMP/env/caches, resolved from Maven Central with its dependencies"
                     "server" -> "on the server; fetched into AMP/pluginDir on the first open"
                     else -> if (jar.origin != null) "AMP/${if (jar.source == "env") "env/<env>/libs" else "pluginDir"}, downloaded from the server" else "AMP/${if (jar.source == "env") "env/<env>/libs" else "pluginDir"}, added on this machine"
                 },
                 "page" to jar.page,
                 "download" to (jar.url ?: "none, this jar was added on this machine"),
+                *listOfNotNull(
+                    jar.coordinate?.let { "declared" to it },
+                    jar.resolvedCoordinate?.takeIf { it != jar.coordinate }?.let { "in the env as" to "$it, because a dependency asks for that newer version" },
+                ).toTypedArray(),
                 *listOfNotNull(
                     jar.origin?.let { o -> "fetched" to "${o.fetchedAt.take(19).replace('T', ' ')}${o.lastModified?.let { " · published $it" } ?: ""}" },
                     jar.file?.let { "file" to it.absolutePath },
@@ -2007,7 +2186,7 @@ private fun ListRow(name: String, active: Boolean, selected: Boolean, meta: Stri
             .hoverable(interactionSource)
             .clickable(interactionSource = interactionSource, indication = null) { onSelect() }
     ) {
-        Row(modifier = Modifier.fillMaxWidth().padding(start = 8.dp, end = 4.dp, top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(modifier = Modifier.fillMaxWidth().padding(start = 10.dp, end = 4.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             if (icon != null) {
                 Icon(icon, contentDescription = null, tint = if (active) FontColor else MutedFontColor, modifier = Modifier.size(13.dp))
                 Spacer(Modifier.width(7.dp))
@@ -2117,9 +2296,9 @@ private fun DetailPanel(modifier: Modifier = Modifier, content: @Composable Colu
 @Composable
 private fun DetailHeader(name: String, active: Boolean, status: String, statusTip: String? = null, menu: List<ContextMenuItem> = emptyList(), mark: Boolean = true, actions: @Composable () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         if (mark) {
             StatusMark(active, statusTip)
@@ -2159,9 +2338,9 @@ private fun KeyValues(vararg pairs: Pair<String, String>) {
         Column {
             pairs.forEach { (key, value) ->
                 Row {
-                    Text(key.padEnd(width), color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp)
-                    Spacer(Modifier.width(12.dp))
-                    Text(value, color = LogMessageColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp)
+                    Text(key.padEnd(width), color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 19.sp)
+                    Spacer(Modifier.width(14.dp))
+                    Text(value, color = LogMessageColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 19.sp)
                 }
             }
         }
@@ -2174,7 +2353,7 @@ private fun Fold(title: String, count: Int?, open: Boolean, key: Any, content: @
     var expanded by remember(key) { mutableStateOf(open) }
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier.fillMaxWidth().pointerHoverIcon(PointerIcon.Hand).clickable { expanded = !expanded }.padding(vertical = 2.dp),
+            modifier = Modifier.fillMaxWidth().pointerHoverIcon(PointerIcon.Hand).clickable { expanded = !expanded }.padding(vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
@@ -2190,7 +2369,7 @@ private fun Fold(title: String, count: Int?, open: Boolean, key: Any, content: @
                 Text(count.toString(), color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
             }
         }
-        if (expanded) Column(modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 1.dp, bottom = 3.dp)) { content() }
+        if (expanded) Column(modifier = Modifier.fillMaxWidth().padding(start = 18.dp, top = 2.dp, bottom = 8.dp)) { content() }
     }
 }
 
@@ -2371,19 +2550,6 @@ private fun SettingField(label: String, value: String, onChange: (String) -> Uni
     }
 }
 
-/** A button that opens a short menu under itself instead of doing one thing: Validate (sample data or a file), Add (a jar or a collection) */
-@Composable
-private fun DropButton(label: String, icon: ImageVector? = null, tip: String? = null, enabled: Boolean = true, accent: Boolean = true, items: List<ContextMenuItem>) {
-    var open by remember { mutableStateOf(false) }
-    Box {
-        if (accent) AccentButton(label, enabled = enabled, icon = icon, tip = if (open) null else tip, arrow = true) { open = !open }
-        else SmallButton(label, enabled = enabled, icon = icon, tip = if (open) null else tip, arrow = true) { open = !open }
-        if (open) Popup(popupPositionProvider = BelowButton, onDismissRequest = { open = false }, properties = PopupProperties(focusable = true)) {
-            MenuBox(items) { open = false }
-        }
-    }
-}
-
 /* ---------- notices ---------- */
 
 /** A message for the user at the top of the page: what an action did, or (in red) why it failed */
@@ -2462,54 +2628,6 @@ private object SquareContextMenu : ContextMenuRepresentation {
             MenuBox(items()) { state.status = ContextMenuState.Status.Closed }
         }
     }
-}
-
-/** Places a menu under its button with their right edges aligned; above the button when the window ends too soon */
-private object BelowButton : PopupPositionProvider {
-    override fun calculatePosition(anchorBounds: IntRect, windowSize: IntSize, layoutDirection: LayoutDirection, popupContentSize: IntSize): IntOffset {
-        var x = anchorBounds.right - popupContentSize.width
-        if (x < 0) x = anchorBounds.left.coerceAtMost((windowSize.width - popupContentSize.width).coerceAtLeast(0))
-        var y = anchorBounds.bottom + 2
-        if (y + popupContentSize.height > windowSize.height) y = (anchorBounds.top - popupContentSize.height - 2).coerceAtLeast(0)
-        return IntOffset(x, y)
-    }
-}
-
-/** The actions whose menu line is red: they end, remove or detach something */
-private val endingActions = listOf("Terminate", "Destroy", "Remove", "Delete", "Stop", "Detach")
-
-@Composable
-private fun MenuBox(items: List<ContextMenuItem>, close: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .width(IntrinsicSize.Max)
-            .widthIn(min = 160.dp)
-            .background(CompletionBackground, RectangleShape)
-            .border(1.dp, CompletionBorder, RectangleShape)
-            .padding(vertical = 3.dp)
-    ) {
-        items.forEach { item -> MenuLine(item.label, ending = endingActions.any { item.label.startsWith(it) }) { close(); item.onClick() } }
-    }
-}
-
-@Composable
-private fun MenuLine(label: String, ending: Boolean, onClick: () -> Unit) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val hovered by interactionSource.collectIsHoveredAsState()
-    Text(
-        label,
-        color = if (ending) LogErrorTextColor else FontColor,
-        fontSize = 12.sp,
-        fontFamily = FontFamily.SansSerif,
-        maxLines = 1,
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(if (hovered) CompletionSelected else Color.Transparent)
-            .hoverable(interactionSource)
-            .pointerHoverIcon(PointerIcon.Hand)
-            .clickable(interactionSource = interactionSource, indication = null) { onClick() }
-            .padding(horizontal = 12.dp, vertical = 5.dp)
-    )
 }
 
 /**

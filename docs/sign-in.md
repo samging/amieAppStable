@@ -14,7 +14,7 @@ the account was disabled), or after a month without opening the app.
 | **Create account** | A registration form inside the app (first name, last name, email, username, password). With *Verify email* on in the realm you get a mail first; open its link, then sign in with the username. |
 | **Register in browser** | Keycloak's hosted registration page. |
 | **Forgot password?** | Keycloak's reset page in the browser. |
-| **Continue as guest** | No server. The app uses the name `guest-desktop-user`. Guests can use the sandbox, the Models page and local metrics; they cannot publish to the backend or sync devices under their own name. |
+| **Continue without an account** | No server. The app uses the name `guest-desktop-user`. Guests can use the sandbox, the Models page and local metrics; they cannot publish to the backend or sync devices under their own name. **Start** on the welcome screen does the same without visiting this page. |
 
 ## How the session is kept
 

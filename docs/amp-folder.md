@@ -28,6 +28,7 @@ and sign-in to another checkout or machine.
 | `sample-intents.csv` | 45 `text,label` rows over greeting / lights / weather, written on first start for trying New model and Validate | yes |
 | `relations.json` | Which test file belongs to which training file (`relate`) | yes |
 | `componentSettings.json` | Configured devices | yes |
+| `databases.json` | The Postgres connections a script opens with `database("name")`: url, user, password (`$ENV:NAME` reads an environment variable), written with a `main` entry on first use | **no** |
 | `backend.json` | Amie backend, website and S3 service addresses | yes |
 | `keycloak.json` | Keycloak server, realm, client id and **secret** | **no** |
 | `session.json` | The signed-in session (access, refresh and id tokens) | **no** |

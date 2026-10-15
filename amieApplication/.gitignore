@@ -21,3 +21,4 @@ node_modules/
 # Local Keycloak client secret and signed-in session of the desktop app
 desktopApp/AMP/keycloak.json
 desktopApp/AMP/session.json
+desktopApp/AMP/databases.json

@@ -38,12 +38,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.text.rememberTextMeasurer
+import org.example.project.ui.theme.EditorIndentGuide
+import org.example.project.ui.theme.EditorIndentGuideActive
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
@@ -219,6 +225,9 @@ private fun completionAt(text: String, caret: Int, highlighting: EditorHighlight
     return Completion(start, prefix, afterReceiver, items)
 }
 
+/** What Tab inserts and the width of one indentation level, four spaces */
+private const val INDENT = EditorFormatting.INDENT
+
 /** The column at the left of the text: line numbers and the fold markers */
 internal val GutterWidth = 56.dp
 
@@ -242,6 +251,8 @@ internal fun SandboxEditor(
     viewportWidth: Dp,
     viewportHeight: Dp,
     onRun: () -> Unit = {},
+    /** Goes up by one each time the strip's Format is pressed; the editor formats the whole script then */
+    formatRequests: Int = 0,
 ) {
     var value by remember { mutableStateOf(TextFieldValue(initialCode)) }
     var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
@@ -259,6 +270,34 @@ internal fun SandboxEditor(
         value = TextFieldValue(updated, TextRange(from + caretOffset))
         completion = null
         onCodeChange(updated)
+    }
+
+    /** The whole script re-indented; the caret stays on its line, at the same place in the line's content */
+    fun formatAll() {
+        val text = value.text
+        val caret = value.selection.start.coerceIn(0, text.length)
+        val line = EditorFolding.lineOf(text, caret)
+        val lineStart = text.lastIndexOf('\n', caret - 1) + 1
+        val inContent = (caret - lineStart - text.substring(lineStart, caret).takeWhile { it == ' ' }.length).coerceAtLeast(0)
+        val formatted = EditorFormatting.format(text)
+        if (formatted == text) return
+        val newLineStart = formatted.split('\n').take(line).sumOf { it.length + 1 }
+        val newLine = formatted.substring(newLineStart).substringBefore('\n')
+        val newCaret = newLineStart + newLine.takeWhile { it == ' ' }.length + minOf(inContent, newLine.trimStart().length)
+        value = TextFieldValue(formatted, TextRange(newCaret.coerceIn(0, formatted.length)))
+        completion = null
+        onCodeChange(formatted)
+    }
+    LaunchedEffect(formatRequests) { if (formatRequests > 0) formatAll() }
+
+    /** Tab and Shift+Tab on the lines a selection touches */
+    fun shiftSelection(direction: Int) {
+        val (text, from, to) = if (direction > 0) EditorFormatting.indentLines(value.text, value.selection.start, value.selection.end)
+        else EditorFormatting.dedentLines(value.text, value.selection.start, value.selection.end)
+        if (text == value.text) return
+        value = TextFieldValue(text, TextRange(from, to))
+        completion = null
+        onCodeChange(text)
     }
 
     fun accept(entry: SandboxApi.Entry) {
@@ -322,6 +361,7 @@ internal fun SandboxEditor(
         Box(modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState())) {
             Box(modifier = Modifier.width(paneWidth).height(paneHeight)) {
                 CurrentLineBox(layout, caretLine, width = paneWidth, topPadding = 16.dp)
+                IndentGuides(layout, textStyle, caretLine = caretLine, startPadding = 12.dp, topPadding = 16.dp)
                 // The Popup is a child of this inner Box, whose origin is the text field's, so the caret rect maps straight to an offset
                 Box(modifier = Modifier.fillMaxSize().padding(start = 12.dp, top = 16.dp, end = 24.dp, bottom = 16.dp)) {
                     BasicTextField(
@@ -382,9 +422,25 @@ internal fun SandboxEditor(
                                         if (down) completion = null
                                         true
                                     }
-                                    // Tab indents with spaces instead of moving focus out of the editor
-                                    event.key == Key.Tab && !event.isShiftPressed -> {
-                                        if (down && value.selection.collapsed) replace(value.selection.start, value.selection.start, "    ")
+                                    cmd && event.isShiftPressed && event.key == Key.F -> {
+                                        if (down) formatAll()
+                                        true
+                                    }
+                                    // Enter keeps the line's indentation, opens a block after a brace
+                                    (event.key == Key.Enter || event.key == Key.NumPadEnter) && !cmd -> {
+                                        if (down) {
+                                            val from = value.selection.min
+                                            val insert = EditorFormatting.newline(value.text, from)
+                                            replace(from, value.selection.max, insert.text, insert.caret)
+                                        }
+                                        true
+                                    }
+                                    // Tab indents with spaces instead of moving focus out of the editor; on a selection, the lines move
+                                    event.key == Key.Tab -> {
+                                        if (down) {
+                                            if (event.isShiftPressed || !value.selection.collapsed) shiftSelection(if (event.isShiftPressed) -1 else 1)
+                                            else replace(value.selection.start, value.selection.start, INDENT)
+                                        }
                                         true
                                     }
                                     else -> false
@@ -411,6 +467,62 @@ internal fun SandboxEditor(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+/**
+ * The indentation made visible: a thin vertical line at every four leading spaces of a line, drawn under the
+ * text as the field lays it out (so folded blocks and the horizontal scroll are respected). A blank line
+ * carries the guides of the next line that has text, so a block's lines stay joined across its empty lines.
+ * The guide of the block the caret is in is lit, over the lines that block spans.
+ */
+@Composable
+private fun IndentGuides(layout: TextLayoutResult?, textStyle: TextStyle, caretLine: Int, startPadding: Dp, topPadding: Dp) {
+    val l = layout ?: return
+    val measurer = rememberTextMeasurer()
+    val indentWidth = remember(textStyle, measurer) { measurer.measure(INDENT, textStyle).size.width.toFloat() }
+    val text = l.layoutInput.text.text
+    // The indentation level of every laid-out line; a blank line takes the next non-blank line's
+    val levels = remember(text, l.lineCount) {
+        val raw = IntArray(l.lineCount) { line ->
+            val start = l.getLineStart(line)
+            val end = l.getLineEnd(line, visibleEnd = true)
+            val content = text.substring(start, end)
+            if (content.isBlank()) -1 else (content.length - content.trimStart(' ').length) / INDENT.length
+        }
+        var next = 0
+        for (i in raw.indices.reversed()) {
+            if (raw[i] < 0) raw[i] = next else next = raw[i]
+        }
+        raw
+    }
+    if (levels.none { it > 0 }) return
+    // The caret's block: its guide is the innermost one of the caret line (a closing line counts one level in),
+    // lit from the first to the last line that is at least that deep around the caret
+    val active = run {
+        if (caretLine !in levels.indices) return@run null
+        val lineText = text.substring(l.getLineStart(caretLine), l.getLineEnd(caretLine, visibleEnd = true)).trimStart()
+        val depth = levels[caretLine] + (if (lineText.startsWith("}") || lineText.startsWith(")") || lineText.startsWith("]")) 1 else 0)
+        if (depth <= 0) return@run null
+        var first = caretLine
+        while (first > 0 && levels[first - 1] + (if (first - 1 == caretLine) 0 else 0) >= depth) first--
+        var last = caretLine
+        while (last + 1 < levels.size && levels[last + 1] >= depth) last++
+        Triple(depth - 1, first, last)
+    }
+    val density = LocalDensity.current
+    val left = with(density) { startPadding.toPx() }
+    val top = with(density) { topPadding.toPx() }
+    Canvas(modifier = Modifier.fillMaxSize()) {
+        for (line in 0 until l.lineCount) {
+            val y0 = top + l.getLineTop(line)
+            val y1 = top + l.getLineBottom(line)
+            for (level in 0 until levels[line]) {
+                val lit = active != null && level == active.first && line >= active.second && line <= active.third
+                val x = left + level * indentWidth + 0.5f
+                drawLine(if (lit) EditorIndentGuideActive else EditorIndentGuide, Offset(x, y0), Offset(x, y1), strokeWidth = 1f)
             }
         }
     }

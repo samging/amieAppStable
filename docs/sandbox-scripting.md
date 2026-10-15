@@ -1,5 +1,7 @@
 # Scripting API
 
+Complete scripts for every call below, ready to paste, are in the [Cookbook](cookbook.md).
+
 The sandbox is a Kotlin script editor (`main.kts`) with a console (how to use the editor, the completion dropdown and
 the console filters is in [The sandbox](sandbox.md)). The script runs inside the app with the sandbox API bound to
 it; everything it logs shows in the console on the right and is appended to `AMP/logs.txt`.
@@ -12,15 +14,14 @@ an environment, since a bare `import(...)` reads as a Kotlin import.
 ## Running a script
 
 1. Type in the editor. The script is saved to `AMP/pluginDir/main.kts` as you type.
-2. Press **Run** over the editor, **⌘↵** (Ctrl+Enter elsewhere) inside it, or the play button at the bottom of
-   the sidebar.
+2. Press **Run** over the editor or **⌘↵** (Ctrl+Enter elsewhere) inside it.
 3. While the script runs the console strip reads `running 12s` (with the model build's phase and progress when
-   `modelBuilder` is working) and the play button becomes a square that fills with that progress; pressing Run
-   again only logs "Script is already running".
+   `modelBuilder` is working) and the Run button reads *Running…*; pressing Run again only logs "Script is
+   already running".
 4. When it ends the strip shows `finished in 41s` or `failed after 3s`, and the console gets the same line.
 
-The level toggles on the console strip (internal, error, data, info) filter what is shown; **Clear** empties the
-view, the log file keeps it all.
+The level toggles on the console strip (internal, error, data, info) filter what is shown; only **info** is on at
+start, the counts on the others say what is hidden. **Clear** empties the view, the log file keeps it all.
 
 ### Run phases
 
@@ -28,7 +29,8 @@ view, the log file keeps it all.
   `environment(SettingsEnv("env", "profile"))` / `amie.import(SettingsEnv(...))` calls are read from the script text *before* it compiles, the packages are resolved from Maven Central (cached under
   `AMP/env/caches`) and put on the script's classpath. Each env (`AMP/env/<name>/env.lock.json`) keeps what was ever
   imported into it, like a virtualenv.
-- **Execution.** The script's own `import` lines are moved to the top, then `val amie = bindings["logger"] as ScriptLogger`
+- **Execution.** The script's own `import` lines are moved to the top (a trailing `//` comment on one is fine),
+  `LogLevel` is imported for you, then `val amie = bindings["logger"] as ScriptLogger`
   and a prelude of top-level functions delegating to it (`fun source(path: String) = amie.source(path)`, …) are
   inserted before the rest of the code, and the whole is evaluated with the Kotlin JSR-223 engine on a background
   thread. The prelude is generated from one list (`SandboxApi.kt`), which also feeds the editor's completion dropdown.
@@ -39,14 +41,15 @@ Defined in `ScriptLogger.kt`. The most used calls (prefix `amie.` optional):
 
 | Call | What it does |
 |---|---|
-| `log("...")`, `info`, `error`, `data` | Console lines at the given level |
+| `log("...")`, `info`, `error`, `data` | Console lines at the given level: **info** for the script's own output (the only level on at start), **data** for what it produced (every model answer is one), **error** (turns itself on when a run fails), **internal** for the app's own lines |
 | `source("train.csv")` | Reads a labeled CSV (text and label columns are inferred from headers like `text`, `label`, `intent`). Looked up as given, then in `AMP/`, then `AMP/pluginDir/` |
 | `relate(train, "test.csv")` | Attaches a test file to a training source; the model validates on it instead of a split. Remembered in `AMP/relations.json` |
 | `sourceFile("file.csv", column = "")` | Raw rows keyed by index, optionally one column |
 | `modelBuilder("name", data)` | Trains and exports an intent classifier (below) |
 | `modelBuilder("name") { ... }` | Same, the lambda returns the data |
 | `initMod("name")` | The session of an exported model: the one already open, else a new one (listed on the Models page, terminable there); `.predict("text")` returns the predicted label, `.scores("text")` every label with its score (best first), `.inference("text")` the raw `label:probability` lines sorted best first; `.close()`. `initMod("dummy")` works on a fresh checkout. How sessions live and die: [Running sessions](sessions.md) |
-| `initMod()` | The bundled BERT NER model |
+| `initMod()` | The bundled BERT NER model, kept open: `.inference("text")` is one tag per token |
+| `initAmie("text")` | Named entities in one text with the same NER model, opened and closed for the call: the tags are printed and returned. For many texts use `initMod()` |
 | `initMod("name.jar")` | A new instance of a package jar behind the same interface: `.inference("text")` calls its `run(text)`, `.close()` its `close()`. Looked up in the env, `AMP/pluginDir`, as a path, then fetched from the Amie server (below) |
 | `validateMetrics("name", labels = listOf(...))` | Prints the stored validation table of a model |
 | `metricsChart("name", labels = listOf(...))` | ASCII bars: accuracy, macro F1 and the F1 of each label with precision, recall and support |
@@ -56,9 +59,13 @@ Defined in `ScriptLogger.kt`. The most used calls (prefix `amie.` optional):
 | `importModelOnnx("path.onnx")` | Any ONNX model behind the `inference / getStatus / close` interface |
 | `sessions.print()`, `sessions.cancel("name")`, `sessions.cancelAll()` | The open ORT sessions |
 | `packages.available()`, `packages.fetch("x.jar")`, `packages.print()`, `packages.closeAll()` | The package jars the server offers, a download into `AMP/pluginDir`, the open package sessions |
-| `saveState("name", json)`, `loadState("name")`, `listStates()` | A JSON text kept per user on the Amie backend (signed in): store it under a name, read it back (null when absent), list the names |
-| `jars.run("plugin.jar")`, `jars.quit("plugin.jar")` | Runs a static `run()` or `main` of a plugin jar once; not a package session |
-| `implementation("group:module:version")`, `amie.import("...")` | Add a package to the script's environment |
+| `saveState("name", json)`, `loadState("name")`, `listStates()` | A JSON text kept per user on the Amie backend (signed in): store it under a name, read it back (null when absent), list the names. The sandbox has no state that outlives a run; this is how a script remembers a choice across runs and machines |
+| `database("main")` | A Postgres database from `AMP/databases.json`: `.query(sql, params…)` rows as maps, `.scalar`, `.execute` for changes, `.print(sql)` a table in the console, `.tables()`, `.close()`. Failures are one ERROR line and a `DatabaseException` |
+| `databases.print()`, `databases.names()`, `databases.closeAll()` | The configured databases |
+| `serve("name", port = 8765)` | Serves the model over HTTP like the Models page's Listen; returns the predict URL or null. `stopServing("name")`, `servingUrl("name")` |
+| `jars.run("plugin.jar")`, `jars.quit("plugin.jar")` | Runs a static `run()` or `main` of a plugin jar once; not a package session. `run` returns what the method returned, null on failure (the reason is an ERROR line) |
+| `importPlugin("plugin.jar")` | The same run, found in the env, `AMP/pluginDir`, as a path or on the server; never throws: a missing jar, a jar without an entry point or a plugin that fails is one ERROR line and the script goes on |
+| `implementation("group:module:version")`, `amie.import("...")` | Add a package to the script's environment (the Models page's **Add → From Maven Central…** does the same with a search) |
 | `implementation("my.jar")`, `amie.import("my.jar")` | Add a jar file to the environment |
 | `environment(SettingsEnv("name", "profile"))`, `amie.import(SettingsEnv(...))` | Select the script environment (must be written literally) |
 | `internalEnv()` | Print what the environment contains |
@@ -198,7 +205,6 @@ rows of `[text, ..., label]`.
 step: text *n* of *N* while embedding, epoch *n* of 150 while training, each validation sample, then export. Phases are
 weighted (embedding 60%, training 30%, ...) into one fraction that drives:
 
-- the sandbox sidebar's play button, which becomes a square that fills with it,
 - the **console strip** (`running 12s · modelBuilder 'intents' training 72/150 · epoch 72 loss 0.3102 accuracy 0.912 · 48%`, with a thin bar under it),
 - the build line at the top of the Models page's list, with its thin bar.
 

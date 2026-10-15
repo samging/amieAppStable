@@ -9,11 +9,14 @@ import kotlinx.serialization.json.Json
 import org.example.project.getDirectory
 import java.io.File
 
-/** Everything the Settings page can change; one field so far */
+/** Everything the Settings page and the sandbox's own switches can change */
 @Serializable
 data class Settings(
     // How large the whole UI is drawn, 1.0 being the system's own size
     val uiScale: Float = 1f,
+    // The sandbox's navigation sidebar, hidden or shown from the strip over the editor (the console is not kept:
+    // it starts hidden and opens by itself at the first output)
+    val sandboxSidebar: Boolean = true,
 )
 
 /**
@@ -35,6 +38,7 @@ object AppSettings {
         .let { it.copy(uiScale = it.uiScale.coerceIn(MIN_SCALE, MAX_SCALE)) }
 
     fun setUiScale(scale: Float) = update { it.copy(uiScale = scale.coerceIn(MIN_SCALE, MAX_SCALE)) }
+    fun setSandboxSidebar(shown: Boolean) = update { it.copy(sandboxSidebar = shown) }
 
     private fun update(change: (Settings) -> Settings) {
         val next = change(_current.value)

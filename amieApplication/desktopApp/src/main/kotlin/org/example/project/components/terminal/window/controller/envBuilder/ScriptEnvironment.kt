@@ -64,6 +64,12 @@ data class Coordinate(val group: String, val module: String, val version: String
 @Serializable
 data class EnvPackage(val coordinate: String, val files: List<String>, val dependencies: List<String>, val repository: String? = null)
 
+/** A declared Maven package: what was asked for, what the env holds for it (null when nothing resolved) and its jar */
+data class MavenPackage(val declared: String, val resolved: String?, val jar: File?) {
+    val declaredVersion: String get() = declared.substringAfterLast(':')
+    val resolvedVersion: String? get() = resolved?.substringAfterLast(':')
+}
+
 @Serializable
 data class EnvLock(
     val name: String,
@@ -130,6 +136,29 @@ class ScriptEnvironment internal constructor(val name: String, private var activ
         runCatching { envJson.decodeFromString<EnvLock>(lockFile.readText()) }.getOrElse { EnvLock(name, activeProfile) }
 
     val packages: List<String> get() = lock.packages.map { it.coordinate }
+
+    /** What the env was asked for, literally: Maven coordinates and local jar names */
+    val declared: List<String> get() = lock.declared
+
+    /**
+     * The Maven packages this env declares (not their dependencies). The version in the env may be newer than the
+     * declared one, since a dependency's higher request wins (Gradle-style), so the match is by group:module.
+     */
+    fun mavenPackages(): List<MavenPackage> = lock.declared.filter { !it.endsWith(".jar") && !isLocalJar(it) }.map { declared ->
+        val key = runCatching { Coordinate.parse(declared).key }.getOrNull()
+        val resolved = key?.let { k -> lock.packages.firstOrNull { p -> runCatching { Coordinate.parse(p.coordinate).key }.getOrNull() == k } }
+        val jar = resolved?.files?.map { File(envRoot, it) }?.firstOrNull { it.isFile && it.extension == "jar" }
+        MavenPackage(declared, resolved?.coordinate, jar)
+    }
+
+    /** Takes a declared package out of the env; its files stay in the cache. False when it wasn't declared */
+    @Synchronized
+    fun remove(notation: String): Boolean {
+        if (notation !in lock.declared) return false
+        resolve(lock.declared - notation)
+        logInternal("env '$name': $notation removed; scripts compiled from the next run no longer see it")
+        return true
+    }
 
     /** Starts a run: sources the env with what the script declares, downloading only what isn't cached */
     @Synchronized

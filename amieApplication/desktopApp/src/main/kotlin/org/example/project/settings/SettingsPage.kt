@@ -53,7 +53,6 @@ fun SettingsPage(navController: NavController) {
         NavigationSidebar(
             selectedIndex = -1,
             onIndexSelected = { if (it == 1) navController.navigate("codingSandbox") },
-            showPlay = false,
             modelsSelected = false,
             onModels = { navController.navigate("models") },
             settingsSelected = true,

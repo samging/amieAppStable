@@ -27,10 +27,11 @@ In IntelliJ or Android Studio open the repository root and use the run configura
 ## First start
 
 1. The window stays blank for a moment while the app checks `AMP/session.json`. When a valid session comes back
-   you land on the **dashboard** straight away; otherwise the **Welcome** screen opens with **Continue**.
-2. With no session you land on the **login page**: sign in with a Keycloak username and password, use
-   **Sign in with browser (SSO)**, **Create account**, or **Continue as guest**. See [Signing in](sign-in.md).
-3. You arrive in the **sandbox** with `main.kts` open. Everything the app writes goes into `AMP/` next to its working
+   you land on the **dashboard** straight away; otherwise the **Welcome** screen opens.
+2. Press **Start**. No account is needed: the sandbox, the models and the metrics work on this machine. The small
+   link under it, *Sign in or create an account*, only matters for publishing and devices; see [Signing in](sign-in.md).
+3. You arrive in the **sandbox** with `main.kts` open. Open **Examples** on the strip over the editor and pick
+   *Ask the dummy model*, then press **Run**. Everything the app writes goes into `AMP/` next to its working
    directory (`amieApplication/desktopApp/AMP/` when started with Gradle); see [The AMP folder](amp-folder.md).
 
 ## The three screens

@@ -5,7 +5,23 @@ and the sidebar. It keeps to the app's quiet scheme: two thin strips (one over t
 no borders, one filled button (**Run**), and tooltips on everything instead of words on the screen. The rule
 between the editor and the console can be dragged to share the width; the split is kept while the app runs.
 
+Both side panes can be put away with the two icon chips left of **Run**. The navigation sidebar is hidden or
+shown by its chip, and that choice is kept in `AMP/settings.json`. The console follows the output instead: it
+starts hidden, since there is nothing to show, opens by itself at the first line a run logs (the first line the
+level toggles let through), and cannot be hidden while it holds output; its chip then says so. **Clear** empties
+it, after which the chip hides it again. With the console hidden the editor takes the whole width and the run's
+status (`ready`, `running 12s`, `finished in 41s`, `failed after 3s` with the error in its tooltip) moves up next
+to the file tab.
+
 ## The editor
+
+Indentation is drawn: a thin vertical line stands at every four leading spaces, so the lines of a block are joined
+down its left edge, across its empty lines too; the guide of the block the caret is in is lit. The editor keeps
+the indentation for you: **Enter** starts the new line at the current line's depth, one level deeper after a `{`,
+and between `{` and `}` it puts the closing brace on its own line below the caret. **Tab** inserts four spaces,
+or indents every line of a selection; **Shift+Tab** moves them back. **Format** on the strip (or ⌘⇧F, Ctrl+Shift+F
+elsewhere) re-indents the whole script by its braces and parentheses, continuing lines (`.map`, `?.let`, `?:`)
+one level in, and leaves the inside of strings and comments alone; the caret stays where it was in its line.
 
 - The strip over it shows the one file as a tab, `main.kts`, with **saved** beside it for a moment after each
   write, and **Run** at its right end (**Running…** while the script runs).
@@ -30,13 +46,19 @@ between the editor and the console can be dragged to share the width; the split 
   `dependency(...)`) for a package and `environment(SettingsEnv("name", "profile"))` for an environment, because
   `import(...)` without `amie.` reads as a Kotlin import statement. **Tab** in the editor inserts four spaces.
 
+**Examples**, on the strip over the editor, is the fastest way in: a menu of complete scripts (ask the dummy
+model, a confidence gate, train from a csv, read metrics, named entities, embeddings, sessions, Postgres, serve a
+model and call it, what to do when something goes wrong). Picking one puts it in the editor, ready for **Run**;
+the script that was there is kept under `AMP/pluginDir/backup/` and **Bring back my previous script** restores
+it. None of them needs an account or a server. The longer versions, with the explanations, are in the
+[Cookbook](cookbook.md).
+
 ## Running
 
-1. Press **Run** over the editor, press **⌘↵** (Ctrl+Enter elsewhere) inside it, or press the play button at the
-   bottom of the sidebar; they are the same. A second press while it runs only logs "Script is already running".
-2. The console strip reads `running 12s` with a moving bar under it; the sidebar's play button becomes a square
-   that fills with the build's progress. While `modelBuilder` works the strip shows the phase and step
-   (`modelBuilder 'x' embedding 40/120 · 43%`).
+1. Press **Run** over the editor or press **⌘↵** (Ctrl+Enter elsewhere) inside it; they are the same. A second
+   press while it runs only logs "Script is already running".
+2. The console strip reads `running 12s` with a moving bar under it and the Run button reads *Running…*. While
+   `modelBuilder` works the strip shows the phase and step (`modelBuilder 'x' embedding 40/120 · 43%`).
 3. The strip ends on `finished in 41s` or `failed after 3s` (the error in its tooltip, and in the console); the
    console gets the same line.
 
@@ -73,11 +95,18 @@ adds the time, the level and the source (`main.kts`, `sandbox`, `internal`) in f
 the log file has them, and **Clear**, which empties the view. Nothing is lost: everything the console ever showed
 is appended to `AMP/logs.txt`. When the console is narrow the toggles move under the status instead of squeezing it.
 
+When the app starts only **info** is on, so the console shows the script's own `log(...)` lines and the start and
+end of each run. The counts on the other toggles still move: `error 1` after a failed run means one error line is
+waiting behind the toggle, and the strip's status says `failed after 3s` with the error in its tooltip either way.
+
 ## Keyboard summary
 
 | Keys | Action |
 |---|---|
 | ⌘↵ (Ctrl+Enter) | Run main.kts |
+| Enter | New line at the current indentation; deeper after `{` |
+| Tab / Shift+Tab | Indent or dedent the line, or every line of the selection |
+| ⌘⇧F (Ctrl+Shift+F) | Format: re-indent the whole script |
 | ⌘- (Ctrl+-) | Fold the block the caret is in; with Shift, every block |
 | ⌘= (Ctrl+=) | Open the folded block at the caret; with Shift, every block |
 | Typing a name | Opens the completion dropdown |

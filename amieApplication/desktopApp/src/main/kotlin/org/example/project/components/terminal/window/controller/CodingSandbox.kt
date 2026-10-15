@@ -11,6 +11,9 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.FormatAlignLeft
+import androidx.compose.material.icons.filled.Terminal
+import androidx.compose.material.icons.filled.ViewSidebar
 import androidx.compose.material.icons.filled.ViewColumn
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
@@ -36,6 +39,11 @@ import org.jetbrains.jewel.foundation.theme.JewelTheme
 import org.jetbrains.jewel.intui.standalone.theme.IntUiTheme
 import org.jetbrains.jewel.ui.component.Text
 import org.example.project.components.ui.viewport.NavigationSidebar
+import org.example.project.components.ui.viewport.DropButton
+import org.example.project.components.ui.viewport.MENU_HEADING
+import androidx.compose.foundation.ContextMenuItem
+import org.example.project.components.terminal.window.controller.pluginEngine.JarPackages
+import org.example.project.settings.AppSettings
 import java.io.File
 import org.example.project.getDirectory
 import kotlinx.coroutines.Dispatchers
@@ -148,7 +156,11 @@ fun prewarmScriptEngine() {
 private const val SANDBOX_SOURCE = "sandbox"
 private const val SCRIPT_SOURCE = "$SANDBOX_SOURCE/main.kts"
 
-private val importDirective = Regex("""^\s*import\s+[\w.]+(\.\*)?(\s+as\s+\w+)?\s*$""")
+// An import line, a trailing // comment allowed
+private val importDirective = Regex("""^\s*import\s+[\w.]+(\.\*)?(\s+as\s+\w+)?\s*(//.*)?$""")
+
+/** In scope in every script without an import line: the console levels for log("…", LogLevel.DATA) */
+private val defaultImports = listOf("org.example.project.components.terminal.window.controller.LogLevel")
 
 /**
  * What the engine evaluates: the user's import directives first (they must lead the file), then the ScriptLogger
@@ -159,8 +171,10 @@ internal fun assembleScript(code: String): String {
     val lines = code.lines()
     val imports = lines.filter { importDirective.matches(it) }
     val body = lines.joinToString("\n") { if (importDirective.matches(it)) "" else it }
+    val imported = imports.map { it.trim().removePrefix("import").trim().substringBefore("//").trim() }
     return buildString {
         imports.forEach { append(it.trim()).append('\n') }
+        defaultImports.filter { it !in imported && "${it.substringBeforeLast('.')}.*" !in imported }.forEach { append("import ").append(it).append('\n') }
         append("import org.example.project.components.terminal.window.controller.ScriptLogger\n")
         append("val amie = bindings[\"logger\"] as ScriptLogger\n")
         append(SandboxApi.prelude())
@@ -205,7 +219,52 @@ fun CodingSandbox(navController: NavController) {
     // Open the main.kts the user already wrote; the default script is only for a first start.
     // The editor keeps its own text state, so it is recreated (editorGeneration) when the file replaces its code
     var editorGeneration by remember { mutableStateOf(0) }
-    var outputLevels by remember { mutableStateOf(LogLevel.entries.toSet()) }
+    // Pressing Format on the strip raises this; the editor re-indents the script when it changes
+    var formatRequests by remember { mutableStateOf(0) }
+    // Only the script's own lines at first; the other levels are a click away on the console strip
+    var outputLevels by remember { mutableStateOf(setOf(LogLevel.INFO)) }
+    val settings by AppSettings.current.collectAsState()
+    // The console starts hidden, since there is nothing to show, opens by itself at the first line that the level
+    // toggles let through, and cannot be hidden while it holds output; Clear empties it, then it can go
+    var consoleWanted by remember { mutableStateOf(false) }
+    // Only lines of the sandbox itself count, not the untagged or internal lines every terminal shows
+    val hasOutput = consoleEntries(SANDBOX_SOURCE).any { it.level in outputLevels && (it.source == SANDBOX_SOURCE || it.source?.startsWith("$SANDBOX_SOURCE/") == true) }
+    LaunchedEffect(hasOutput) { if (hasOutput) consoleWanted = true }
+    val consoleShown = consoleWanted || hasOutput
+    /** Puts [code] in the editor and in main.kts, as if typed */
+    fun loadCode(code: String) {
+        codeField.value = code
+        highlights = Highlights.Builder().code(code).language(highlights.getLanguage()).theme(highlights.getTheme()).build()
+        editorGeneration++
+        runCatching { File(getDirectory().toString(), "pluginDir/main.kts").apply { parentFile.mkdirs() }.writeText(code) }
+            .onFailure { logToConsole(ResponseDto(time = Instant.now(), message = "Failed to save main.kts: ${it.message}", level = LogLevel.ERROR, source = SANDBOX_SOURCE)) }
+    }
+    val backupDir = File(getDirectory().toString(), "pluginDir/backup")
+    /** An example replaces the script; what was there is kept under AMP/pluginDir/backup so nothing is lost */
+    fun loadExample(example: SandboxExamples.Example) {
+        val current = highlights.getCode()
+        if (current.isNotBlank() && current != example.code) {
+            val stamp = java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").format(java.time.LocalDateTime.now())
+            val backup = File(backupDir, "main-$stamp.kts")
+            runCatching { backupDir.mkdirs(); backup.writeText(current) }
+                .onSuccess { logToConsole(ResponseDto(time = Instant.now(), message = "Example '${example.title}' loaded; your script is kept at ${backup.path} (Examples > Bring back my previous script)", source = SANDBOX_SOURCE)) }
+                .onFailure { logToConsole(ResponseDto(time = Instant.now(), message = "Example '${example.title}' loaded; the previous script could not be kept: ${it.message}", level = LogLevel.ERROR, source = SANDBOX_SOURCE)) }
+        } else {
+            logToConsole(ResponseDto(time = Instant.now(), message = "Example '${example.title}' loaded; press Run", source = SANDBOX_SOURCE))
+        }
+        loadCode(example.code)
+    }
+    fun restoreBackup() {
+        val newest = backupDir.listFiles { f -> f.extension == "kts" }?.maxByOrNull { it.name }
+        if (newest == null) {
+            logToConsole(ResponseDto(time = Instant.now(), message = "No previous script under ${backupDir.path}", source = SANDBOX_SOURCE))
+            return
+        }
+        val current = highlights.getCode()
+        loadCode(newest.readText())
+        newest.delete()
+        logToConsole(ResponseDto(time = Instant.now(), message = "Brought back ${newest.name}" + (if (current.isNotBlank()) "; the example it replaced is not kept" else ""), source = SANDBOX_SOURCE))
+    }
     LaunchedEffect(Unit) {
         val saved = withContext(Dispatchers.IO) {
             runCatching { File(getDirectory().toString(), "pluginDir/main.kts").takeIf { it.isFile }?.readText() }.getOrNull()
@@ -240,7 +299,7 @@ fun CodingSandbox(navController: NavController) {
     }
 
     /**
-     * Runs main.kts: the sidebar's play button, the Run button over the editor and Cmd/Ctrl+Enter all end here. A
+     * Runs main.kts: the Run button over the editor and Cmd/Ctrl+Enter both end here. A
      * second press while it runs only says so. The console is emptied first; the log file keeps the earlier runs.
      */
     fun run() {
@@ -278,9 +337,10 @@ fun CodingSandbox(navController: NavController) {
                         logToConsole(ResponseDto(time = Instant.now(), message = message, level = level, source = SCRIPT_SOURCE))
                     }
 
-                    override fun initAmie(text: String) {
+                    override fun initAmie(text: String): List<String> {
                         val result = org.example.project.components.terminal.integrations.amiePilot.initAmie(text)
                         logToConsole(ResponseDto(time = Instant.now(), message = result.joinToString("\n"), source = SCRIPT_SOURCE))
+                        return result
                     }
                     override  fun initMod() : InteractionModel {
                         return org.example.project.components.terminal.integrations.amiePilot.InitMod().create()
@@ -333,14 +393,29 @@ fun CodingSandbox(navController: NavController) {
 
                     override fun internalEnv(): List<String> = env.print()
 
+                    // Runs a plugin jar's static run() (or main). Nothing here throws: a missing jar, a jar without an
+                    // entry point or a plugin that fails is one ERROR line, and the script goes on
                     override fun importPlugin(plugin: String) {
                         // AMP/pluginDir/corePlugins.json names the core plugin set; absent on a fresh checkout
                         val file = File(getDirectory().toString(), "pluginDir/corePlugins.json")
-                        if (file.isFile) DeviceManagerFactory.create(file).getPlugins()
-                        else logToConsole(ResponseDto(time = Instant.now(), message = "importPlugin: no ${file.path}", source = SCRIPT_SOURCE))
-                        logToConsole(ResponseDto(time = Instant.now(), message = "importPlugin $plugin", source = SCRIPT_SOURCE))
-                        val res = jars.run(plugin)
-                        logToConsole(ResponseDto( time = Instant.now(), message = res.toString(), source = SCRIPT_SOURCE))
+                        if (file.isFile) runCatching { DeviceManagerFactory.create(file).getPlugins() }
+                            .onFailure { logToConsole(ResponseDto(time = Instant.now(), message = "importPlugin: core plugins not read from ${file.path}: ${it.message}", level = LogLevel.ERROR, source = SCRIPT_SOURCE)) }
+                        else logToConsole(ResponseDto(time = Instant.now(), message = "importPlugin: no ${file.path}, only the jar is run", source = SCRIPT_SOURCE))
+                        val found = JarPackages.resolve(plugin)
+                        if (found == null) {
+                            logToConsole(ResponseDto(time = Instant.now(), message = "importPlugin: $plugin not found in the env, AMP/pluginDir, as a path or on the server", level = LogLevel.ERROR, source = SCRIPT_SOURCE))
+                            return
+                        }
+                        logToConsole(ResponseDto(time = Instant.now(), message = "importPlugin ${found.first.name} (${found.second})", source = SCRIPT_SOURCE))
+                        val result = runCatching { jars.run(found.first.absolutePath) }.getOrElse { e ->
+                            logToConsole(ResponseDto(time = Instant.now(), message = "importPlugin: ${found.first.name} failed: ${e.message ?: e.javaClass.simpleName}", level = LogLevel.ERROR, source = SCRIPT_SOURCE))
+                            return
+                        }
+                        logToConsole(ResponseDto(
+                            time = Instant.now(),
+                            message = if (result == null) "importPlugin: ${found.first.name} returned nothing (a failure is an ERROR line above)" else "importPlugin: ${found.first.name} -> $result",
+                            source = SCRIPT_SOURCE,
+                        ))
                     }
 
 
@@ -392,6 +467,8 @@ fun CodingSandbox(navController: NavController) {
                 }
             } catch (e: Exception) {
                 failure = e.message ?: e.javaClass.simpleName
+                // The error level may be off (only info is on at start): a failure turns it on, so the reason is in view
+                outputLevels = outputLevels + LogLevel.ERROR
                 logger.error("Error running script: ${pluginPath}| ${e.message}")
                 logToConsole(ResponseDto(time = Instant.now(), message = "Error: ${e.message}", level = LogLevel.ERROR, source = SANDBOX_SOURCE))
             } finally {
@@ -413,21 +490,17 @@ fun CodingSandbox(navController: NavController) {
 
         Row(modifier = Modifier.fillMaxSize().background(EditorBackground)) {
 
-            NavigationSidebar(
+            // Both panes can be hidden from the strip over the editor; the sidebar's choice is kept in AMP/settings.json
+            if (settings.sandboxSidebar) NavigationSidebar(
                 selectedIndex = selectedIndex,
                 onIndexSelected = {
                     selectedIndex = it
                     if (it == 0) navController.navigate("home1/")
                 },
-                showPlay = true,
                 modelsSelected = false,
                 onModels = { navController.navigate("models") },
                 settingsSelected = false,
                 onSettings = { navController.navigate("settings") },
-                running = running,
-                runProgress = build?.fraction,
-
-                showPlayCallback = { run() },
             )
 
             // The editor and the console share the width at a rule that can be dragged; the split lasts while the app runs
@@ -437,8 +510,28 @@ fun CodingSandbox(navController: NavController) {
                 var editorWidth by remember { mutableStateOf(SandboxSplit.editorWidth.takeIf { it > 0f } ?: (total.value * 0.58f)) }
                 val width = editorWidth.coerceIn(minPane, (total.value - minPane).coerceAtLeast(minPane)).dp
                 Row(modifier = Modifier.fillMaxSize()) {
-                    Column(modifier = Modifier.width(width).fillMaxHeight()) {
-                        EditorHeader(saved = savedFlash, running = running, shortcut = runShortcut, onRun = { run() })
+                    // With the console hidden the editor takes the whole width
+                    val editorModifier = if (consoleShown) Modifier.width(width) else Modifier.weight(1f)
+                    Column(modifier = editorModifier.fillMaxHeight()) {
+                        EditorHeader(
+                            saved = savedFlash,
+                            running = running,
+                            shortcut = runShortcut,
+                            onRun = { run() },
+                            sidebarShown = settings.sandboxSidebar,
+                            onSidebar = { AppSettings.setSandboxSidebar(!settings.sandboxSidebar) },
+                            onFormat = { formatRequests++ },
+                            examples = SandboxExamples.groups.flatMap { group ->
+                                listOf(ContextMenuItem(MENU_HEADING + group) {}) + SandboxExamples.all.filter { it.group == group }.map { ex -> ContextMenuItem(ex.title) { loadExample(ex) } }
+                            } + listOf(ContextMenuItem(MENU_HEADING + "Your script") {}, ContextMenuItem("Bring back my previous script") { restoreBackup() }),
+                            consoleShown = consoleShown,
+                            consoleLocked = hasOutput,
+                            onConsole = { if (!hasOutput) consoleWanted = !consoleWanted },
+                            // The run's state moves here while the console strip is away
+                            status = if (consoleShown) null else ({
+                                RunStatus(running = running, startedAt = runStartedAt, lastRun = lastRun, build = build, lastBuild = buildHistory.firstOrNull(), shortcut = runShortcut)
+                            }),
+                        )
                         val editorTextStyle = TextStyle(
                             fontFamily = FontFamily.Monospace,
                             fontSize = 14.sp,
@@ -463,11 +556,13 @@ fun CodingSandbox(navController: NavController) {
                                     viewportWidth = maxWidth,
                                     viewportHeight = maxHeight,
                                     onRun = { run() },
+                                    formatRequests = formatRequests,
                                 )
                             }
                         }
                     }
 
+                    if (consoleShown) {
                     SplitHandle { delta ->
                         editorWidth = (width.value + delta).coerceIn(minPane, (total.value - minPane).coerceAtLeast(minPane))
                         SandboxSplit.editorWidth = editorWidth
@@ -500,6 +595,7 @@ fun CodingSandbox(navController: NavController) {
                             inputBorderColor = ConsoleBorderColor
                         )
                     }
+                    }
                 }
             }
         }
@@ -515,11 +611,27 @@ private object SandboxSplit {
 }
 
 /**
- * The strip over the editor: the one file as a tab, "saved" beside it for a moment after each write, and Run at
- * the right end (Running… while the script runs; the console strip says how long).
+ * The strip over the editor: the one file as a tab, "saved" beside it for a moment after each write, the run's
+ * status when the console strip is hidden, and at the right end the two pane switches (sidebar, console) and Run
+ * (Running… while the script runs; the console strip says how long).
  */
 @Composable
-private fun EditorHeader(saved: Boolean, running: Boolean, shortcut: String, onRun: () -> Unit) {
+private fun EditorHeader(
+    saved: Boolean,
+    running: Boolean,
+    shortcut: String,
+    onRun: () -> Unit,
+    onFormat: () -> Unit,
+    /** The Examples menu: complete scripts that replace the editor's text (the previous script is kept) */
+    examples: List<ContextMenuItem>,
+    sidebarShown: Boolean,
+    onSidebar: () -> Unit,
+    consoleShown: Boolean,
+    /** The console holds output, so it stays: the chip only says why */
+    consoleLocked: Boolean,
+    onConsole: () -> Unit,
+    status: (@Composable () -> Unit)? = null,
+) {
     Column(modifier = Modifier.fillMaxWidth().background(TabBarBackground)) {
         Row(modifier = Modifier.fillMaxWidth().height(32.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.fillMaxHeight().width(IntrinsicSize.Max).background(TabActiveBackground)) {
@@ -530,7 +642,27 @@ private fun EditorHeader(saved: Boolean, running: Boolean, shortcut: String, onR
                     Text(text = if (saved) "saved" else "Kotlin script", style = TextStyle(color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.SansSerif))
                 }
             }
+            if (status != null) {
+                Spacer(modifier = Modifier.width(12.dp))
+                Box(modifier = Modifier.weight(1f, fill = false)) { status() }
+            }
             Spacer(modifier = Modifier.weight(1f))
+            DropButton("Examples", accent = false, tip = "Complete scripts to run as they are: a model, training, NER, a database, serving… Your current script is kept under AMP/pluginDir/backup", items = examples)
+            Spacer(modifier = Modifier.width(6.dp))
+            IconChip(Icons.Default.FormatAlignLeft, tip = "Format: re-indent the whole script by its braces (${if (shortcut.startsWith("⌘")) "⌘⇧F" else "Ctrl+Shift+F"})") { onFormat() }
+            Spacer(modifier = Modifier.width(4.dp))
+            IconChip(Icons.Default.ViewSidebar, tip = if (sidebarShown) "Hide the navigation sidebar" else "Show the navigation sidebar", active = sidebarShown) { onSidebar() }
+            Spacer(modifier = Modifier.width(4.dp))
+            IconChip(
+                Icons.Default.Terminal,
+                tip = when {
+                    consoleLocked -> "The console has output, so it stays; Clear it to hide it"
+                    consoleShown -> "Hide the console; it comes back by itself at the next output, and the run's status moves up here meanwhile"
+                    else -> "Show the console (empty; it opens by itself when a run logs something)"
+                },
+                active = consoleShown,
+            ) { onConsole() }
+            Spacer(modifier = Modifier.width(8.dp))
             if (running) SmallButton("Running…", enabled = false, icon = Icons.Default.PlayArrow, tip = "main.kts is running; the console follows it") {}
             else AccentButton("Run", icon = Icons.Default.PlayArrow, tip = "Run main.kts ($shortcut). The file is saved as you type") { onRun() }
             Spacer(modifier = Modifier.width(8.dp))
@@ -583,33 +715,6 @@ private fun ConsoleStrip(
     details: Boolean,
     onDetails: (Boolean) -> Unit,
 ) {
-    // Ticks once a second while running so the elapsed time moves
-    var now by remember { mutableStateOf(Instant.now()) }
-    LaunchedEffect(running) {
-        while (running) {
-            now = Instant.now()
-            delay(1000)
-        }
-    }
-    val elapsed = startedAt?.takeIf { running }?.let { Duration.between(it, now).short() }
-    val failed = lastRun?.ok == false || (lastBuild?.phase?.finished == true && !lastBuild.succeeded && lastRun?.ok != true)
-    val statusColor = when {
-        running -> SuccessColor
-        failed -> DangerColor
-        else -> MutedFontColor
-    }
-    val status = when {
-        running && build != null -> "running ${elapsed ?: "0s"} · modelBuilder '${build.modelName}' ${build.describe()} · ${(build.fraction * 100).toInt()}%"
-        running -> "running ${elapsed ?: "0s"}"
-        lastRun == null -> "ready · $shortcut runs main.kts"
-        lastRun.ok -> "finished in ${lastRun.took.short()}"
-        else -> "failed after ${lastRun.took.short()}"
-    }
-    val statusTip = listOfNotNull(
-        lastRun?.detail?.let { "last error: $it" },
-        lastBuild?.let { "last build '${it.modelName}' ${it.phase.label} in ${it.elapsed.short()}" + it.detail.takeIf { d -> d.isNotBlank() }?.let { d -> " · $d" }.orEmpty() },
-    ).joinToString("\n").ifEmpty { null }
-
     Column(modifier = Modifier.fillMaxWidth().background(TabBarBackground)) {
         // The toggles move under the status when the console is narrow instead of squeezing it
         FlowRow(
@@ -617,18 +722,7 @@ private fun ConsoleStrip(
             horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.height(26.dp)) {
-                PulsingDot(color = statusColor, pulsing = running)
-                Spacer(modifier = Modifier.width(8.dp))
-                AppTooltip(statusTip) {
-                    Text(
-                        text = status,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        style = TextStyle(color = if (running) FontColor else MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.SansSerif),
-                    )
-                }
-            }
+            RunStatus(running = running, startedAt = startedAt, lastRun = lastRun, build = build, lastBuild = lastBuild, shortcut = shortcut)
             Spacer(modifier = Modifier.weight(1f))
             for (level in listOf(LogLevel.INTERNAL, LogLevel.ERROR, LogLevel.DATA, LogLevel.INFO)) {
                 Box(modifier = Modifier.height(26.dp), contentAlignment = Alignment.CenterStart) {
@@ -662,6 +756,54 @@ private fun ConsoleStrip(
             )
         } else {
             Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(UnifiedBorderColor))
+        }
+    }
+}
+
+/**
+ * What the script is doing, as a dot and a line: ready (and how to run it), running with the elapsed time and,
+ * while modelBuilder works, its phase and progress; finished or failed with the time it took, the detail in the
+ * tooltip. On the console strip, or over the editor while the console is hidden.
+ */
+@Composable
+private fun RunStatus(running: Boolean, startedAt: Instant?, lastRun: RunOutcome?, build: ModelBuild?, lastBuild: ModelBuild?, shortcut: String) {
+    // Ticks once a second while running so the elapsed time moves
+    var now by remember { mutableStateOf(Instant.now()) }
+    LaunchedEffect(running) {
+        while (running) {
+            now = Instant.now()
+            delay(1000)
+        }
+    }
+    val elapsed = startedAt?.takeIf { running }?.let { Duration.between(it, now).short() }
+    val failed = lastRun?.ok == false || (lastBuild?.phase?.finished == true && !lastBuild.succeeded && lastRun?.ok != true)
+    val statusColor = when {
+        running -> SuccessColor
+        failed -> DangerColor
+        else -> MutedFontColor
+    }
+    val status = when {
+        running && build != null -> "running ${elapsed ?: "0s"} · modelBuilder '${build.modelName}' ${build.describe()} · ${(build.fraction * 100).toInt()}%"
+        running -> "running ${elapsed ?: "0s"}"
+        lastRun == null -> "ready · $shortcut runs main.kts"
+        lastRun.ok -> "finished in ${lastRun.took.short()}"
+        else -> "failed after ${lastRun.took.short()}"
+    }
+    val statusTip = listOfNotNull(
+        lastRun?.detail?.let { "last error: $it" },
+        lastBuild?.let { "last build '${it.modelName}' ${it.phase.label} in ${it.elapsed.short()}" + it.detail.takeIf { d -> d.isNotBlank() }?.let { d -> " · $d" }.orEmpty() },
+    ).joinToString("\n").ifEmpty { null }
+
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.height(26.dp)) {
+        PulsingDot(color = statusColor, pulsing = running)
+        Spacer(modifier = Modifier.width(8.dp))
+        AppTooltip(statusTip) {
+            Text(
+                text = status,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = TextStyle(color = if (running) FontColor else MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.SansSerif),
+            )
         }
     }
 }

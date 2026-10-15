@@ -115,8 +115,24 @@ asked). Each line shows the Java the jar needs and its version, and at the right
 `on server` (the tooltip says what that means) and the ⋯ button; an open one is underlined in green. The filter
 box matches the jar name, version, Java, a collection name, the class a session opens on, and any class or
 resource name inside the jar, so a class can be found without knowing which jar holds it. **Add** beside the
-filter box offers **Jar from this machine…** (copied into `AMP/pluginDir` and imported into the env) and **New
-collection…**.
+filter box offers **Jar from this machine…** (copied into `AMP/pluginDir` and imported into the env), **From
+Maven Central…** and **New collection…**.
+
+### From Maven Central
+
+**Add → From Maven Central…** opens a form in the place of the detail panel with one box. Type a name (`gson`,
+`okhttp`), a class name, `group:artifact` for the versions of one artifact, or paste a full
+`group:artifact:version` as in a Gradle dependency; Maven Central is asked as you type and the hits are ordered
+here, the artifact named like what you typed and the well-known groups first (the server's own order buries
+them). Every hit is a row with
+its newest version and publication date and its own **Add**, which resolves that version and its dependencies
+into the env (`AMP/env/<env>/env.lock.json`, files under `AMP/env/caches`), exactly what
+`implementation("group:artifact:version")` in a script does. A pasted coordinate is the first row. A thin bar
+shows while the library is being resolved, and the form closes itself when it is done: the library then sits
+under **From Maven Central** in the list, selected, with the same SOURCE, BUILD and CONTENTS sections as any jar
+(the coordinate is in SOURCE), a **Remove** button that takes it out of the env (the files stay cached), and a
+menu that copies the `implementation("…")` line. A script can import its classes from the next run without
+declaring it. These are libraries, not packages: nothing opens them with `initMod`.
 
 ### Collections
 

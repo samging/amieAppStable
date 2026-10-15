@@ -106,6 +106,18 @@ fun LoginPage(onLoginSuccess: (String) -> Unit, onRegister: () -> Unit = {}) {
                 Text("SIGN IN WITH BROWSER (SSO)", fontSize = 11.sp, fontFamily = FontFamily.SansSerif, letterSpacing = 1.sp)
             }
 
+            Spacer(modifier = Modifier.height(12.dp))
+            OutlinedButton(
+                onClick = { onLoginSuccess("guest-desktop-user") },
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                shape = RectangleShape,
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFc7cbd4)),
+                border = BorderStroke(1.dp, Color(UnifiedBorderColor.toArgb())),
+                enabled = busy == null
+            ) {
+                Text("CONTINUE WITHOUT AN ACCOUNT", fontSize = 11.sp, fontFamily = FontFamily.SansSerif, letterSpacing = 1.sp)
+            }
+
             Row(modifier = Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 TextButton(onClick = onRegister, enabled = busy == null) {
                     Text("Create account", color = Color(0xFFc7cbd4), fontSize = 12.sp, fontFamily = FontFamily.SansSerif)
@@ -115,9 +127,6 @@ fun LoginPage(onLoginSuccess: (String) -> Unit, onRegister: () -> Unit = {}) {
                     enabled = busy == null
                 ) {
                     Text("Forgot password?", color = Color(0xFF878e9c), fontSize = 12.sp, fontFamily = FontFamily.SansSerif)
-                }
-                TextButton(onClick = { onLoginSuccess("guest-desktop-user") }, enabled = busy == null) {
-                    Text("Continue as guest", color = Color(0xFF878e9c).copy(alpha = 0.7f), fontSize = 12.sp, fontFamily = FontFamily.SansSerif)
                 }
             }
         }

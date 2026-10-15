@@ -37,7 +37,10 @@ class PredictionTest {
         assertEquals(Prediction("echo: hello", null), Prediction.parse("echo: hello"))
         assertEquals(Prediction("B-PER", null), Prediction.parse("B-PER"))
         assertEquals(Prediction("the:B-PER", null), Prediction.parse("the:B-PER"))
-        assertEquals(Prediction("a:b", 1.5f), Prediction.parse("a:b:1.5"))
+        assertEquals(Prediction("a:b", 0.5f), Prediction.parse("a:b:0.5"))
+        // A number outside 0..1 is not a probability: a token with its class index stays whole
+        assertEquals(Prediction("the:3", null), Prediction.parse("the:3"))
+        assertEquals(Prediction("x:1.5", null), Prediction.parse("x:1.5"))
         assertNull(model("echo: hello").scores("hi")["echo: hello"])
         assertEquals("echo: hello", model("echo: hello").predict("hi"))
     }

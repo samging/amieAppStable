@@ -83,7 +83,7 @@ import androidx.compose.foundation.layout.wrapContentSize
 import amiemultiplatform.shared.generated.resources.ascii_amie_welcome
 
 @Composable
-fun WelcomePage(navController: NavHostController) {
+fun WelcomePage(navController: NavHostController, onStart: () -> Unit = { navController.navigate("login") }) {
     val session by org.example.project.auth.AuthState.session.collectAsState()
     // The start route only comes here without a session; should one exist (or appear) while this is shown, the
     // page moves on to the dashboard by itself, so a signed-in user never sees this screen or a "Continue as" button
@@ -121,7 +121,7 @@ fun WelcomePage(navController: NavHostController) {
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
-            onClick = { navController.navigate("login") },
+            onClick = onStart,
             enabled = !restoring,
             modifier = Modifier.fillMaxWidth(0.4f).height(48.dp),
             shape = RectangleShape,
@@ -133,11 +133,28 @@ fun WelcomePage(navController: NavHostController) {
             ),
         ) {
             Text(
-                if (restoring) "Restoring session…" else "Continue",
+                if (restoring) "Restoring session…" else "Start",
                 fontWeight = FontWeight.SemiBold,
                 fontFamily = FontFamily.SansSerif,
                 letterSpacing = 0.5.sp,
                 color = Color.Black
+            )
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+        Text(
+            text = "No account needed. The sandbox, the models and the metrics work on this machine.",
+            color = MutedFontColor,
+            fontSize = 11.sp,
+            fontFamily = FontFamily.SansSerif
+        )
+        Spacer(modifier = Modifier.height(18.dp))
+        androidx.compose.material3.TextButton(onClick = { navController.navigate("login") }, enabled = !restoring) {
+            Text(
+                "Sign in or create an account (only for publishing and devices)",
+                color = MutedFontColor,
+                fontSize = 12.sp,
+                fontFamily = FontFamily.SansSerif
             )
         }
     }

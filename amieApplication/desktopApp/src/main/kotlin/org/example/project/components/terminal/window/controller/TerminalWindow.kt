@@ -407,9 +407,10 @@ fun TerminalWindow(
                             override fun initMod() : InteractionModel {
                                 return org.example.project.components.terminal.integrations.amiePilot.InitMod().create()
                             }
-                            override fun initAmie(text: String) {
+                            override fun initAmie(text: String): List<String> {
                                 val result = org.example.project.components.terminal.integrations.amiePilot.initAmie(text)
                                 logToConsole(ResponseDto(time = Instant.now(), message = result.joinToString("\n"), level = LogLevel.DATA))
+                                return result
                             }
 
                             override fun forwardContext(text: String, tokens: (matrix: LongArray) -> Unit): Array<Array<FloatArray>>? =

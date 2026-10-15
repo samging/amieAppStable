@@ -74,6 +74,8 @@ fun AppBaseTemplate() {
             runCatching { org.example.project.auth.AuthState.restore() }
             org.example.project.components.terminal.window.controller.modules.ModelServer.restore()
         }
+        // Database connections a script left open are closed when the app exits
+        Runtime.getRuntime().addShutdownHook(Thread { runCatching { org.example.project.components.terminal.window.controller.databases.Databases.closeAll() } })
     }
     val restoring by org.example.project.auth.AuthState.restoring.collectAsState()
 
@@ -104,9 +106,15 @@ fun AppBaseTemplate() {
 
             composable("welcome") {
                 Column(modifier = Modifier.fillMaxSize()) {
-                    // No account chip or Log in button here: Continue is the only way on from the welcome screen
+                    // No account chip or Log in button here: Start goes to the sandbox as a guest, Sign in is the small option
                     WindowHeader(name = "Welcome", showOnBack = false, showUser = false, onBack = {})
-                    WelcomePage(navController = navController)
+                    WelcomePage(
+                        navController = navController,
+                        onStart = {
+                            guestUser = "guest-desktop-user"
+                            navController.navigate("home1/") { popUpTo("welcome") { inclusive = true } }
+                        },
+                    )
                 }
             }
 

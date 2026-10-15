@@ -41,6 +41,7 @@ nav:
       - The sandbox: sandbox.md
       - Running sessions: sessions.md
       - Scripting API: sandbox-scripting.md
+      - Cookbook, scripts to copy: cookbook.md
       - Models and metrics: models.md
       - Serving a model: serving.md
       - Devices: devices.md

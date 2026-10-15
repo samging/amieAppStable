@@ -54,6 +54,8 @@ dependencies {
     implementation(libs.jewel.int.ui.decorated.window)
     implementation(libs.kodeview)
     implementation("com.microsoft.onnxruntime:onnxruntime:1.19.2")
+    // Postgres for scripts: database("main") reads AMP/databases.json
+    implementation("org.postgresql:postgresql:42.7.4")
     implementation("ai.djl.huggingface:tokenizers:0.31.0")
 
     implementation(libs.tensorflow.core)

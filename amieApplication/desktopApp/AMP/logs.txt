@@ -2558,3 +2558,6 @@ Waiting for logs...
 > [INTERNAL] [internal] 2026-10-14T19:18:35.705588Z initMod: 'dummy' -> greeting:0.65430593, weather:0.4820101, lights:0.36340934
 > [INFO] [sandbox] 2026-10-14T19:18:35.705991Z Finished in 0s
 > [INTERNAL] [internal] 2026-10-14T19:20:16.598213Z auth: signed out
+> [ERROR] [internal] 2026-10-15T10:36:25.688029Z database 'probe': can't connect to jdbc:postgresql://127.0.0.1:1/nothing?connectTimeout=1&loginTimeout=1 as 'x': Connection to 127.0.0.1:1 refused. Check that the hostname and port are correct and that the postmaster is accepting TCP/IP connections.
+> [ERROR] [internal] 2026-10-15T10:41:19.706975Z database 'probe': can't connect to jdbc:postgresql://127.0.0.1:1/nothing?connectTimeout=1&loginTimeout=1 as 'x': Connection to 127.0.0.1:1 refused. Check that the hostname and port are correct and that the postmaster is accepting TCP/IP connections.
+> [ERROR] [internal] 2026-10-15T10:55:35.246298Z database 'probe': can't connect to jdbc:postgresql://127.0.0.1:1/nothing?connectTimeout=1&loginTimeout=1 as 'x': Connection to 127.0.0.1:1 refused. Check that the hostname and port are correct and that the postmaster is accepting TCP/IP connections.

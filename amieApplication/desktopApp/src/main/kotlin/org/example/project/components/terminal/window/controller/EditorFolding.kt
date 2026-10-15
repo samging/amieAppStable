@@ -130,7 +130,7 @@ internal object EditorFolding {
     }
 
     /** Which characters are code rather than part of a string, a character literal or a comment */
-    private fun codeMask(text: String): BooleanArray {
+    internal fun codeMask(text: String): BooleanArray {
         val n = text.length
         val code = BooleanArray(n) { true }
         fun hide(from: Int, to: Int) { for (k in from until minOf(to, n)) code[k] = false }
