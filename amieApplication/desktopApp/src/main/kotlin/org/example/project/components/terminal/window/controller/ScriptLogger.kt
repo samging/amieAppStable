@@ -18,6 +18,8 @@ import org.example.project.components.terminal.window.controller.pluginEngine.Ja
 import org.example.project.components.terminal.window.controller.pluginEngine.JarPackages
 import org.example.project.components.terminal.window.controller.modules.MetricsReport
 import org.example.project.components.terminal.window.controller.modules.ModelSessions
+import org.example.project.components.terminal.window.controller.modules.ModelGroups
+import org.example.project.components.terminal.window.controller.modules.ModelSwarm
 import org.example.project.components.terminal.window.controller.modules.ModelServer
 import org.example.project.components.terminal.window.controller.modules.readServing
 import org.example.project.components.terminal.window.controller.databases.Database
@@ -45,8 +47,16 @@ interface ScriptLogger {
     fun initMod(modelName: String): InteractionModel =
         if (modelName.trim().endsWith(".jar", ignoreCase = true)) JarPackages.open(modelName.trim())
         else ModelSessions.open(modelName.trim())
-    // Package jar sessions: packages.available(), packages.fetch("x.jar"), packages.print(), packages.closeAll()
+    // Package jar sessions: packages.available(), packages.fetch("x.jar"), packages.print(), packages.closeAll();
+    // packages.meta("x.jar") what the jar says it needs, packages.test("x.jar") runs the tests it declares
     val packages: JarPackages get() = JarPackages
+    // The swarm of a model group of the env (the one open on it, else opened now): the models asked together.
+    // .predict(text) is the label with the best score across them, .scores(text) each label's best score,
+    // .each(text) every model's own label, .vote(text) the label most models give, .ask(text) every raw answer
+    fun group(name: String): ModelSwarm = ModelGroups.open(name)
+    // The model groups of the envs: groups.print(), groups.names(), groups.create("name", listOf("a", "b")),
+    // groups.add("name", "model"), groups.remove("name", "model"), groups.delete("name"), groups.closeAll()
+    val groups: ModelGroups get() = ModelGroups
     // Saved states of the signed-in user on the Amie backend (uploads/<user>/state/<name>.json): any JSON text under
     // a name matching [A-Za-z0-9._-]{1,64}. Blocking calls like a package fetch; a failure is one ERROR line
     fun saveState(name: String, json: String) {

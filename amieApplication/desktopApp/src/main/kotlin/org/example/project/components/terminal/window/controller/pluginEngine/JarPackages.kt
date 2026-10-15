@@ -67,6 +67,10 @@ class JarPackageSession internal constructor(
     val className: String,
     /** Where the jar came from: env, pluginDir, path or server */
     val source: String,
+    /** What the jar says it needs, when it says anything */
+    val meta: PackageMeta?,
+    /** The folder its configuration files are read from */
+    val configDir: File,
     private val loader: URLClassLoader,
     private val instance: Any,
     private val runMethod: Method,
@@ -120,6 +124,9 @@ class JarPackageSession internal constructor(
         "file" to file.absolutePath,
         "url" to JarPackages.origin(jarName)?.url,
         "page" to JarPackages.origin(jarName)?.page,
+        "configDir" to configDir.absolutePath,
+        "config" to (meta?.config?.map { it.file } ?: emptyList<String>()),
+        "metadata" to (meta != null),
         "openedAt" to openedAt.toString(),
         "runs" to runs,
         "running" to running,
@@ -181,28 +188,46 @@ object JarPackages {
     /** The open package sessions, oldest first */
     val open: List<JarPackageSession> @Synchronized get() = sessions.values.toList()
 
-    /** Opens a new session on the jar; see the class comment for where the jar is looked up */
+    /**
+     * Opens a new session on the jar; see the class comment for where the jar is looked up. Before the class is
+     * made, the jar's metadata is read and its configuration is put where the package finds it: the config
+     * folder (`AMP/pluginDir/config/<jar>/`, templates written for the files that are missing) is the first
+     * root of the class loader, so `getResource("x.properties")` resolves there; `amie.package.config` and
+     * `amie.package.name` are system properties while the package is opened; and a `configure(File)`,
+     * `configure(Path)`, `configure(String)` or `configure(Map)` method of the package class, if it has one,
+     * is called with the folder (the map holds `dir` and each file by name).
+     */
     fun open(name: String): JarPackageSession {
         val (file, source) = resolve(name) ?: throw IllegalArgumentException(
             "package $name not found: not in the env, AMP/pluginDir, as a path, or on the server (${BackendConfig.load().site})"
         )
+        val meta = PackageMetadata.read(file)
+        val configDir = PackageMetadata.configDir(file.name)
+        PackageMetadata.prepareConfig(file.name, meta)
+        meta?.java?.let { needed ->
+            val host = Runtime.version().feature()
+            if (needed > host) throw IllegalStateException("${file.name} needs Java $needed (its metadata says so) and this app runs Java $host")
+        }
         val env = ScriptEnvironments.current
         val parent = env?.classLoader(JarPackages::class.java.classLoader) ?: JarPackages::class.java.classLoader
         val id = ids.incrementAndGet()
-        val loader = URLClassLoader("amie-package-${file.name}-$id", arrayOf(file.toURI().toURL()), parent)
+        val loader = URLClassLoader("amie-package-${file.name}-$id", arrayOf(configDir.toURI().toURL(), file.toURI().toURL()), parent)
         try {
-            val entry = findEntryClass(file, loader)
+            val entry = findEntryClass(file, loader, meta?.entry)
                 ?: throw IllegalArgumentException("${file.name} has no package class: a public class with run(String): List and close(), and a no-arg constructor")
             val previous = Thread.currentThread().contextClassLoader
             Thread.currentThread().contextClassLoader = loader
             val instance = try {
-                entry.clazz.getConstructor().newInstance()
+                System.setProperty("amie.package.config", configDir.absolutePath)
+                System.setProperty("amie.package.name", file.name)
+                System.setProperty("amie.package.config.${file.name.removeSuffix(".jar")}", configDir.absolutePath)
+                entry.clazz.getConstructor().newInstance().also { configure(it, entry.clazz, configDir, file.name) }
             } catch (e: InvocationTargetException) {
                 throw IllegalStateException("${file.name}: ${entry.clazz.name} could not be created: ${e.cause}", e.cause)
             } finally {
                 Thread.currentThread().contextClassLoader = previous
             }
-            val session = JarPackageSession(id, file.name, file, entry.clazz.name, source, loader, instance, entry.run, entry.close)
+            val session = JarPackageSession(id, file.name, file, entry.clazz.name, source, meta, configDir, loader, instance, entry.run, entry.close)
             session.log.add("open", "opened as session #$id on ${entry.clazz.name} from $source")
             synchronized(this) { sessions[id] = session }
             logInternal("package ${file.name} (#$id): session ready on ${entry.clazz.name} from $source")
@@ -211,6 +236,75 @@ object JarPackages {
             runCatching { loader.close() }
             throw e
         }
+    }
+
+    /** Hands the config folder to the package through its configure method, when it has one */
+    private fun configure(instance: Any, clazz: Class<*>, configDir: File, jarName: String) {
+        val method = clazz.methods.firstOrNull { it.name == "configure" && it.parameterCount == 1 && !Modifier.isStatic(it.modifiers) } ?: return
+        val type = method.parameterTypes[0]
+        val argument: Any? = when {
+            type == File::class.java -> configDir
+            type == java.nio.file.Path::class.java -> configDir.toPath()
+            type == String::class.java -> configDir.absolutePath
+            type.isAssignableFrom(Map::class.java) -> buildMap<String, String> {
+                put("dir", configDir.absolutePath)
+                configDir.listFiles()?.filter { it.isFile }?.forEach { put(it.name, it.absolutePath) }
+            }
+            else -> null
+        }
+        if (argument == null) {
+            logInternal("package $jarName: configure(${type.simpleName}) is not called; File, Path, String or Map are understood")
+            return
+        }
+        try {
+            method.invoke(instance, argument)
+            logInternal("package $jarName: configure(${type.simpleName}) called with ${configDir.absolutePath}")
+        } catch (e: InvocationTargetException) {
+            throw IllegalStateException("$jarName: configure failed: ${e.cause}", e.cause)
+        }
+    }
+
+    /** What the jar says it needs, from inside it and from the sidecar beside it; null when it says nothing */
+    fun meta(name: String): PackageMeta? = resolve(name)?.first?.let { PackageMetadata.read(it) }
+
+    /**
+     * Runs the tests the jar declares on a fresh session (opened as initMod would, configuration and all) and
+     * closes it: every test's input through run, the answer checked against expect, contains and lines. With no
+     * tests declared, one call with "hello" that must not throw. The report is printed, kept beside the jar as
+     * <jar>.tests.json and returned.
+     */
+    fun test(name: String): PackageTestReport {
+        val jarName = File(name).name
+        val session = try {
+            open(name)
+        } catch (e: Throwable) {
+            val report = PackageTestReport(jarName, error = e.message ?: e.javaClass.simpleName)
+            PackageMetadata.writeReport(report)
+            logInternal("test run ${report.summary()}", LogLevel.ERROR)
+            return report
+        }
+        val tests = session.meta?.tests.orEmpty()
+        val smoke = tests.isEmpty()
+        val results = try {
+            (if (smoke) listOf(PackageTest(name = "answers hello", input = "hello")) else tests).map { t ->
+                val begun = System.nanoTime()
+                val outcome = runCatching { session.inference(t.input) }
+                val millis = (System.nanoTime() - begun) / 1_000_000
+                outcome.fold(
+                    onSuccess = { answer -> t.check(answer).let { reason -> PackageTestResult(t.title, t.input, reason == null, answer, reason, millis) } },
+                    onFailure = { PackageTestResult(t.title, t.input, false, emptyList(), "threw ${it.javaClass.simpleName}: ${it.message}", millis) },
+                )
+            }
+        } finally {
+            session.close()
+        }
+        val report = PackageTestReport(jarName, results = results, smoke = smoke, entryClass = session.className)
+        PackageMetadata.writeReport(report)
+        logInternal("test run ${report.summary()}", if (report.ok) LogLevel.INFO else LogLevel.ERROR)
+        results.forEach { r ->
+            logInternal("  ${if (r.passed) "pass" else "FAIL"}  ${r.name}: \"${r.input.take(40)}\" -> ${r.answer.joinToString(" | ").take(100)}${r.reason?.let { "  ($it)" } ?: ""}  ${r.millis} ms", if (r.passed) LogLevel.INFO else LogLevel.ERROR)
+        }
+        return report
     }
 
     /** The jar as a file with where it was found, downloading it from the server when it is nowhere local */
@@ -305,7 +399,7 @@ object JarPackages {
         val env = ScriptEnvironments.current
         val parent = env?.classLoader(JarPackages::class.java.classLoader) ?: JarPackages::class.java.classLoader
         return URLClassLoader("amie-inspect-${file.name}", arrayOf(file.toURI().toURL()), parent).use { loader ->
-            runCatching { findEntryClass(file, loader)?.clazz?.name }.getOrNull()
+            runCatching { findEntryClass(file, loader, PackageMetadata.read(file)?.entry)?.clazz?.name }.getOrNull()
         }
     }
 
@@ -335,10 +429,11 @@ object JarPackages {
     private class Entry(val clazz: Class<*>, val run: Method, val close: Method?)
 
     /**
-     * The class to instantiate: the manifest's Main-Class when it satisfies the contract, else a class that
-     * implements an interface named AmiePackage, else the first class in the jar that satisfies it.
+     * The class to instantiate: the one the metadata names when it satisfies the contract, else the manifest's
+     * Main-Class when it does, else a class that implements an interface named AmiePackage, else the first class
+     * in the jar that satisfies it.
      */
-    private fun findEntryClass(file: File, loader: ClassLoader): Entry? {
+    private fun findEntryClass(file: File, loader: ClassLoader, preferred: String? = null): Entry? {
         val candidates = mutableListOf<Entry>()
         var mainClass: String? = null
         JarFile(file).use { jar ->
@@ -354,6 +449,7 @@ object JarPackages {
             }
         }
         if (candidates.isEmpty()) return null
+        preferred?.let { p -> candidates.firstOrNull { it.clazz.name == p }?.let { return it } }
         mainClass?.let { main -> candidates.firstOrNull { it.clazz.name == main }?.let { return it } }
         candidates.firstOrNull { c -> c.clazz.interfaces.any { it.simpleName == "AmiePackage" } }?.let { return it }
         return candidates.first()

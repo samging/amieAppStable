@@ -78,8 +78,14 @@ class JarInterpreter {
             return null
         }
         val parent = env?.classLoader(JarInterpreter::class.java.classLoader) ?: JarInterpreter::class.java.classLoader
-        val loader = URLClassLoader("amie-jar-${file.name}", arrayOf(file.toURI().toURL()), parent)
-        logInternal("jar ${file.name}: loaded from ${file.absolutePath}")
+        // The jar's config folder is the first root, so its configuration files resolve as resources; the
+        // metadata's templates are written there first, and amie.package.config names it
+        val configDir = PackageMetadata.configDir(file.name)
+        PackageMetadata.prepareConfig(file.name, PackageMetadata.read(file))
+        System.setProperty("amie.package.config", configDir.absolutePath)
+        System.setProperty("amie.package.config.${file.name.removeSuffix(".jar")}", configDir.absolutePath)
+        val loader = URLClassLoader("amie-jar-${file.name}", arrayOf(configDir.toURI().toURL(), file.toURI().toURL()), parent)
+        logInternal("jar ${file.name}: loaded from ${file.absolutePath}, config in ${configDir.absolutePath}")
         return (file to loader).also { loaded[key(jarFile)] = it }
     }
 

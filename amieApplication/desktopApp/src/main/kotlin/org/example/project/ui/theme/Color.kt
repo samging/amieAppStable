@@ -99,6 +99,9 @@ val DangerButtonBorder = Color(0xFF7F3434)
 val PageAccent = Color(0xFF2B5797)
 val PageAccentHover = Color(0xFF356AB5)
 val AccentButtonHover = PageAccentHover
+// The Run button alone: green, the colour of a thing that runs, so it is told apart from the blue that creates
+val RunButton = SuccessColor
+val RunButtonHover = Color(0xFF6FA879)
 // Charts: one muted slate hue in three steps (dark, mid, light) and a gray; nothing vivid, nothing warm
 val ChartAccent = Color(0xFF7D93AD)
 val ChartSecond = Color(0xFFA9ADB3)

@@ -15,6 +15,11 @@ and sign-in to another checkout or machine.
 | `pluginDir/*.jar` | Package jars, opened by scripts with `initMod("x.jar")`; jars fetched from the Amie server land here | yes |
 | `pluginDir/*.jar.source.json` | Where a fetched jar came from: download URL, website page, version, fetch time | yes |
 | `pluginDir/collections.json` | The package collections: name and member jars | yes |
+| `pluginDir/*.jar.package.json` | Metadata written beside a jar that ships none (or over the jar's own): config files, env, Java, entry class, tests | yes |
+| `pluginDir/*.jar.tests.json` | The last test run of that package: each test's input, answer, pass/fail | yes |
+| `pluginDir/config/<jar>/` | The configuration files a package reads: its templates are written here, the package resolves them as resources | yes |
+| `env/<env>/groups.json` | The model groups of that env: name, models, icon | yes |
+| `env/<env>/<group>.sessions.log` | What the swarm of that group was asked and answered | yes |
 | `pluginDir/*.jar.sessions.log` | What every session of that package was asked and answered (open, run, error, close lines) | yes |
 | `modules/<name>/model.onnx` | An exported model | yes |
 | `modules/<name>/module.json` | Its manifest: encoder, dimensions, labels | yes |

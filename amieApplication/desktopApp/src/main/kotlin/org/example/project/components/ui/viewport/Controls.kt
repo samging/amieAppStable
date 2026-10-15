@@ -49,14 +49,14 @@ import org.example.project.ui.theme.TabActiveBackground
  */
 
 @Composable
-internal fun AccentButton(label: String, enabled: Boolean = true, icon: ImageVector? = null, tip: String? = null, arrow: Boolean = false, onClick: () -> Unit) {
+internal fun AccentButton(label: String, enabled: Boolean = true, icon: ImageVector? = null, tip: String? = null, arrow: Boolean = false, fill: Color = PageAccent, fillHover: Color = AccentButtonHover, onClick: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val hovered by interactionSource.collectIsHoveredAsState()
     val colour = if (enabled) Color.White else Color.White.copy(alpha = 0.5f)
     AppTooltip(tip) { Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
-            .background(when { !enabled -> PageAccent.copy(alpha = 0.35f); hovered -> AccentButtonHover; else -> PageAccent }, RectangleShape)
+            .background(when { !enabled -> fill.copy(alpha = 0.35f); hovered -> fillHover; else -> fill }, RectangleShape)
             .hoverable(interactionSource)
             .pointerHoverIcon(PointerIcon.Hand)
             .clickable(enabled = enabled, interactionSource = interactionSource, indication = null) { onClick() }

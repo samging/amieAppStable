@@ -51,6 +51,8 @@ Defined in `ScriptLogger.kt`. The most used calls (prefix `amie.` optional):
 | `checkData(data)` | The preprocessor alone, without training: what it would clean, drop and refuse, and whether a build could start (returns true then) |
 | `initMod("name")` | The session of an exported model: the one already open, else a new one (listed on the Models page, terminable there); `.predict("text")` returns the predicted label, `.scores("text")` every label with its score (best first), `.inference("text")` the raw `label:probability` lines sorted best first; `.close()`. `initMod("dummy")` works on a fresh checkout. How sessions live and die: [Running sessions](sessions.md) |
 | `initMod()` | The bundled BERT NER model, kept open: `.inference("text")` is one tag per token |
+| `group("name")` | The swarm of a model group of the env: the models asked together as one session (the one already open on the group, else a new one, listed on the Models page as a *model group* session). `.predict("text")` is the label with the best score across the models, `.scores("text")` each label's best score, `.vote("text")` the label most models give, `.each("text")` every model's own label, `.ask("text")` every model's raw lines; `.close()` closes the sessions it opened. Groups are made on the Models page (a model's ⋯ menu) or with `groups` |
+| `groups` | The model groups of the envs: `groups.print()`, `groups.names()`, `groups.create("name", listOf("a", "b"))` (in the env the script is sourced in), `groups.add("name", "model")`, `groups.remove("name", "model")`, `groups.delete("name")`, `groups.closeAll()`. A group belongs to an env: it is kept in `AMP/env/<env>/groups.json`, `group("name")` looks in the script's env first, and `internalEnv()` lists them with the packages |
 | `initAmie("text")` | Named entities in one text with the same NER model, opened and closed for the call: the tags are printed and returned. For many texts use `initMod()` |
 | `initMod("name.jar")` | A new instance of a package jar behind the same interface: `.inference("text")` calls its `run(text)`, `.close()` its `close()`. Looked up in the env, `AMP/pluginDir`, as a path, then fetched from the Amie server (below) |
 | `validateMetrics("name", labels = listOf(...))` | Prints the stored validation table of a model |
@@ -93,8 +95,10 @@ if (scores.values.first() < 0.5f) log("not sure", LogLevel.ERROR)
 m.predictions("turn the lights on").forEach { p -> log("${p.label} ${p.score}") }
 ```
 
-Each of the three calls runs the model once, so ask once and keep the result instead of calling `predict` and
-`scores` on the same text. A package's answers (`echo: hello`) have no score: `predict` returns the first line
+Each call is logged as a DATA line in the console in the shape it was asked: `predict` logs the text and the one
+label with its score (`intents "turn the lights on" -> lights 0.970`), `scores` and `inference` the text and every
+label with its score. Each of the three calls runs the model once, so ask once and keep the result instead of
+calling `predict` and `scores` on the same text. A package's answers (`echo: hello`) have no score: `predict` returns the first line
 whole and `scores` is empty.
 
 ## Building a model
@@ -137,10 +141,71 @@ packages.available().forEach { log("${it.name} ${it.size}") }   // what the serv
 packages.print()                                                   // open package sessions
 ```
 
-The package class is the manifest's `Main-Class` when it satisfies the contract, else a class implementing an
-interface named `AmiePackage`, else the first class in the jar that does. `run` executes on the calling thread with
+The package class is the one the jar's metadata names (below) when it satisfies the contract, else the manifest's
+`Main-Class` when it does, else a class implementing an interface named `AmiePackage`, else the first class in the
+jar that does. `run` executes on the calling thread with
 the jar's class loader as context loader, and what it returns is shown one line per element. Open package sessions
 also appear under **Sessions** on the [Models page](models-page.md).
+
+### What a jar needs: metadata, configuration and test runs
+
+A jar can say what it requires in `META-INF/amie/package.json` (or `amie-package.json` at its root). For a jar
+that ships none, `AMP/pluginDir/<jar>.package.json` beside it says the same (**⋯ > Write metadata template** on
+the Models page writes one to fill in); when both exist, the sidecar's fields override the jar's. The shape:
+
+```json
+{
+  "name": "weather", "version": "1.2", "description": "answers with the forecast for a place",
+  "java": 21,
+  "entry": "com.example.Weather",
+  "config": [
+    {"file": "weather.properties", "required": true, "description": "the API key", "template": "apiKey=\n"}
+  ],
+  "env": [{"name": "WEATHER_PROXY", "required": false, "description": "an HTTP proxy, if one is needed"}],
+  "tests": [
+    {"name": "a known place", "input": "Paris", "contains": "Paris"},
+    {"name": "answers in one line", "input": "Berlin", "lines": 1},
+    {"name": "exact", "input": "ping", "expect": "pong"}
+  ],
+  "notes": "free text for whoever runs it",
+  "flags": [{"text": "stable", "color": "green"}, {"text": "v2 api", "color": "blue"}]
+}
+```
+
+`flags` are coloured tags the Models page shows on the jar's row and panel beside its version, Java, language and
+test flags; the colour is one of slate, green, amber, red, violet, blue. Flags added on the page go to the
+sidecar and add to the jar's own.
+
+The runtime reads it before the jar is opened (`pluginEngine/PackageMeta.kt`, `JarPackages.open`):
+
+- **Configuration lives in `AMP/pluginDir/config/<jar without .jar>/`.** The folder is made on the first open,
+  and every declared `config` file that is missing is written from its `template`, so the person finds a file to
+  fill in instead of a stack trace. A required file with no template that is missing is an error line in the
+  console (the jar still opens). The package finds the folder three ways: it is the **first root of the jar's
+  class loader**, so `getClass().getClassLoader().getResource("weather.properties")` (or `getResourceAsStream`)
+  resolves there, ahead of a default copy inside the jar; the system properties **`amie.package.config`** (the
+  folder) and `amie.package.name` (the jar) are set while it is opened, with `amie.package.config.<jar>` kept
+  for the jar; and a public **`configure(File)`**, `configure(Path)`, `configure(String)` or
+  `configure(Map<String, String>)` method of the package class, when it has one, is called with the folder right
+  after the constructor (the map holds `dir` and each file in the folder by name). `jars.run("x.jar")` loads a
+  jar the same way.
+- **`java`** is checked against the Java this app runs: a jar that needs a newer one is refused with the reason.
+- **`entry`** picks the package class when the jar has more than one candidate.
+- **`tests`** are the jar's own test runs: `packages.test("x.jar")` in a script, or **Test run** on the Models
+  page, opens a fresh session as `initMod` would (configuration included), sends each `input` through `run`,
+  checks the answer against `expect` (the whole answer), `contains` (some line) and `lines` (how many), closes
+  the session, prints the report and keeps it as `AMP/pluginDir/<jar>.tests.json`. A test with none of the three
+  passes when `run` does not throw. With no tests declared the run is one call with `"hello"` that must answer.
+
+```kotlin
+packages.meta("weather.jar")?.let { log("needs Java ${it.java}, files ${it.config.map { c -> c.file }}") }
+val report = packages.test("weather.jar")          // the console gets one line per test
+log(if (report.ok) "all ${report.passed} passed" else "${report.failed} failed")
+```
+
+The Models page shows all of it on the jar's panel: **REQUIREMENTS** (Java, package class, metadata, config
+folder, every config file and variable, the last test run, each marked met or not), **CONFIG** (the folder with
+**Reveal folder**, the files and their state) and **TESTS** (what is declared, and the last run's answers).
 
 ### Session logs
 

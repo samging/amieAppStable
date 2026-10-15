@@ -11,6 +11,8 @@ data class AppChrome(
     val dragArea: @Composable (content: @Composable () -> Unit) -> Unit = { it() },
     val onMinimize: () -> Unit = {},
     val onToggleMaximize: () -> Unit = {},
+    /** Whether the window fills its screen right now, for the maximize button's tooltip */
+    val maximized: () -> Boolean = { false },
     val onClose: () -> Unit = {},
     val user: String = "",
     val onLogin: (() -> Unit)? = null,

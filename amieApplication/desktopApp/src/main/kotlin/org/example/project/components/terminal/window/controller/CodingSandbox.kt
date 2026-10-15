@@ -72,6 +72,8 @@ import java.time.Instant
 import org.example.project.components.terminal.integrations.amiePilot.*
 import org.slf4j.LoggerFactory
 import org.example.project.ui.theme.ConsoleBackground
+import org.example.project.ui.theme.RunButton
+import org.example.project.ui.theme.RunButtonHover
 import org.example.project.ui.theme.ConsoleBorderColor
 import org.example.project.ui.theme.PanelDividerColor
 import org.example.project.ui.theme.ConsoleInputBackground
@@ -224,13 +226,20 @@ fun CodingSandbox(navController: NavController) {
     // Only the script's own lines at first; the other levels are a click away on the console strip
     var outputLevels by remember { mutableStateOf(setOf(LogLevel.INFO)) }
     val settings by AppSettings.current.collectAsState()
-    // The console starts hidden, since there is nothing to show, opens by itself at the first line that the level
-    // toggles let through, and cannot be hidden while it holds output; Clear empties it, then it can go
+    // The console starts hidden, since there is nothing to show, and opens by itself at the first line of a run
+    // (the levels let through); it can be hidden at any time, output or not, and stays hidden for the rest of that
+    // run, so a long run does not keep bringing it back. Run empties it, and its first line opens it again
     var consoleWanted by remember { mutableStateOf(false) }
     // Only lines of the sandbox itself count, not the untagged or internal lines every terminal shows
-    val hasOutput = consoleEntries(SANDBOX_SOURCE).any { it.level in outputLevels && (it.source == SANDBOX_SOURCE || it.source?.startsWith("$SANDBOX_SOURCE/") == true) }
-    LaunchedEffect(hasOutput) { if (hasOutput) consoleWanted = true }
-    val consoleShown = consoleWanted || hasOutput
+    val outputCount = consoleEntries(SANDBOX_SOURCE).count { it.level in outputLevels && (it.source == SANDBOX_SOURCE || it.source?.startsWith("$SANDBOX_SOURCE/") == true) }
+    val hasOutput = outputCount > 0
+    // Only the first line after an empty console opens it: what was there when it was hidden stays out of the way
+    var seenOutput by remember { mutableStateOf(0) }
+    LaunchedEffect(outputCount) {
+        if (outputCount > 0 && seenOutput == 0) consoleWanted = true
+        seenOutput = outputCount
+    }
+    val consoleShown = consoleWanted
     /** Puts [code] in the editor and in main.kts, as if typed */
     fun loadCode(code: String) {
         codeField.value = code
@@ -514,8 +523,11 @@ fun CodingSandbox(navController: NavController) {
                     // With the console hidden the editor takes the whole width
                     val editorModifier = if (consoleShown) Modifier.width(width) else Modifier.weight(1f)
                     Column(modifier = editorModifier.fillMaxHeight()) {
+                        // The env the script declares (environment(SettingsEnv("name")), else default), read from the text
+                        val envName = remember(codeField.value) { EnvPlan.scan(codeField.value).envName }
                         EditorHeader(
                             saved = savedFlash,
+                            env = envName,
                             running = running,
                             shortcut = runShortcut,
                             onRun = { run() },
@@ -526,8 +538,8 @@ fun CodingSandbox(navController: NavController) {
                                 listOf(ContextMenuItem(MENU_HEADING + group) {}) + SandboxExamples.all.filter { it.group == group }.map { ex -> ContextMenuItem(ex.title) { loadExample(ex) } }
                             } + listOf(ContextMenuItem(MENU_HEADING + "Your script") {}, ContextMenuItem("Bring back my previous script") { restoreBackup() }),
                             consoleShown = consoleShown,
-                            consoleLocked = hasOutput,
-                            onConsole = { if (!hasOutput) consoleWanted = !consoleWanted },
+                            consoleHasOutput = hasOutput,
+                            onConsole = { consoleWanted = !consoleWanted },
                             // The run's state moves here while the console strip is away
                             status = if (consoleShown) null else ({
                                 RunStatus(running = running, startedAt = runStartedAt, lastRun = lastRun, build = build, lastBuild = buildHistory.firstOrNull(), shortcut = runShortcut)
@@ -619,6 +631,8 @@ private object SandboxSplit {
 @Composable
 private fun EditorHeader(
     saved: Boolean,
+    /** The env the script is sourced in, in the place a file tab would take: the file is always AMP/pluginDir/main.kts */
+    env: String,
     running: Boolean,
     shortcut: String,
     onRun: () -> Unit,
@@ -628,19 +642,24 @@ private fun EditorHeader(
     sidebarShown: Boolean,
     onSidebar: () -> Unit,
     consoleShown: Boolean,
-    /** The console holds output, so it stays: the chip only says why */
-    consoleLocked: Boolean,
+    /** The console holds output; its chip says what hiding it does with it */
+    consoleHasOutput: Boolean,
     onConsole: () -> Unit,
     status: (@Composable () -> Unit)? = null,
 ) {
     Column(modifier = Modifier.fillMaxWidth().background(TabBarBackground)) {
         Row(modifier = Modifier.fillMaxWidth().height(32.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.fillMaxHeight().width(IntrinsicSize.Max).background(TabActiveBackground)) {
-                Box(modifier = Modifier.fillMaxWidth().height(2.dp).background(TabActiveIndicator))
-                Row(modifier = Modifier.weight(1f).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = "main.kts", style = TextStyle(color = FontColor, fontSize = 12.sp, fontFamily = FontFamily.SansSerif))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = if (saved) "saved" else "Kotlin script", style = TextStyle(color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.SansSerif))
+            // No file tab: there is one script, AMP/pluginDir/main.kts (the docs say so), and what matters is the
+            // env it runs in, so that is what the strip says
+            AppTooltip("The script is AMP/pluginDir/main.kts, saved as you type; it is sourced in the env '$env' (environment(SettingsEnv(\"name\")) picks another)") {
+                Row(modifier = Modifier.fillMaxHeight().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "env", style = TextStyle(color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.SansSerif))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(text = env, style = TextStyle(color = FontColor, fontSize = 12.sp, fontFamily = FontFamily.Monospace))
+                    if (saved) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(text = "saved", style = TextStyle(color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.SansSerif))
+                    }
                 }
             }
             if (status != null) {
@@ -657,15 +676,15 @@ private fun EditorHeader(
             IconChip(
                 Icons.Default.Terminal,
                 tip = when {
-                    consoleLocked -> "The console has output, so it stays; Clear it to hide it"
-                    consoleShown -> "Hide the console; it comes back by itself at the next output, and the run's status moves up here meanwhile"
+                    consoleShown -> "Hide the console; its output is kept, it comes back by itself at the first line of the next run, and the run's status moves up here meanwhile"
+                    consoleHasOutput -> "Show the console with its output"
                     else -> "Show the console (empty; it opens by itself when a run logs something)"
                 },
                 active = consoleShown,
             ) { onConsole() }
             Spacer(modifier = Modifier.width(8.dp))
             if (running) SmallButton("Running…", enabled = false, icon = Icons.Default.PlayArrow, tip = "main.kts is running; the console follows it") {}
-            else AccentButton("Run", icon = Icons.Default.PlayArrow, tip = "Run main.kts ($shortcut). The file is saved as you type") { onRun() }
+            else AccentButton("Run", icon = Icons.Default.PlayArrow, tip = "Run the script ($shortcut) in the env '$env'. It is AMP/pluginDir/main.kts, saved as you type", fill = RunButton, fillHover = RunButtonHover) { onRun() }
             Spacer(modifier = Modifier.width(8.dp))
         }
         Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(UnifiedBorderColor))

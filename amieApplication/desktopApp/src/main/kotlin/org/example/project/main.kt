@@ -23,6 +23,8 @@ import androidx.compose.foundation.window.WindowDraggableArea
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -83,15 +85,39 @@ fun main() = application {
         window.minimumSize = Dimension(960, 640)
         // A backend.json that still points at Keycloak's port is corrected before the first backend call
         androidx.compose.runtime.LaunchedEffect(Unit) { org.example.project.backend.BackendConfig.resolve() }
+        // The window is undecorated, so the system's own maximize is not there for it. On macOS the header button
+        // asks for native full screen (its own Space, menu bar and dock away; Esc or the button leaves it).
+        // Elsewhere, or when that is refused, the window is sized by hand to the screen it is on minus the menu
+        // bar and the dock, and brought back to the bounds it had
+        var maximized by remember { mutableStateOf(false) }
+        var floatingBounds by remember { mutableStateOf<java.awt.Rectangle?>(null) }
+        androidx.compose.runtime.LaunchedEffect(Unit) { MacFullScreen.listen(window) { maximized = it } }
+        fun toggleMaximize() {
+            val frame = window
+            if (MacFullScreen.toggle(frame)) return
+            if (!maximized) {
+                floatingBounds = frame.bounds
+                val gc = frame.graphicsConfiguration
+                val screenBounds = gc.bounds
+                val insets = Toolkit.getDefaultToolkit().getScreenInsets(gc)
+                frame.setBounds(
+                    screenBounds.x + insets.left,
+                    screenBounds.y + insets.top,
+                    screenBounds.width - insets.left - insets.right,
+                    screenBounds.height - insets.top - insets.bottom,
+                )
+                maximized = true
+            } else {
+                floatingBounds?.let { frame.bounds = it }
+                maximized = false
+            }
+        }
         // Each page's WindowHeader is the top bar; it gets dragging and the window controls from here
         val chrome = AppChrome(
             dragArea = { content -> WindowDraggableArea { content() } },
             onMinimize = { windowState.isMinimized = true },
-            onToggleMaximize = {
-                windowState.placement =
-                    if (windowState.placement == WindowPlacement.Maximized) WindowPlacement.Floating
-                    else WindowPlacement.Maximized
-            },
+            onToggleMaximize = { toggleMaximize() },
+            maximized = { maximized },
             onClose = ::exitApplication,
         )
         // The UI scale from Settings multiplies the system density, so everything inside draws larger or smaller
@@ -108,7 +134,7 @@ fun main() = application {
                 CompositionLocalProvider(LocalDensity provides Density(systemDensity.density * settings.uiScale, systemDensity.fontScale)) {
                     AppBaseTemplate()
                 }
-                if (windowState.placement == WindowPlacement.Floating) ResizeEdges()
+                if (!maximized) ResizeEdges()
             }
         }
     }

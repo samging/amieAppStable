@@ -80,6 +80,10 @@ data class CandidateResult(
     val trainAccuracy: Double,
     val finalLoss: Double,
     val chosen: Boolean = false,
+    /** F1 per label on the validation rows, so the heads can be compared label by label */
+    val perLabelF1: Map<String, Double> = emptyMap(),
+    /** What the diagnostics say about this head: memorising, barely above the majority label, weak labels */
+    val insights: List<String> = emptyList(),
 )
 
 /** The best candidate: by the chosen score, then the other score, then the fewest parameters */

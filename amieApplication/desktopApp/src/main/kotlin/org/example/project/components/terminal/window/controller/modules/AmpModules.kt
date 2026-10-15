@@ -51,6 +51,8 @@ data class ModuleManifest(
     val trainAccuracy: Double? = null,
     // The heads the build compared and which one it kept; null when one head was trained
     val search: String? = null,
+    // The icon of the model on the Models page: a name from its catalog (lightbulb, cloud, chat, …); null is the chip
+    val icon: String? = null,
 )
 
 @Serializable
@@ -111,16 +113,71 @@ fun defaultGuide(m: ModuleManifest): String = buildString {
     appendLine("- guide.md: this guide")
 }
 
+/** Module names: letters, digits, dots, dashes and underscores, as the folder under AMP/modules is named */
+val MODULE_NAME: Regex = Regex("""[A-Za-z0-9._-]{1,64}""")
+
+/**
+ * Writes the module: a new one, or the same name trained again, in which case the sessions open on the old head
+ * are closed (the next initMod opens the new one), a listener on it is restarted on the new head, and the
+ * description and guide it had are kept unless the manifest brings its own.
+ */
 fun writeModule(manifest: ModuleManifest, onnxBytes: ByteArray): File {
-    val dir = moduleDir(manifest.name).apply { mkdirs() }
-    val modelFile = File(dir, manifest.model)
+    val previous = if (moduleExists(manifest.name)) readModule(manifest.name)?.second else null
+    val wasListening = ModelServer.isListening(manifest.name)
+    if (previous != null) {
+        ModelServer.stop(manifest.name, persist = false)
+        ModelSessions.all.filter { it.name == manifest.name }.forEach { session ->
+            logInternal("module '${manifest.name}' is being replaced: session #${session.id} on the old head is closed")
+            session.close()
+        }
+    }
+    val kept = if (previous != null && manifest.description == null) manifest.copy(description = previous.description) else manifest
+    val dir = moduleDir(kept.name).apply { mkdirs() }
+    val modelFile = File(dir, kept.model)
     modelFile.writeBytes(onnxBytes)
-    File(dir, "module.json").writeText(moduleJson.encodeToString(manifest))
-    guideFile(dir).takeIf { !it.isFile }?.writeText(defaultGuide(manifest))
+    File(dir, "module.json").writeText(moduleJson.encodeToString(kept))
+    if (wasListening) runCatching { ModelServer.start(kept.name) }.onFailure { logInternal("module '${kept.name}': the listener did not come back on the new head: ${it.message}", LogLevel.ERROR) }
+    guideFile(dir).takeIf { !it.isFile }?.writeText(defaultGuide(kept))
     val registry = readRegistry()
-    registryFile.writeText(moduleJson.encodeToString(registry.copy(modules = registry.modules + (manifest.name to dir.name))))
-    logInternal("module '${manifest.name}' exported to ${modelFile.absolutePath}")
+    registryFile.writeText(moduleJson.encodeToString(registry.copy(modules = registry.modules + (kept.name to dir.name))))
+    logInternal(if (previous == null) "module '${kept.name}' exported to ${modelFile.absolutePath}" else "module '${kept.name}' trained again; the new head replaced ${modelFile.absolutePath}")
     return modelFile
+}
+
+/**
+ * Gives a module a new name: its sessions are closed and its listener stopped, the folder under AMP/modules is
+ * moved, module.json, the guide's title and the registry say the new name, and a serving path that was the
+ * default of the old name becomes the default of the new one. The listener is started again under the new name
+ * if it was on. Throws with the reason when the name is taken or not a module name.
+ */
+fun renameModule(name: String, newName: String): Boolean {
+    val target = newName.trim()
+    require(MODULE_NAME.matches(target)) { "'$target' is not a model name: letters, digits, dots, dashes and underscores, up to 64" }
+    if (target == name) return true
+    require(!moduleExists(target) && !moduleDir(target).exists()) { "a model named '$target' exists already" }
+    val (dir, manifest) = readModule(name) ?: return false
+    val wasListening = ModelServer.isListening(name)
+    val serving = readServing(name)
+    ModelServer.stop(name, persist = false)
+    ModelSessions.all.filter { it.name == name }.forEach { it.close() }
+    val newDir = moduleDir(target)
+    if (!dir.renameTo(newDir)) {
+        dir.copyRecursively(newDir, overwrite = true)
+        dir.deleteRecursively()
+    }
+    File(newDir, "module.json").writeText(moduleJson.encodeToString(manifest.copy(name = target)))
+    guideFile(newDir).takeIf { it.isFile }?.let { guide ->
+        val lines = guide.readLines()
+        if (lines.firstOrNull()?.trim() == "# $name") guide.writeText((listOf("# $target") + lines.drop(1)).joinToString("\n", postfix = "\n"))
+    }
+    val registry = readRegistry()
+    registryFile.writeText(moduleJson.encodeToString(registry.copy(modules = registry.modules - name + (target to newDir.name))))
+    val path = if (serving.path.isBlank() || serving.path == "/models/$name") "" else serving.path
+    writeServing(target, serving.copy(path = path, enabled = wasListening))
+    ModelGroups.forget(name, renamedTo = target)
+    if (wasListening) runCatching { ModelServer.start(target) }.onFailure { logInternal("module '$target': the listener did not come back after the rename: ${it.message}", LogLevel.ERROR) }
+    logInternal("module '$name' renamed to '$target': ${newDir.absolutePath}")
+    return true
 }
 
 /** Rewrites module.json with [change] applied, e.g. a new description; false when the module isn't there */
@@ -141,6 +198,7 @@ fun deleteModule(name: String): Boolean {
     val gone = dir.deleteRecursively()
     val registry = readRegistry()
     registryFile.writeText(moduleJson.encodeToString(registry.copy(modules = registry.modules - name)))
+    ModelGroups.forget(name)
     logInternal(if (gone) "module '$name' destroyed: ${dir.absolutePath} removed" else "module '$name' forgotten, but ${dir.absolutePath} could not be removed entirely", if (gone) LogLevel.INTERNAL else LogLevel.ERROR)
     return gone
 }

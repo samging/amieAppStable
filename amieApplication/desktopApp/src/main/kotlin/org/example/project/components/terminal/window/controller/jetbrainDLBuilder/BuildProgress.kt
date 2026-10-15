@@ -29,6 +29,8 @@ data class ModelBuild(
     val detail: String = "",
     val startedAt: Instant = Instant.now(),
     val finishedAt: Instant? = null,
+    /** The heads trained so far with their scores on the validation rows, in the order they finished; the chosen one is marked once all are compared */
+    val candidates: List<CandidateResult> = emptyList(),
 ) {
     val active: Boolean get() = !phase.finished
     val succeeded: Boolean get() = phase == BuildPhase.DONE
@@ -80,6 +82,16 @@ object ModelBuildProgress {
 
     fun step(step: Int, detail: String? = null) {
         _current.update { it?.copy(step = step, detail = detail ?: it.detail) }
+    }
+
+    /** One more head is trained and scored; the page lists it under the build at once */
+    fun candidate(result: CandidateResult) {
+        _current.update { it?.copy(candidates = it.candidates + result) }
+    }
+
+    /** Every head is compared: the one that is kept is marked */
+    fun chose(architecture: String) {
+        _current.update { b -> b?.copy(candidates = b.candidates.map { it.copy(chosen = it.architecture == architecture) }) }
     }
 
     fun done(detail: String = "") = finish(BuildPhase.DONE, detail)

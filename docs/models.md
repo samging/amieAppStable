@@ -106,11 +106,24 @@ then the smaller head):
 | `dense[32]` | one of 32 |
 | `dense[64, 16]` | two hidden layers |
 
-The console shows every candidate's accuracy, macro F1, train accuracy, loss and parameter count, then
-`chosen: dense[16], the best macro F1 on the validation rows (next: dense[32] 0.912)`. The comparison is kept
-with the build in `metrics.json` (`candidates`) and in one line of the manifest (`search`, shown as **heads
-tried** under About → TRAINING). Each candidate costs its epochs; on a few hundred rows the whole search takes
-seconds.
+As each head finishes the console shows its accuracy, macro F1, train accuracy, loss and parameter count, then
+its F1, precision and recall per label, then what the diagnostics make of it (memorising, barely above the
+majority label, a weak label and what it is taken for), and the Models page lists it under the build line at once.
+Once every head is in, one line ranks them (`compared 4 heads by macro F1: dense[16] 0.950 · dense[32] 0.912 …`)
+and `chosen: dense[16], the best macro F1 on the validation rows (next: dense[32] 0.912)` says which is kept.
+The chosen head is then validated once more on every validation row (the VALIDATING phase), so what is stored,
+charted and exported is that head's own run. The comparison is kept with the build in `metrics.json`
+(`candidates`, with `perLabelF1` and `insights` per head; **HEADS COMPARED** on the Metrics tab) and in one line
+of the manifest (`search`, shown as **heads tried** under About → TRAINING). Each candidate costs its epochs; on a
+few hundred rows the whole search takes seconds.
+
+### Training again
+
+`modelBuilder("intents", train)` with the name of a model that exists trains it again in place, which is how a
+model follows its data: add or fix rows in the csv and build under the same name. The sessions open on the old
+head are closed (the next `initMod` opens the new one), a listener comes back on the new head, the description
+and the guide are kept unless the build brings its own, and `metrics.json` keeps every earlier run, so the runs
+show whether the new rows helped. The Models page's **Retrain** does the same.
 
 ### Your own head
 

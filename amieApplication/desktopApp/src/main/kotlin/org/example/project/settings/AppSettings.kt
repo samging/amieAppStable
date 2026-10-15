@@ -17,6 +17,8 @@ data class Settings(
     // The sandbox's navigation sidebar, hidden or shown from the strip over the editor (the console is not kept:
     // it starts hidden and opens by itself at the first output)
     val sandboxSidebar: Boolean = true,
+    // The Models page's navigation sidebar, hidden or shown from its tab strip
+    val modelsSidebar: Boolean = true,
 )
 
 /**
@@ -39,6 +41,7 @@ object AppSettings {
 
     fun setUiScale(scale: Float) = update { it.copy(uiScale = scale.coerceIn(MIN_SCALE, MAX_SCALE)) }
     fun setSandboxSidebar(shown: Boolean) = update { it.copy(sandboxSidebar = shown) }
+    fun setModelsSidebar(shown: Boolean) = update { it.copy(modelsSidebar = shown) }
 
     private fun update(change: (Settings) -> Settings) {
         val next = change(_current.value)

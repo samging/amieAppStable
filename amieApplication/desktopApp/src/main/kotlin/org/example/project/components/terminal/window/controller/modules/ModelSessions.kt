@@ -1,5 +1,6 @@
 package org.example.project.components.terminal.window.controller.modules
 
+import org.example.project.components.terminal.integrations.amiePilot.Ask
 import org.example.project.components.terminal.integrations.amiePilot.InitMod
 import org.example.project.components.terminal.integrations.amiePilot.InteractionModel
 import org.example.project.components.terminal.window.controller.LogLevel
@@ -35,12 +36,16 @@ class ModelSession internal constructor(
     var closed: Boolean = false
         private set
 
-    override fun inference(text: String): List<String> {
+    override fun inference(text: String): List<String> = inference(text, Ask.INFERENCE)
+
+    override fun inference(text: String, ask: Ask): List<String> {
         check(!closed) { "model $name (#$id) is closed" }
         runningCount.incrementAndGet()
         val begun = System.nanoTime()
         try {
-            return model.inference(text).also { log.run(text, it, (System.nanoTime() - begun) / 1_000_000) }
+            // A plain inference goes through the model's own entry point; predict and scores say what they are for
+            val answer = if (ask == Ask.INFERENCE) model.inference(text) else model.inference(text, ask)
+            return answer.also { log.run(text, it, (System.nanoTime() - begun) / 1_000_000) }
         } catch (e: Throwable) {
             log.error(text, e)
             throw e
@@ -100,8 +105,12 @@ object ModelSessions {
         return true
     }
 
+    /** Closes every model session and every swarm over them */
     @Synchronized
-    fun closeAll() = sessions.values.toList().forEach { it.close() }
+    fun closeAll() {
+        ModelGroups.closeAll()
+        sessions.values.toList().forEach { it.close() }
+    }
 
     internal fun unregister(session: ModelSession) {
         synchronized(this) { sessions.remove(session.id) }

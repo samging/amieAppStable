@@ -7,11 +7,10 @@ between the editor and the console can be dragged to share the width; the split 
 
 Both side panes can be put away with the two icon chips left of **Run**. The navigation sidebar is hidden or
 shown by its chip, and that choice is kept in `AMP/settings.json`. The console follows the output instead: it
-starts hidden, since there is nothing to show, opens by itself at the first line a run logs (the first line the
-level toggles let through), and cannot be hidden while it holds output; its chip then says so. **Clear** empties
-it, after which the chip hides it again. With the console hidden the editor takes the whole width and the run's
-status (`ready`, `running 12s`, `finished in 41s`, `failed after 3s` with the error in its tooltip) moves up next
-to the file tab.
+starts hidden, since there is nothing to show, and opens by itself at the first line a run logs (one the level
+toggles let through). Its chip hides it at any time, output or not; what it holds is kept, it stays hidden for
+the rest of that run, and the first line of the next run (which empties it first) brings it back. With the console hidden the editor takes the whole width and the run's status (`ready`,
+`running 12s`, `finished in 41s`, `failed after 3s` with the error in its tooltip) moves up next to the file tab.
 
 ## The editor
 
@@ -23,9 +22,12 @@ or indents every line of a selection; **Shift+Tab** moves them back. **Format** 
 elsewhere) re-indents the whole script by its braces and parentheses, continuing lines (`.map`, `?.let`, `?:`)
 one level in, and leaves the inside of strings and comments alone; the caret stays where it was in its line.
 
-- The strip over it shows the one file as a tab, `main.kts`, with **saved** beside it for a moment after each
-  write, and **Run** at its right end (**Running…** while the script runs).
-- The file is `AMP/pluginDir/main.kts`. It is saved as you type (a third of a second after the last keystroke).
+- There is one script and it is always `AMP/pluginDir/main.kts`, so the strip over the editor shows no file tab.
+  It says instead which **env** the script is sourced in (`default` unless the text says
+  `environment(SettingsEnv("name"))`), with **saved** beside it for a moment after each write, and the green
+  **Run** at its right end (**Running…** while the script runs).
+- The file is saved as you type (a third of a second after the last keystroke). You can edit
+  `AMP/pluginDir/main.kts` with anything else too; the editor loads it at start.
 - **Highlighting** in a calm palette: keywords a steel blue, strings sand, numbers gray-blue, comments gray, and
   the sandbox API functions (`source`, `modelBuilder`, `metricsChart`, …) in the one accent, a muted teal, so you
   can see at a glance what talks to the app.

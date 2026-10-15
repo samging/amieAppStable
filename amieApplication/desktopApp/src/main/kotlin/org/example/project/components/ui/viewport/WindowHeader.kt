@@ -123,7 +123,7 @@ fun WindowHeader(name:String,
 
                 Box(modifier = Modifier.width(1.dp).height(20.dp).background(UnifiedBorderColor))
                 WindowControlButton(symbol = "—", tip = "Minimize", onClick = chrome.onMinimize)
-                WindowControlButton(symbol = "□", tip = "Maximize, or back to the floating size", onClick = chrome.onToggleMaximize)
+                WindowControlButton(symbol = "□", tip = if (chrome.maximized()) "Leave full screen, back to the floating window" else "Full screen: the window fills the screen (on a Mac in its own Space, Esc leaves it)", onClick = chrome.onToggleMaximize)
                 WindowControlButton(symbol = "✕", tip = "Close the app", hoverColor = DangerColor, onClick = chrome.onClose)
             }
 

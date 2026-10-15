@@ -17,6 +17,7 @@ and close it. The function reference is in [Scripting API](sandbox-scripting.md)
 | **Intent model** | `initMod("name")` in a script, **Open session** on the Models page | **One per model.** A second `initMod("name")` returns the session that is already open | `label:probability` lines, best first (`lights:0.91`, `weather:0.06`, …); `predict(text)` is the label alone, `scores(text)` a label → score map |
 | **Package** | `initMod("name.jar")` | **One per call.** Every `initMod` makes a fresh instance of the jar's class in its own class loader | What the package's `run(text)` returned, one line per element |
 | **ONNX session** | `importModelOnnx("file.onnx")` | One per call | The raw model's output; no log is kept |
+| **Model group** | `group("name")` in a script, **Open swarm** on the Models page | **One per group.** A swarm over one session per model of the group (each the model's own session, reused if open); closing the swarm closes the sessions it opened | The labels merged over the models, each with its best score; `vote(text)` the label most models give, `each(text)` every model's own label, `ask(text)` every raw answer. Logged to `AMP/env/<env>/<group>.sessions.log` |
 
 The bundled NER model, `initMod()` with no name, is not a listed session: it is an ordinary object your script
 owns, so close it yourself when you are done.

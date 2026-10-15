@@ -1,7 +1,9 @@
 package org.example.project.components.terminal.window.controller.modules
 
+import org.example.project.components.terminal.integrations.amiePilot.Ask
 import org.example.project.components.terminal.integrations.amiePilot.InteractionModel
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
@@ -23,13 +25,18 @@ class ModelSessionTest {
     @Test
     fun `inference goes to the model, is counted and logged with the answer`() {
         val model = mock<InteractionModel>()
+        // predict and scores tell the model what they are for (Ask), so the model logs only that; a plain
+        // inference goes through the one-argument call. A mock answers nothing on the default method unless told
+        whenever(model.inference(eq("turn the lights on"), any())).thenReturn(listOf("lights:0.9", "weather:0.1"))
         whenever(model.inference("turn the lights on")).thenReturn(listOf("lights:0.9", "weather:0.1"))
         val (s, log) = session(model)
 
         assertEquals("lights", s.predict("turn the lights on"))
         assertEquals(mapOf("lights" to 0.9f, "weather" to 0.1f), s.scores("turn the lights on"))
 
-        verify(model, times(2)).inference("turn the lights on")
+        verify(model).inference("turn the lights on", Ask.PREDICT)
+        verify(model).inference("turn the lights on", Ask.SCORES)
+        verify(model, never()).inference("turn the lights on")
         assertEquals(2, s.runs)
         assertEquals(0, s.running)
         val lines = log.readText()

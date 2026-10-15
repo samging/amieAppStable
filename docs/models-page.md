@@ -1,6 +1,7 @@
 # Models page
 
-Route `models`, opened from the second icon in the sidebar. It is a full page (not a side panel) in
+Route `models`, opened from the second icon in the sidebar, which the chip at the far left of the tab strip, right where
+the sidebar meets it, hides and shows (the choice is kept in `AMP/settings.json`, as the sandbox's is). It is a full page (not a side panel) in
 `components/terminal/window/controller/ModelsPage.kt`, and it re-reads its state while open. What it showed last
 is kept for the life of the app (`ModelsCache`), so coming back to the page shows the models at once; the first
 read after start-up is local only (files, sessions, listeners) and the one slow read, the server's jar listing,
@@ -72,7 +73,20 @@ line (listening address, the data it was trained on) under its name and the acti
 | **Listen on :port / Stop** | Starts or stops the HTTP listener (`modules/ModelServer.kt`) with the settings as shown; the label names the port it will use |
 | **⚙** | Opens the serving settings under the header: **Host / Port / Path / Methods** and **Save** write `AMP/modules/<name>/serving.json`; a port outside 1–65535 is named and keeps Save disabled; the POST and GET URLs are listed under them with **Copy** and **Copy curl**. The gear stays lit while the block is open |
 | **Publish** | Uploads the model as `<name>.onnx`, `<name>.module.json` and `<name>.guide.md` to the Amie backend (`POST /upload`, `progLanguage=onnx`) with the Keycloak token, then asks the website to refresh its listing and says in the notice strip whether `/dashboard?username=<you>` lists the files, naming that address; a guest is sent to the sign-in page. A backend that cannot be reached ("Host is down", "Connection refused") is an address problem in `AMP/backend.json`, not a sign-in one |
-| **⋯** | The whole menu: Open session, Listen/Stop, Validate on sample data, Validate on file…, Publish to the website, Remove from the website, Reveal folder, Copy `initMod("name")`, Terminate model, Destroy model… |
+| **⋯** | The whole menu: Open session, Listen/Stop, Validate on sample data, Validate on file…, Retrain on `<data>.csv`, Retrain on file…, Rename…, Publish to the website, Remove from the website, Reveal folder, Copy `initMod("name")`, Terminate model, Destroy model… |
+
+**Rename…** opens a strip at the top of the page with the current name in a field; **Rename** is enabled once the
+new name is a module name (letters, digits, dots, dashes, underscores) no other model has. The folder under
+`AMP/modules` moves, `module.json`, the guide's title and `modules.json` say the new name, the sessions on it are
+closed, and a listener comes back under the new name (a serving path that was the old default becomes the new
+default). A trained model can be renamed like any other; scripts then open it with `initMod("newname")`.
+
+**Retrain** trains the model again under the same name: on the csv it was trained on as it is now (edit or add
+rows to the file, then retrain), or on another csv (**Retrain on file…**, also **Other file…** on the Data tab).
+Nothing that opens the model has to change: the head is rebuilt in place, the sessions on the old head are
+closed so the next `initMod` opens the new one, a listener comes back on it, the description and the guide stay,
+and the Metrics tab keeps every earlier run beside the new one, so the runs show whether the new data helped.
+Only one build runs at a time; the line at the top of the list follows it as for a new model.
 
 Under the header the panel has its own tabs, each with a tooltip that says what it holds:
 
@@ -80,11 +94,33 @@ Under the header the panel has its own tabs, each with a tooltip that says what 
 |---|---|
 | **About** | The description (editable; **Save description** appears under it once it has changed and writes `module.json`), then the **WHERE** and **TRAINING** blocks. Every uppercase block title on these tabs is a line that folds its block away and back (open by default): where the model lives with **Reveal folder**, created / encoder / head / labels, and **TRAINING**: architecture, data, rows, epochs, batch size, learning rate, hidden units, final loss, train accuracy |
 | **Guide** | `AMP/modules/<name>/guide.md`, the guide shipped inside the model, rendered as light markdown; **Edit** and **Save** change it, and it goes along when the model is published |
-| **Metrics** | One line: the run chips (the latest first, each chip's tooltip names its data, rows, accuracy and time) and **Validate**, which offers **On the sample data** and **On a file…** and adds a run (`modules/ModelValidation.kt`). The chosen run's charts follow: scores per label, the confusion matrix, then scores by run and, from the sessions log, how sure the model is and how long an answer takes. The charts are PNG files drawn by `modules/MetricsImages.kt` into `AMP/modules/<name>/plots/` whenever the metrics or the log change, in one muted slate hue |
-| **Data** | The csv files it was trained and validated on, each with rows per label and text lengths as bars, a folded preview and **Open in viewer**; then **RAN ON**: what its sessions answered and what the server served |
+| **Metrics** | One line: the run chips (the latest first, each chip's tooltip names its data, rows, accuracy and time) and **Validate**, which offers **On the sample data** and **On a file…** and adds a run (`modules/ModelValidation.kt`). A run that came from a build has **HEADS COMPARED**: every head the build trained, with accuracy, macro F1, train accuracy and loss on the same validation rows, F1 per label under each, what the diagnostics said of it, and the chosen one marked. The chosen run's charts follow: scores per label, the confusion matrix, then scores by run and, from the sessions log, how sure the model is and how long an answer takes. The charts are PNG files drawn by `modules/MetricsImages.kt` into `AMP/modules/<name>/plots/` whenever the metrics or the log change, in one muted slate hue |
+| **Data** | The csv files it was trained and validated on, each with rows per label and text lengths as bars, a folded preview and **Open in viewer**; the trained-on file has **Retrain** (the same name, on the file as it is now) and **Other file…**; then **RAN ON**: what its sessions answered and what the server served |
 | **Requirements** | `modules/ModelRequirements.kt`: everything it needs to run, checked on this machine, each line marked met / not met / information (the mark's tooltip says which) |
 | **Console** | The console lines that name the model, or with **all models** everything the models, packages and sessions logged; the box's height can be dragged |
 | **Sessions** | The sessions it owns, each with **Log** and **Terminate** |
+
+### Icons and groups
+
+Every model has an icon: the chip by default, or one from a small catalog (lightbulb, cloud, chat, home, music,
+shield, star, bolt, heart, language, science, work, pets, school, cart, hub, groups) chosen under **ICON** on the
+About tab and kept in `module.json`. It shows in the list, on the panel header and in the groups that hold it.
+
+A **group** is a named set of models that are asked together: a swarm. A model's ⋯ menu offers **Add to group
+<name>** for every group it is not in and **New group with <model>…**, which opens a strip at the top of the page
+asking for the name and the **env** the group belongs to. Groups live in the env, as packages do: each env keeps
+its own in `AMP/env/<env>/groups.json`, a script sourced in that env finds them with `group("name")`
+(the default env first, then any), and `internalEnv()` lists them with the packages. The list shows the groups in
+a **groups** fold above the data folds, each with its icon, how many models it holds (and how many are missing),
+its env and **open** or **closed**. Selecting one shows its panel: **Open swarm** / **Terminate swarm**, the
+models (a row each; **Detach** takes one out; **Add model** adds one), the icon picker, where it lives and, while
+open, the swarm's session with its log. **Remove group** leaves the models alone. A destroyed or renamed model is
+taken out of (or renamed in) every group.
+
+Groups are also made by **dragging**: take a model's row and drop it on a group's row to put it in that group, on
+another model's row to open the new-group strip with the two of them, or on the zone that appears over the list
+while you drag ("drop here for a new group") for a new group with that one. The ghost beside the pointer says what
+the drop would do, and the row under it is lit. A click without movement still selects the row.
 
 ### New model
 
@@ -101,8 +137,15 @@ split. As soon as the data file is chosen the form reads it and shows how many s
 While **Build** is disabled the line beside it (and its tooltip) says what is still missing: a data file, a name,
 or a csv without the two columns. **Build** runs the same `buildClassifier` the sandbox's `modelBuilder` runs, on
 a background thread; while it runs one line at the top of the list shows the phase, step and a thin progress bar,
-and when it ends the new model is selected. Only one build runs at a time. **Close** brings the selected model
-back.
+and under it every head scored so far (architecture, accuracy, macro F1, train accuracy, loss, the chosen one
+marked once all are compared; the tooltip of a line has its F1 per label), so the comparison is visible while the
+next head trains. When it ends the new model is selected. Only one build runs at a time. **Close** brings the
+selected model back.
+
+A csv chosen from anywhere else on the machine (**Data**, **Test**, **Validate on file…**, **Retrain on file…**)
+is copied into `AMP/` first (a newer copy replaces the one there), so the model finds its data again by its name
+later: the Data tab, the list's grouping and a retrain all look the file up in `AMP/`. A file already under `AMP/`
+is used where it is.
 
 A fresh checkout has one component already: the **dummy** model (`modules/AmpModules.kt`, `ensureDummyModule`),
 a fixed one-layer head over the encoder with the labels `greeting`, `lights`, `weather`. It is written when
@@ -122,6 +165,28 @@ box matches the jar name, version, Java, a collection name, the class a session 
 resource name inside the jar, so a class can be found without knowing which jar holds it. **Add** beside the
 filter box offers **Jar from this machine…** (copied into `AMP/pluginDir` and imported into the env), **From
 Maven Central…** and **New collection…**.
+
+### What a package needs
+
+A package jar's panel has three blocks the libraries do not: **REQUIREMENTS**, every line marked met, not met or
+information: the Java it needs against the Java this app runs, its package class, whether it ships metadata,
+its config folder, each config file and environment variable it declares, and what its last test run came to;
+**CONFIG**, the folder `AMP/pluginDir/config/<jar>/` with **Reveal folder**, where the package's files are read
+from (as resources, through the `amie.package.config` property and a `configure(...)` method; templates for the
+missing files are written on the first open) and the declared files with their state; and **TESTS**, the test
+runs the jar declares and the last run's answers, each marked pass or fail. **Test run** in the header (also in
+the ⋯ menu) opens a fresh session with the configuration in place, runs the declared tests (or one call with
+"hello" when there are none), closes it and reports in the notice strip and the block, where every test shows
+what it asked (`run("…")`) and the whole answer line by line, with the reason when it failed.
+
+Under the header the jar's **flags** say what it works with at a glance, as coloured tags: its version (blue),
+the Java it needs (slate, red when this app is too old for it), its language (violet) and how its last test run
+went (green or red), then the jar's own flags from its metadata (`flags: [{"text": "stable", "color": "green"}]`)
+and the ones you add with **Add flag** (also in the ⋯ menu): a word and one of six colours (slate, green, amber,
+red, violet, blue), kept in the sidecar metadata beside the jar and removable from the ⋯ menu. The same flags
+show on the jar's row in the list. A jar with no metadata
+gets **Write metadata template** in its ⋯ menu, which writes `AMP/pluginDir/<jar>.package.json` to fill in. The
+format is in [Sandbox scripting](sandbox-scripting.md#what-a-jar-needs-metadata-configuration-and-test-runs).
 
 ### From Maven Central
 

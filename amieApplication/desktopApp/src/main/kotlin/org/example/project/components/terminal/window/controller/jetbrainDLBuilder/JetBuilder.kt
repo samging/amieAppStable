@@ -176,10 +176,19 @@ private fun buildClassifierPhases(
             if (epoch.epoch % EPOCH_LOG_EVERY == 0 && epoch.epoch < arch.epochs) logInternal("modelBuilder: $summary")
         }
         epochsDone += arch.epochs
+        // Every head is scored on the same validation rows as soon as it is fitted: its scores, its scores per
+        // label and what the diagnostics make of it go to the console and under the build on the Models page
         val prediction = validationIdx.map { i -> model.predict(pooled[i]) }.toIntArray()
         val scored = computeMetrics(labels, truth, prediction, trainIdx.size, emptyList())
-        val result = CandidateResult(arch.label, arch.hidden, arch.epochs, model.parameters, scored.accuracy, scored.macroF1, last.accuracy, last.loss)
+        val insights = Diagnostics.aboutModel(scored, labels, last.accuracy)
+        val result = CandidateResult(
+            arch.label, arch.hidden, arch.epochs, model.parameters, scored.accuracy, scored.macroF1, last.accuracy, last.loss,
+            perLabelF1 = scored.labels.mapValues { it.value.f1 }, insights = insights,
+        )
         say("${arch.label}: accuracy ${fmt3(scored.accuracy)} · macro F1 ${fmt3(scored.macroF1)} on validation (train accuracy ${fmt3(last.accuracy)}, loss ${fmt4(last.loss)}, ${model.parameters} parameters)")
+        say("${arch.label} per label: " + scored.labels.entries.joinToString(" · ") { (label, m) -> "$label F1 ${fmt3(m.f1)} (precision ${fmt3(m.precision)}, recall ${fmt3(m.recall)})" })
+        insights.forEach { say("${arch.label}: $it") }
+        ModelBuildProgress.candidate(result)
         Triple(arch, model, result to (last to batchSize))
     }
     val results = trained.map { it.third.first }
@@ -187,11 +196,18 @@ private fun buildClassifierPhases(
     val (arch, model, rest) = trained.first { it.third.first === best }
     val (last, batchSize) = rest.second
     val candidateResults = results.map { it.copy(chosen = it === best) }
-    if (candidates.size > 1) say("chosen: ${best.architecture}, the best ${if (options.pickBy == "accuracy") "accuracy" else "macro F1"} on the validation rows" +
-        (results.filter { it !== best }.maxByOrNull { if (options.pickBy == "accuracy") it.accuracy else it.macroF1 }?.let { " (next: ${it.architecture} ${fmt3(if (options.pickBy == "accuracy") it.accuracy else it.macroF1)})" } ?: ""))
+    ModelBuildProgress.chose(best.architecture)
+    if (candidates.size > 1) {
+        val score = { r: CandidateResult -> if (options.pickBy == "accuracy") r.accuracy else r.macroF1 }
+        say("compared ${candidates.size} heads by ${if (options.pickBy == "accuracy") "accuracy" else "macro F1"}: " +
+            results.sortedByDescending(score).joinToString(" · ") { "${it.architecture} ${fmt3(score(it))}" })
+        say("chosen: ${best.architecture}, the best ${if (options.pickBy == "accuracy") "accuracy" else "macro F1"} on the validation rows" +
+            (results.filter { it !== best }.maxByOrNull(score)?.let { " (next: ${it.architecture} ${fmt3(score(it))})" } ?: ""))
+    }
 
-    // ---- 4. the chosen head's validation, kept with the model
-    ModelBuildProgress.phase(BuildPhase.VALIDATING, steps = validationIdx.size, detail = "${validationIdx.size} samples")
+    // ---- 4. the chosen head's validation, kept with the model: run once more after the comparison, so what is
+    // stored and charted is the head that was exported, scored on every validation row
+    ModelBuildProgress.phase(BuildPhase.VALIDATING, steps = validationIdx.size, detail = "the chosen ${arch.label} on ${validationIdx.size} rows")
     val prediction = validationIdx.mapIndexed { n, i -> model.predict(pooled[i]).also { ModelBuildProgress.step(n + 1) } }.toIntArray()
     val scored = computeMetrics(labels, truth, prediction, trainIdx.size, warnings)
     val diagnostics = Diagnostics.aboutModel(scored, labels, last.accuracy)

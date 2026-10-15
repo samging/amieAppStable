@@ -115,6 +115,21 @@ object SandboxExamples {
             |}
             |""".trimMargin()),
 
+        Example("A group of models, asked together", "Models", """
+            |// A group is a named set of models kept in the env (AMP/env/<env>/groups.json). group("name")
+            |// opens them as one swarm: predict is the best score across them, vote the label most give.
+            |// The Models page makes groups too (a model's ⋯ menu > New group with…); this one holds the dummy.
+            |groups.create("house", listOf("dummy"))
+            |groups.print()
+            |val swarm = group("house")
+            |log(swarm.predict("turn the lights on"))                 // the label with the best score across the models
+            |log(swarm.vote("turn the lights on"))                    // the label most models answer
+            |swarm.each("turn the lights on").forEach { (model, label) -> log("${'$'}model says ${'$'}label") }
+            |swarm.scores("turn the lights on").forEach { (label, score) -> log("${'$'}label ${'$'}score") }
+            |internalEnv()                                            // the env's packages and its groups
+            |swarm.close()                                            // closes the sessions it opened
+            |""".trimMargin()),
+
         Example("Sessions: what is open", "Housekeeping", """
             |// Models have one session each; packages get a new instance per initMod("x.jar").
             |sessions.print()                                // every ONNX Runtime session

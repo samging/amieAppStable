@@ -73,6 +73,8 @@ object SandboxApi {
     private const val ORT_SESSIONS = "$PKG.modelLoaders.OrtSessions"
     private const val JAR_INTERPRETER = "$PKG.pluginEngine.JarInterpreter"
     private const val JAR_PACKAGES = "$PKG.pluginEngine.JarPackages"
+    private const val MODEL_SWARM = "$PKG.modules.ModelSwarm"
+    private const val MODEL_GROUPS = "$PKG.modules.ModelGroups"
     private const val MODEL_INTERFACE = "$PKG.ModelCreationalInterface"
     private const val ARCHITECTURE = "$PKG.jetbrainDLBuilder.Architecture"
     private const val BUILD_OPTIONS = "$PKG.jetbrainDLBuilder.BuildOptions"
@@ -93,7 +95,9 @@ object SandboxApi {
         fn("initAmie", "Named entities with the bundled BERT NER model: one tag per token (O, B-PER, I-ORG…), printed and returned; a one-off call, initMod() keeps the model open", Param("text", STRING), returns = "List<String>"),
         fn("initMod", "Opens the default interaction model", returns = INTERACTION_MODEL),
         fn("initMod", "The session of the module modelBuilder exported to AMP/modules/<modelName>: the one already open on it, else a new one. A new instance of a package jar when the name ends in .jar (local or fetched from the Amie server). .predict(text) is the label, .scores(text) every label with its score, .inference(text) the raw label:score lines", Param("modelName", STRING), returns = INTERACTION_MODEL),
-        prop("packages", JAR_PACKAGES, "Package jar sessions: packages.available(), packages.fetch(\"x.jar\"), packages.print(), packages.closeAll()"),
+        prop("packages", JAR_PACKAGES, "Package jar sessions: packages.available(), packages.fetch(\"x.jar\"), packages.print(), packages.closeAll(); packages.meta(\"x.jar\") what the jar says it needs (config files, env, Java, tests), packages.test(\"x.jar\") runs the tests it declares on a fresh session and prints the report"),
+        fn("group", "The swarm of a model group of the env, the models asked together: .predict(text) the best label across them, .scores(text) each label's best score, .each(text) every model's label, .vote(text) the label most models give, .ask(text) every raw answer, .close()", Param("name", STRING), returns = MODEL_SWARM),
+        prop("groups", MODEL_GROUPS, "The model groups of the envs: groups.print(), groups.names(), groups.create(\"name\", listOf(\"a\", \"b\")), groups.add(\"name\", \"model\"), groups.remove(\"name\", \"model\"), groups.delete(\"name\"), groups.closeAll()"),
         fn("saveState", "Stores a JSON text as the signed-in user's saved state <name> on the Amie backend (uploads/<user>/state/<name>.json)", Param("name", STRING), Param("json", STRING)),
         fn("loadState", "The JSON text of the saved state <name> on the Amie backend, null when there is none", Param("name", STRING), returns = "String?"),
         fn("listStates", "Names of the signed-in user's saved states on the Amie backend", returns = "List<String>"),

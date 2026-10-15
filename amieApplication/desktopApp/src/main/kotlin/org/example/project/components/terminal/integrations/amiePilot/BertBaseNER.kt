@@ -230,8 +230,10 @@ class InitMod(private val moduleName: String? = null) {
 
             override fun getStatus(): Any = manifest
 
+            override fun inference(text: String): List<String> = inference(text, Ask.INFERENCE)
+
             // text -> encoder hidden state -> mean pooling -> exported head
-            override fun inference(text: String): List<String> {
+            override fun inference(text: String, ask: Ask): List<String> {
                 // The encoder keeps its last hidden state, so one text at a time goes through it
                 val pooled = synchronized(encoder) {
                     encoder.sayHello(text)
@@ -251,13 +253,15 @@ class InitMod(private val moduleName: String? = null) {
                 val res = scores.mapIndexed { i, score -> (manifest.labels.getOrNull(i) ?: i.toString()) to score }
                     .sortedByDescending { it.second }
                     .map { (label, score) -> "$label:$score" }
-                // The answer is data the script asked for, so it shows as a DATA line: the text, then every label with its score
+                // The answer is data the script asked for, so it shows as a DATA line: the text, then what was asked
+                // for: the one label of predict, else every label with its score
+                fun pretty(entry: String): String {
+                    val label = entry.substringBeforeLast(':')
+                    val score = entry.substringAfterLast(':').toDoubleOrNull()
+                    return if (score == null) entry else "$label ${"%.3f".format(java.util.Locale.US, score)}"
+                }
                 logInternal(
-                    "$name ${quoteForLog(text)} -> " + res.joinToString { entry ->
-                        val label = entry.substringBeforeLast(':')
-                        val score = entry.substringAfterLast(':').toDoubleOrNull()
-                        if (score == null) entry else "$label ${"%.3f".format(java.util.Locale.US, score)}"
-                    },
+                    "$name ${quoteForLog(text)} -> " + if (ask == Ask.PREDICT) res.firstOrNull()?.let(::pretty).orEmpty() else res.joinToString(transform = ::pretty),
                     LogLevel.DATA,
                 )
                 return res

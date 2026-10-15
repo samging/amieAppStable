@@ -94,6 +94,25 @@ class DataSource internal constructor(
             return (if (given.isAbsolute) listOf(given) else listOf(given, File(amp, path), File(amp, "pluginDir/$path")))
                 .firstOrNull { it.isFile }
         }
+
+        /** Whether the file lives under AMP/, where a model's data is looked for by its name later on */
+        fun inAmp(file: File): Boolean = file.canonicalPath.startsWith(File(getDirectory().toString()).canonicalPath + File.separator)
+
+        /**
+         * The file as AMP/<name>: a csv picked from anywhere else on the machine is copied in (a newer copy replaces
+         * the one there), so the model that trains or validates on it finds it again by its name. A file already
+         * under AMP/ is returned as it is.
+         */
+        fun importIntoAmp(file: File): File {
+            if (inAmp(file)) return file
+            val amp = File(getDirectory().toString()).apply { mkdirs() }
+            val target = File(amp, file.name)
+            if (!target.isFile || target.lastModified() < file.lastModified() || target.length() != file.length()) {
+                file.copyTo(target, overwrite = true)
+                logInternal("data: ${file.name} copied into AMP/ from ${file.parent}")
+            }
+            return target
+        }
     }
 }
 

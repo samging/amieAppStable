@@ -71,6 +71,27 @@ import androidx.compose.material.icons.filled.StopCircle
 import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.ViewSidebar
+import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Science
+import androidx.compose.material.icons.filled.Work
+import androidx.compose.material.icons.filled.Pets
+import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Hub
+import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.PlaylistAdd
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.DriveFileRenameOutline
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -99,6 +120,7 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.loadImageBitmap
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
@@ -107,6 +129,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.round
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.material.icons.filled.Flag
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
@@ -160,6 +193,16 @@ import org.example.project.components.terminal.window.controller.modules.readMet
 import org.example.project.components.terminal.window.controller.modules.readModule
 import org.example.project.components.terminal.window.controller.modules.readRegistry
 import org.example.project.components.terminal.window.controller.modules.readServing
+import org.example.project.components.terminal.window.controller.modules.renameModule
+import org.example.project.components.terminal.window.controller.modules.ModelGroup
+import org.example.project.components.terminal.window.controller.modules.ModelGroups
+import org.example.project.components.terminal.window.controller.modules.GROUP_NAME
+import org.example.project.components.terminal.window.controller.pluginEngine.PackageMeta
+import org.example.project.components.terminal.window.controller.pluginEngine.PackageFlag
+import org.example.project.components.terminal.window.controller.pluginEngine.PackageMetadata
+import org.example.project.components.terminal.window.controller.pluginEngine.PackageTestReport
+import org.example.project.components.terminal.window.controller.modules.MODULE_NAME
+import org.example.project.settings.AppSettings
 import org.example.project.components.terminal.window.controller.modules.updateModule
 import org.example.project.components.terminal.window.controller.modules.uptime
 import org.example.project.components.terminal.window.controller.modules.writeServing
@@ -184,6 +227,7 @@ import org.example.project.components.ui.viewport.NavigationSidebar
 import org.example.project.getDirectory
 import org.example.project.ui.theme.ActiveColor
 import org.example.project.ui.theme.ChartAccent
+import org.example.project.ui.theme.AccentSoft
 import org.example.project.ui.theme.DangerColor
 import org.example.project.ui.theme.ChipBackground
 import org.example.project.ui.theme.ChipBorderColor
@@ -246,6 +290,29 @@ private data class SessionInfo(
     val terminate: () -> Unit,
 )
 
+/**
+ * The icons a model or a group can carry, by the name kept in module.json or groups.json: a small catalog of
+ * plain Material glyphs, nothing branded. The chip (memory) is the default for a model, the hub for a group.
+ */
+private val iconCatalog: List<Pair<String, ImageVector>> = listOf(
+    "memory" to Icons.Default.Memory, "hub" to Icons.Default.Hub, "lightbulb" to Icons.Default.Lightbulb, "cloud" to Icons.Default.Cloud,
+    "chat" to Icons.Default.Chat, "home" to Icons.Default.Home, "music" to Icons.Default.MusicNote, "shield" to Icons.Default.Shield,
+    "star" to Icons.Default.Star, "bolt" to Icons.Default.Bolt, "heart" to Icons.Default.Favorite, "language" to Icons.Default.Language,
+    "science" to Icons.Default.Science, "work" to Icons.Default.Work, "pets" to Icons.Default.Pets, "school" to Icons.Default.School,
+    "cart" to Icons.Default.ShoppingCart, "groups" to Icons.Default.Groups,
+)
+
+private fun iconNamed(name: String?, default: ImageVector): ImageVector = iconCatalog.firstOrNull { it.first == name }?.second ?: default
+
+/** A coloured tag: text and its colour; the colour names are what a flag in the metadata may say */
+private data class Flag(val text: String, val color: Color, val tip: String? = null)
+
+private val flagColors: List<Pair<String, Color>> = listOf(
+    "slate" to ChartAccent, "green" to SuccessColor, "amber" to Color(0xFFB08A3E), "red" to DangerColor, "violet" to Color(0xFF8A6FB5), "blue" to PageAccent,
+)
+
+private fun flagColor(name: String?): Color = flagColors.firstOrNull { it.first == name }?.second ?: ChartAccent
+
 /** An intent model as a component: its manifest, metrics, data, how it is served, whether it listens and its sessions */
 private data class ModelInfo(
     val name: String,
@@ -262,7 +329,10 @@ private data class ModelInfo(
     /** The csv of the last validation, when it is a file that is present */
     val validationFile: File?,
     val sessions: List<SessionInfo>,
+    /** The groups the model is in, as "name" or "name (env)" */
+    val groups: List<String> = emptyList(),
 ) {
+    val icon: ImageVector get() = iconNamed(manifest.icon, Icons.Default.Memory)
     val url: String? get() = stats?.url
     val listening: Boolean get() = stats != null
     val busy: Boolean get() = sessions.any { it.running }
@@ -283,8 +353,21 @@ private data class ModelInfo(
     fun matches(query: String): Boolean {
         val q = query.trim().lowercase()
         return q.isEmpty() || name.lowercase().contains(q) || manifest.labels.any { it.lowercase().contains(q) } ||
-            status.lowercase().contains(q) || dataName.lowercase().contains(q) || metrics.any { it.validation.lowercase().contains(q) }
+            status.lowercase().contains(q) || dataName.lowercase().contains(q) || metrics.any { it.validation.lowercase().contains(q) } ||
+            groups.any { it.lowercase().contains(q) }
     }
+}
+
+/** A model group as the page shows it: the group, the swarm open on it (if any) and the models it names that exist */
+private data class GroupInfo(val group: ModelGroup, val swarm: SessionInfo?, val present: List<String>) {
+    val name: String get() = group.name
+    val env: String get() = group.env
+    val icon: ImageVector get() = iconNamed(group.icon, Icons.Default.Hub)
+    val open: Boolean get() = swarm != null
+    val missing: List<String> get() = group.models - present.toSet()
+    /** "name" in the default env, "name (env)" elsewhere: how a group is told apart across envs */
+    val label: String get() = if (env == org.example.project.components.terminal.window.controller.envBuilder.DEFAULT_ENV) name else "$name ($env)"
+    fun matches(q: String) = q.isEmpty() || name.lowercase().contains(q) || env.lowercase().contains(q) || group.models.any { it.lowercase().contains(q) } || (if (open) "open" else "closed").contains(q)
 }
 
 /**
@@ -306,8 +389,29 @@ private data class JarInfo(
     val coordinate: String? = null,
     /** The version the env actually holds for it, when a dependency asked for a newer one than declared */
     val resolvedCoordinate: String? = null,
+    /** What the jar says it needs: inside it (META-INF/amie/package.json) or beside it (<jar>.package.json) */
+    val meta: PackageMeta? = null,
+    val metaSource: String? = null,
+    /** AMP/pluginDir/config/<jar>/, where its configuration files are read from */
+    val configDir: File? = null,
+    val requirements: List<Requirement> = emptyList(),
+    /** The last test run, from <jar>.tests.json */
+    val report: PackageTestReport? = null,
 ) {
     val local: Boolean get() = file != null
+    val unmet: Int get() = requirements.count { it.ok == false }
+
+    /**
+     * What the jar works with, as coloured tags: its version (blue), the Java it needs (slate, red when this app
+     * is too old for it), its language (violet), how its tests went (green or red), then the custom flags from
+     * its metadata and the ones added on the page.
+     */
+    val flags: List<Flag> get() = listOfNotNull(
+        version?.let { Flag("v$it", flagColor("blue"), "version $it" + (meta?.version?.let { " (from the metadata)" } ?: " (from the manifest)")) },
+        (meta?.java ?: contents?.minJava)?.let { j -> Flag("java $j+", if (contents?.runsHere == false || j > Runtime.version().feature()) DangerColor else flagColor("slate"), "needs Java $j or newer; this app runs Java ${Runtime.version().feature()}") },
+        contents?.let { Flag(if (it.kotlin) "kotlin" else "java", flagColor("violet"), "written in ${if (it.kotlin) "Kotlin" else "Java"}") },
+        report?.let { r -> Flag(if (r.ok) "tests pass" else "tests fail", if (r.ok) SuccessColor else DangerColor, r.summary()) },
+    ) + (meta?.flags ?: emptyList()).map { Flag(it.text, flagColor(it.color), "a flag of the jar: ${it.text}") }
     val maven: Boolean get() = coordinate != null
     val open: Int get() = sessions.size
     val status: String get() = when {
@@ -333,6 +437,7 @@ private data class JarInfo(
 
 private data class ModelsSnapshot(
     val models: List<ModelInfo> = emptyList(),
+    val groups: List<GroupInfo> = emptyList(),
     val jars: List<JarInfo> = emptyList(),
     val sessions: List<SessionInfo> = emptyList(),
     val collections: List<PackageCollection> = emptyList(),
@@ -357,6 +462,7 @@ private object ModelsCache {
 private const val KIND_MODEL = "intent model"
 private const val KIND_PACKAGE = "package"
 private const val KIND_ONNX = "ONNX session"
+private const val KIND_GROUP = "model group"
 
 /** Reads the local state; with [remote] the server's jar listing too (cached a minute by JarPackages) */
 private fun readSnapshot(remote: Boolean): ModelsSnapshot {
@@ -367,6 +473,8 @@ private fun readSnapshot(remote: Boolean): ModelsSnapshot {
         SessionInfo("package:${s.id}", s.jarName, s.id, KIND_PACKAGE, s.running > 0, s.runs, s.openedAt, s.log.lines, true) { JarPackages.close(s.id) }
     } + OrtSessions.all.filter { !it.name.startsWith("module:") }.map { s ->
         SessionInfo("ort:${s.id}", s.name, s.id, KIND_ONNX, s.running > 0, s.runs, s.openedAt, emptyList(), false) { OrtSessions.cancel(s.id.toString()) }
+    } + ModelGroups.openSwarms.map { s ->
+        SessionInfo("group:${s.id}", s.group.name, s.id, KIND_GROUP, s.running > 0, s.runs, s.openedAt, s.log.lines, true) { ModelGroups.closeSwarm(s.id) }
     }
 
     val found = (readRegistry().modules.keys + (modulesDir.listFiles()?.filter { File(it, "module.json").isFile }?.map { it.name } ?: emptyList())).distinct()
@@ -383,7 +491,11 @@ private fun readSnapshot(remote: Boolean): ModelsSnapshot {
             manifest.data?.let { DataSource.locate(it) },
             runs.lastOrNull()?.validation?.takeIf { it.endsWith(".csv", ignoreCase = true) }?.let { DataSource.locate(it) },
             sessions.filter { it.kind == KIND_MODEL && it.owner == name },
+            groups = ModelGroups.ofModel(name),
         )
+    }
+    val groups = ModelGroups.all().map { g ->
+        GroupInfo(g, sessions.firstOrNull { it.kind == KIND_GROUP && it.owner == g.name && ModelGroups.openSwarms.any { s -> s.id == it.id && s.group.env == g.env } }, g.models.filter { m -> names.contains(m) })
     }
 
     // The page reads the default env when no script has opened one yet, so Maven libraries are listed before the first run
@@ -409,12 +521,18 @@ private fun readSnapshot(remote: Boolean): ModelsSnapshot {
     val jars = (local.map { (file, source) ->
         val origin = JarPackages.origin(file.name)
         val contents = JarInspector.inspect(file)
-        JarInfo(file.name, source, origin, origin?.url, origin?.page ?: page, origin?.version ?: contents?.implementationVersion, file, contents, collectionsOf(file.name), sessions.filter { it.kind == KIND_PACKAGE && it.owner == file.name })
+        val meta = PackageMetadata.read(file)
+        JarInfo(
+            file.name, source, origin, origin?.url, origin?.page ?: page, meta?.version ?: origin?.version ?: contents?.implementationVersion, file, contents, collectionsOf(file.name),
+            sessions.filter { it.kind == KIND_PACKAGE && it.owner == file.name },
+            meta = meta, metaSource = PackageMetadata.source(file), configDir = PackageMetadata.configDir(file.name),
+            requirements = PackageMetadata.requirements(file, contents, meta, contents?.entryClass), report = PackageMetadata.lastReport(file.name),
+        )
     } + mavenJars + remoteJars.map {
         JarInfo(it.name, "server", null, JarPackages.downloadUrl(it.name), page, it.version, null, null, collectionsOf(it.name), sessions.filter { s -> s.kind == KIND_PACKAGE && s.owner == it.name })
     }).sortedBy { it.name }
 
-    return ModelsSnapshot(models, jars, sessions, collections, env.mavenPackages().map { it.declared }.toSet())
+    return ModelsSnapshot(models, groups, jars, sessions, collections, env.mavenPackages().map { it.declared }.toSet())
 }
 
 /* ---------- page ---------- */
@@ -432,10 +550,12 @@ private fun readSnapshot(remote: Boolean): ModelsSnapshot {
 @Composable
 fun ModelsPage(navController: NavController) {
     val session by AuthState.session.collectAsState()
+    // The sidebar can be put away from the tab strip, as the sandbox's can; the choice is kept in AMP/settings.json
+    val settings by AppSettings.current.collectAsState()
 
     CompositionLocalProvider(LocalContextMenuRepresentation provides SquareContextMenu) {
     Row(modifier = Modifier.fillMaxSize().background(EditorBackground)) {
-        NavigationSidebar(
+        if (settings.modelsSidebar) NavigationSidebar(
             selectedIndex = -1,
             onIndexSelected = { if (it == 1) navController.navigate("codingSandbox") },
             modelsSelected = true,
@@ -443,21 +563,33 @@ fun ModelsPage(navController: NavController) {
             settingsSelected = false,
             onSettings = { navController.navigate("settings") },
         )
-        ModelsContent(user = session?.username, onLogin = { navController.navigate("login") { launchSingleTop = true } })
+        ModelsContent(
+            user = session?.username,
+            onLogin = { navController.navigate("login") { launchSingleTop = true } },
+            sidebarShown = settings.modelsSidebar,
+            onSidebar = { AppSettings.setModelsSidebar(!settings.modelsSidebar) },
+        )
     }
     }
 }
 
 @Composable
-private fun ModelsContent(user: String?, onLogin: () -> Unit) {
+private fun ModelsContent(user: String?, onLogin: () -> Unit, sidebarShown: Boolean, onSidebar: () -> Unit) {
     var snapshot by remember { mutableStateOf(ModelsCache.snapshot) }
     var refresh by remember { mutableStateOf(0) }
     var notice by remember { mutableStateOf<Notice?>(null) }
     var destroying by remember { mutableStateOf<String?>(null) }
+    var renaming by remember { mutableStateOf<String?>(null) }
     // The keys of the actions running right now (open:<model>, publish:<jar>, …), so their buttons can say so
     var pending by remember { mutableStateOf(setOf<String>()) }
     var tab by remember { mutableStateOf(PageTab.MODELS) }
     var selectedModel by remember { mutableStateOf<String?>(null) }
+    // A group's row selected instead of a model's: "name@env"
+    var selectedGroup by remember { mutableStateOf<String?>(null) }
+    // The models a new group is being made for (the strip at the top of the page asks for the name and env)
+    var grouping by remember { mutableStateOf<List<String>?>(null) }
+    // The jar a flag is being added to
+    var flagging by remember { mutableStateOf<String?>(null) }
     var selectedJar by remember { mutableStateOf<String?>(null) }
     var creating by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -495,6 +627,8 @@ private fun ModelsContent(user: String?, onLogin: () -> Unit) {
             tab = tab,
             counts = mapOf(PageTab.MODELS to snapshot.models.size, PageTab.PACKAGES to snapshot.jars.size, PageTab.SESSIONS to snapshot.sessions.size),
             onTab = { tab = it },
+            sidebarShown = sidebarShown,
+            onSidebar = onSidebar,
         )
 
         Column(
@@ -504,6 +638,47 @@ private fun ModelsContent(user: String?, onLogin: () -> Unit) {
                 .padding(horizontal = 10.dp, vertical = 6.dp)
         ) {
             notice?.let { NoticeBar(it) { notice = null } }
+            flagging?.let { jar ->
+                FlagBar(
+                    jar = jar,
+                    onAdd = { text, color ->
+                        flagging = null
+                        background("flag:$jar") { PackageMetadata.addFlag(jar, PackageFlag(text, color)) }
+                    },
+                    onCancel = { flagging = null },
+                )
+            }
+            grouping?.let { models ->
+                NewGroupBar(
+                    models = models,
+                    envs = ModelGroups.envs(),
+                    taken = snapshot.groups.map { it.name to it.env },
+                    onCreate = { name, env ->
+                        grouping = null
+                        background("group:$name") {
+                            val g = ModelGroups.create(name, models, env)
+                            selectedGroup = "${g.name}@${g.env}"
+                            notice = Notice("${models.joinToString()} ${if (models.size == 1) "is" else "are"} in the group $name of env $env; a script opens the group with group(\"$name\")")
+                        }
+                    },
+                    onCancel = { grouping = null },
+                )
+            }
+            renaming?.let { name ->
+                RenameBar(
+                    name = name,
+                    taken = snapshot.models.map { it.name },
+                    onRename = { newName ->
+                        renaming = null
+                        background("rename:$name") {
+                            renameModule(name, newName)
+                            selectedModel = newName
+                            notice = Notice("$name is now $newName; scripts open it with initMod(\"$newName\")")
+                        }
+                    },
+                    onCancel = { renaming = null },
+                )
+            }
             destroying?.let { name ->
                 ConfirmBar(
                     text = "Destroy $name? Its folder AMP/modules/$name goes, with every run and its logs. A session or listener on it is closed first. This cannot be undone.",
@@ -524,24 +699,54 @@ private fun ModelsContent(user: String?, onLogin: () -> Unit) {
                     validating = validating,
                     pending = pending,
                     selectedName = selectedModel,
+                    selectedGroupKey = selectedGroup,
                     signedIn = user != null,
                     creating = creating || (snapshot.models.isEmpty() && build == null),
                     onCreating = { creating = it },
-                    onSelect = { selectedModel = it },
+                    onSelect = { selectedModel = it; selectedGroup = null },
+                    onSelectGroup = { selectedGroup = it },
+                    onIcon = { model, icon -> background("icon:${model.name}") { updateModule(model.name) { it.copy(icon = icon) } } },
+                    onAddToGroup = { model, group -> background("group:${group.name}") { ModelGroups.add(group.name, model.name, group.env) } },
+                    onNewGroup = { models -> grouping = models },
+                    onGroupOpen = { g -> background("open:group:${g.name}") { ModelGroups.open(g.name, g.env) } },
+                    onGroupTerminate = { g -> background("terminate:group:${g.name}") { g.swarm?.terminate() } },
+                    onGroupRemove = { g, model -> background("group:${g.name}") { ModelGroups.remove(g.name, model, g.env) } },
+                    onGroupIcon = { g, icon -> background("group:${g.name}") { ModelGroups.setIcon(g.name, icon, g.env) } },
+                    onGroupDelete = { g ->
+                        if (selectedGroup == "${g.name}@${g.env}") selectedGroup = null
+                        background("group:${g.name}") { ModelGroups.delete(g.name, g.env); notice = Notice("the group ${g.name} is gone; its models stay") }
+                    },
                     onBuild = { name, data, test, description ->
                         if (build != null) notice = Notice("a build is already running: ${build?.modelName}; wait for it to end")
                         else background("build") {
-                            val source = DataSource.read(data.absolutePath) ?: error("${data.name} has no text and label columns the builder can use")
-                            test?.let { source.relate(it.absolutePath) }
-                            buildClassifier(source.samples(), name, validation = source.related?.samples(), validationName = source.related?.name, dataName = data.name, description = description)
+                            // A csv picked from anywhere else lands in AMP/ first, where the model finds it again by its name
+                            val file = DataSource.importIntoAmp(data)
+                            val source = DataSource.read(file.absolutePath) ?: error("${file.name} has no text and label columns the builder can use")
+                            test?.let { source.relate(DataSource.importIntoAmp(it).absolutePath) }
+                            buildClassifier(source.samples(), name, validation = source.related?.samples(), validationName = source.related?.name, dataName = file.name, description = description)
                                 ?: error("model '$name' was not built; its Console tab says why")
                             selectedModel = name
                             creating = false
                         }
                     },
+                    onRetrain = { model, data ->
+                        if (build != null) notice = Notice("a build is already running: ${build?.modelName}; wait for it to end")
+                        else background("build") {
+                            val picked = data ?: model.dataFile ?: error("${model.name} has no data file in AMP/ to train on again; pick one with Retrain on file…")
+                            val file = DataSource.importIntoAmp(picked)
+                            val source = DataSource.read(file.absolutePath) ?: error("${file.name} has no text and label columns the builder can use")
+                            // The same name: the head is rebuilt in place, the sessions on it reopen on the new one, the
+                            // metrics keep every earlier run and the description and guide stay
+                            buildClassifier(source.samples(), model.name, validation = source.related?.samples(), validationName = source.related?.name, dataName = file.name, description = model.manifest.description)
+                                ?: error("model '${model.name}' was not trained again; its Console tab says why")
+                            selectedModel = model.name
+                            notice = Notice("${model.name} was trained again on ${file.name}; the Metrics tab has the new run beside the earlier ones")
+                        }
+                    },
+                    onRename = { model -> renaming = model.name },
                     onValidate = { model, data ->
                         if (validating != null) notice = Notice("a validation is already running: ${validating?.model}; wait for it to end")
-                        else background("validate:${model.name}") { ModelValidation.validate(model.name, data) }
+                        else background("validate:${model.name}") { ModelValidation.validate(model.name, DataSource.importIntoAmp(data)) }
                     },
                     onSave = { model, settings -> background("save:${model.name}") { writeServing(model.name, settings.copy(enabled = model.listening)) } },
                     onDescribe = { model, text -> background("describe:${model.name}") { updateModule(model.name) { it.copy(description = text.trim().ifEmpty { null }) } } },
@@ -582,6 +787,20 @@ private fun ModelsContent(user: String?, onLogin: () -> Unit) {
                         background("addjar") { addJar(chosen); selectedJar = chosen.name }
                     },
                     onFetch = { jar -> background("fetch:${jar.name}") { JarPackages.fetch(jar.name) ?: error("${jar.name} is not on the server") } },
+                    onTest = { jar ->
+                        background("test:${jar.name}") {
+                            val report = JarPackages.test(jar.name)
+                            notice = Notice(report.summary() + "; the TESTS block of the jar has every answer", error = !report.ok)
+                        }
+                    },
+                    onFlag = { jar -> flagging = jar.name },
+                    onRemoveFlag = { jar, text -> background("flag:${jar.name}") { PackageMetadata.removeFlag(jar.name, text) } },
+                    onTemplate = { jar ->
+                        background("template:${jar.name}") {
+                            val file = PackageMetadata.writeTemplate(jar.name, jar.contents?.entryClass, jar.contents?.minJava)
+                            notice = Notice("${file.name} written beside the jar: say there which config files, variables and Java it needs and what its test runs expect")
+                        }
+                    },
                     onMaven = { coordinate ->
                         background("maven:$coordinate") {
                             val env = ScriptEnvironments.current ?: ScriptEnvironments.open(DEFAULT_ENV)
@@ -695,12 +914,17 @@ private fun MemoryFooter() {
     }
 }
 
-/** The strip under the window header: one tab per section with its count, nothing else */
+/** The strip under the window header: the sidebar's chip right after the tabs, one tab per section with its count */
 @Composable
-private fun PageTabs(tab: PageTab, counts: Map<PageTab, Int?>, onTab: (PageTab) -> Unit) {
+private fun PageTabs(tab: PageTab, counts: Map<PageTab, Int?>, onTab: (PageTab) -> Unit, sidebarShown: Boolean, onSidebar: () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth().background(TabBarBackground)) {
         Row(modifier = Modifier.fillMaxWidth().height(32.dp), verticalAlignment = Alignment.CenterVertically) {
+            // The first thing on the strip, right where the sidebar it hides and shows meets it
+            Spacer(Modifier.width(6.dp))
+            IconChip(Icons.Default.ViewSidebar, tip = if (sidebarShown) "Hide the navigation sidebar" else "Show the navigation sidebar", active = sidebarShown) { onSidebar() }
+            Spacer(Modifier.width(6.dp))
             PageTab.entries.forEach { t -> TabCell(t.title, t.icon, counts[t], selected = t == tab, tip = t.tip) { onTab(t) } }
+            Spacer(Modifier.weight(1f))
         }
         Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(UnifiedBorderColor))
     }
@@ -742,11 +966,26 @@ private fun ColumnScope.ModelsTab(
     validating: ValidationProgress?,
     pending: Set<String>,
     selectedName: String?,
+    selectedGroupKey: String?,
     signedIn: Boolean,
     creating: Boolean,
     onCreating: (Boolean) -> Unit,
     onSelect: (String) -> Unit,
+    onSelectGroup: (String) -> Unit,
+    /** Sets the model's icon (a catalog name, null for the default) in module.json */
+    onIcon: (ModelInfo, String?) -> Unit,
+    onAddToGroup: (ModelInfo, GroupInfo) -> Unit,
+    /** Opens the strip that makes a new group with these models */
+    onNewGroup: (List<String>) -> Unit,
+    onGroupOpen: (GroupInfo) -> Unit,
+    onGroupTerminate: (GroupInfo) -> Unit,
+    onGroupRemove: (GroupInfo, String) -> Unit,
+    onGroupIcon: (GroupInfo, String?) -> Unit,
+    onGroupDelete: (GroupInfo) -> Unit,
     onBuild: (String, File, File?, String) -> Unit,
+    /** Trains the model again under the same name: on the given csv, or on the one it was trained on */
+    onRetrain: (ModelInfo, File?) -> Unit,
+    onRename: (ModelInfo) -> Unit,
     onValidate: (ModelInfo, File) -> Unit,
     onSave: (ModelInfo, ServingSettings) -> Unit,
     onDescribe: (ModelInfo, String) -> Unit,
@@ -760,12 +999,25 @@ private fun ColumnScope.ModelsTab(
 ) {
     val clipboard = LocalClipboardManager.current
 
+    // The actions of a group: open or close its swarm, take models out, copy the call, remove it
+    fun menuOfGroup(g: GroupInfo): List<ContextMenuItem> = listOfNotNull(
+        if (g.open) ContextMenuItem("Terminate swarm") { onGroupTerminate(g) } else ContextMenuItem("Open swarm") { onGroupOpen(g) },
+        ContextMenuItem("Copy group(\"${g.name}\")") { clipboard.setText(AnnotatedString("group(\"${g.name}\")")) },
+    ) + g.group.models.map { m -> ContextMenuItem("Take $m out") { onGroupRemove(g, m) } } + listOf(
+        ContextMenuItem("Remove group") { onGroupDelete(g) },
+    )
+
     // The actions of a model: one list for its row's right-click, its ⋯ button and its panel header
     fun menuOf(model: ModelInfo): List<ContextMenuItem> = listOfNotNull(
         if (model.sessions.isEmpty()) ContextMenuItem("Open session") { onOpen(model) } else null,
         ContextMenuItem(if (model.listening) "Stop listening" else "Listen on :${model.serving.port}") { onListen(model, !model.listening, model.serving) },
         ContextMenuItem("Validate on sample data") { onValidate(model, ensureSampleData()) },
         ContextMenuItem("Validate on file…") { chooseFile("Validation data", listOf("csv"))?.let { onValidate(model, it) } },
+        if (model.dataFile != null && build == null) ContextMenuItem("Retrain on ${model.dataFile.name}") { onRetrain(model, null) } else null,
+        if (build == null) ContextMenuItem("Retrain on file…") { chooseFile("Training data", listOf("csv"))?.let { onRetrain(model, it) } } else null,
+        ContextMenuItem("Rename…") { onRename(model) },
+    ) + snapshot.groups.filter { model.name !in it.group.models }.map { g -> ContextMenuItem("Add to group ${g.label}") { onAddToGroup(model, g) } } + listOfNotNull(
+        ContextMenuItem("New group with ${model.name}…") { onNewGroup(listOf(model.name)) },
         ContextMenuItem(if (signedIn) "Publish to the website" else "Publish to the website (sign in)") { onPublish(model) },
         ContextMenuItem(if (signedIn) "Remove from the website" else "Remove from the website (sign in)") { onUnpublish(model) },
         ContextMenuItem("Reveal folder") { openInBrowser(model.dir.toURI().toString()) },
@@ -779,8 +1031,20 @@ private fun ColumnScope.ModelsTab(
     var query by remember { mutableStateOf("") }
     val shown = snapshot.models.filter { it.matches(query) }
     val ordered = shown.sortedWith(compareByDescending<ModelInfo> { it.running }.thenByDescending { it.accuracy }.thenBy { it.name })
-    val selected = snapshot.models.firstOrNull { it.name == selectedName } ?: ordered.firstOrNull()
-    Row(modifier = Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+    val shownGroups = snapshot.groups.filter { it.matches(query.trim().lowercase()) }.sortedWith(compareByDescending<GroupInfo> { it.open }.thenBy { it.env }.thenBy { it.name })
+    // A model dragged onto a group joins it; onto another model, the two make a new group; onto the zone over the list, a new group with it
+    val drag = remember { DragState { model, target ->
+        when {
+            target == "new-group" -> onNewGroup(listOf(model))
+            target.startsWith("group:") -> snapshot.groups.firstOrNull { "group:${it.name}@${it.env}" == target }?.let { g -> snapshot.models.firstOrNull { it.name == model }?.let { m -> onAddToGroup(m, g) } }
+            target.startsWith("model:") -> onNewGroup(listOf(model, target.removePrefix("model:")))
+        }
+    } }
+    var overlayOrigin by remember { mutableStateOf(Offset.Zero) }
+    Box(modifier = Modifier.fillMaxWidth().weight(1f).onGloballyPositioned { overlayOrigin = it.positionInRoot() }) {
+    val selectedGroupInfo = selectedGroupKey?.let { key -> snapshot.groups.firstOrNull { "${it.name}@${it.env}" == key } }
+    val selected = if (selectedGroupInfo != null) null else snapshot.models.firstOrNull { it.name == selectedName } ?: ordered.firstOrNull()
+    Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         var listWidth by remember { mutableStateOf(ModelsCache.listWidth) }
         Column(modifier = Modifier.width(listWidth.dp).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             // The filter and the one action of the list on a single line; the form opens in the panel on the right
@@ -793,7 +1057,32 @@ private fun ColumnScope.ModelsTab(
                 ) { onCreating(!creating) }
             }
             build?.let { BuildLine(it) }
-            if (shown.isEmpty()) { if (query.isNotBlank()) NoMatches(query) { query = "" } else Hint("no models yet") }
+            if (drag.dragging != null) NewGroupDropZone(drag)
+            if (shown.isEmpty() && shownGroups.isEmpty()) { if (query.isNotBlank()) NoMatches(query) { query = "" } else Hint("no models yet") }
+            // The groups first: each a swarm a script opens with group("name"), kept in its env
+            if (shownGroups.isNotEmpty()) Fold("groups", shownGroups.size, open = true, key = "groups") {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    shownGroups.forEach { g ->
+                        ListRow(
+                            name = g.label,
+                            active = g.open,
+                            selected = selectedGroupInfo?.let { it.name == g.name && it.env == g.env } == true,
+                            meta = listOfNotNull(
+                                when (g.group.models.size) { 0 -> "no models"; 1 -> "1 model"; else -> "${g.group.models.size} models" },
+                                if (g.missing.isNotEmpty()) "${g.missing.size} missing" else null,
+                                "env ${g.env}",
+                            ).joinToString(" · "),
+                            status = if (g.open) "open" else "closed",
+                            statusTip = if (g.open) "open: the swarm #${g.swarm?.id} answers group(\"${g.name}\") with ${g.present.size} models" else "closed: no swarm on it; Open swarm, or group(\"${g.name}\") in a script, opens one",
+                            underline = g.open,
+                            icon = g.icon,
+                            menu = menuOfGroup(g),
+                            drag = drag,
+                            dropKey = "group:${g.name}@${g.env}",
+                        ) { onSelectGroup("${g.name}@${g.env}") }
+                    }
+                }
+            }
             val groups = ordered.groupBy { it.dataName }
             val groupOrder = groups.keys.sortedWith(compareByDescending<String> { groups.getValue(it).any { m -> m.running } }.thenByDescending { groups.getValue(it).maxOf { m -> m.accuracy } })
             groupOrder.forEach { data ->
@@ -809,12 +1098,16 @@ private fun ColumnScope.ModelsTab(
                                     model.lastRun?.let { "accuracy ${pct(it.accuracy)}" } ?: "not validated",
                                     if (model.listening) "serving :${model.serving.port}" else null,
                                     when (model.sessions.size) { 0 -> null; 1 -> "1 session"; else -> "${model.sessions.size} sessions" },
+                                    if (model.groups.isNotEmpty()) "in ${model.groups.joinToString()}" else null,
                                 ).joinToString(" · "),
                                 status = model.status,
                                 statusTip = statusTip(model),
                                 underline = model.running,
-                                icon = Icons.Default.Memory,
+                                icon = model.icon,
                                 menu = menuOf(model),
+                                drag = drag,
+                                dragKey = model.name,
+                                dropKey = "model:${model.name}",
                             ) { onSelect(model.name) }
                         }
                     }
@@ -824,6 +1117,20 @@ private fun ColumnScope.ModelsTab(
         VerticalSeparator { listWidth = it; ModelsCache.listWidth = it }
         when {
             creating && build == null -> NewModelPanel(Modifier.weight(1f).fillMaxHeight(), onBuild = onBuild, onClose = { onCreating(false) })
+            selectedGroupInfo != null -> GroupDetail(
+                group = selectedGroupInfo,
+                models = snapshot.models,
+                pending = pending,
+                menu = menuOfGroup(selectedGroupInfo),
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+                onOpen = { onGroupOpen(selectedGroupInfo) },
+                onTerminate = { onGroupTerminate(selectedGroupInfo) },
+                onAdd = { model -> onAddToGroup(model, selectedGroupInfo) },
+                onRemove = { onGroupRemove(selectedGroupInfo, it) },
+                onIcon = { onGroupIcon(selectedGroupInfo, it) },
+                onSelectModel = onSelect,
+                onTerminateSession = onTerminate,
+            )
             selected != null -> ModelDetail(
                 model = selected,
                 signedIn = signedIn,
@@ -832,6 +1139,9 @@ private fun ColumnScope.ModelsTab(
                 menu = menuOf(selected),
                 modifier = Modifier.weight(1f).fillMaxHeight(),
                 onValidate = { data -> onValidate(selected, data) },
+                onRetrain = { data -> onRetrain(selected, data) },
+                onIcon = { onIcon(selected, it) },
+                building = build != null,
                 onSave = { onSave(selected, it) },
                 onDescribe = { onDescribe(selected, it) },
                 onListen = { on, settings -> onListen(selected, on, settings) },
@@ -841,6 +1151,27 @@ private fun ColumnScope.ModelsTab(
             )
             else -> Spacer(Modifier.weight(1f))
         }
+    }
+    // The ghost: the dragged model's name beside the pointer, and what dropping would do
+    drag.dragging?.let { name ->
+        val action = when (val t = drag.over) {
+            null -> "drop on a group, a model, or the zone over the list"
+            "new-group" -> "new group with $name"
+            else -> if (t.startsWith("group:")) "join ${t.removePrefix("group:").substringBefore('@')}" else "new group with ${t.removePrefix("model:")}"
+        }
+        Text(
+            "$name · $action",
+            color = FontColor,
+            fontSize = 11.sp,
+            fontFamily = FontFamily.SansSerif,
+            maxLines = 1,
+            modifier = Modifier
+                .offset { (drag.position - overlayOrigin).round() + IntOffset(14, 10) }
+                .background(PanelSurfaceSelected, RectangleShape)
+                .border(1.dp, PageAccent, RectangleShape)
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+        )
+    }
     }
 }
 
@@ -964,6 +1295,10 @@ private fun ModelDetail(
     menu: List<ContextMenuItem>,
     modifier: Modifier = Modifier,
     onValidate: (File) -> Unit,
+    onRetrain: (File?) -> Unit,
+    onIcon: (String?) -> Unit,
+    /** A build is running, so Retrain waits */
+    building: Boolean,
     onSave: (ServingSettings) -> Unit,
     onDescribe: (String) -> Unit,
     onListen: (Boolean, ServingSettings) -> Unit,
@@ -1004,11 +1339,13 @@ private fun ModelDetail(
     DetailPanel(modifier) {
         DetailHeader(
             name = model.name,
+            icon = model.icon,
             active = model.running,
             status = listOfNotNull(
                 model.status,
                 if (model.listening) "listening ${model.serving.host}:${model.serving.port}" else "not serving",
                 "trained on ${model.dataName}",
+                if (model.groups.isNotEmpty()) "in ${model.groups.joinToString()}" else null,
             ).joinToString(" · "),
             statusTip = statusTip(model),
             menu = menu,
@@ -1062,10 +1399,10 @@ private fun ModelDetail(
 
         Column(modifier = Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 14.dp).padding(top = 10.dp, bottom = 14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             when (tab) {
-                DetailTab.ABOUT -> AboutBlock(model, onDescribe)
+                DetailTab.ABOUT -> AboutBlock(model, onDescribe, onIcon)
                 DetailTab.GUIDE -> GuideBlock(model)
                 DetailTab.METRICS -> MetricsBlock(model, validating, onValidate)
-                DetailTab.DATA -> DataBlock(model)
+                DetailTab.DATA -> DataBlock(model, building, onRetrain)
                 DetailTab.REQUIREMENTS -> RequirementsBlock(model)
                 DetailTab.CONSOLE -> ConsoleBlock(model.name, consoleLines)
                 DetailTab.SESSIONS -> SessionsOf(model.sessions, onTerminate, title = false)
@@ -1112,7 +1449,7 @@ private fun DetailTabs(tabs: List<Pair<DetailTab, Int?>>, selected: DetailTab, o
  * what it was trained on and how. Models built before the training details were kept say so.
  */
 @Composable
-private fun AboutBlock(model: ModelInfo, onDescribe: (String) -> Unit) {
+private fun AboutBlock(model: ModelInfo, onDescribe: (String) -> Unit, onIcon: (String?) -> Unit) {
     val m = model.manifest
     var text by remember(model.name, m.description) { mutableStateOf(m.description ?: "") }
     val dirty = text.trim() != (m.description ?: "")
@@ -1135,6 +1472,11 @@ private fun AboutBlock(model: ModelInfo, onDescribe: (String) -> Unit) {
     if (dirty) Row(modifier = Modifier.fillMaxWidth()) {
         Spacer(Modifier.weight(1f))
         AccentButton("Save description", icon = Icons.Default.Save, tip = "Write the description to module.json") { onDescribe(text) }
+    }
+
+    Section("ICON", key = "${model.name}:icon") {
+        Hint("the glyph of the model in the list and on this header, kept in module.json")
+        IconPicker(chosen = m.icon, default = "memory") { onIcon(it) }
     }
 
     Section("WHERE", key = "${model.name}:where") {
@@ -1309,6 +1651,10 @@ private fun MetricsBlock(model: ModelInfo, validating: ValidationProgress?, onVa
             "scores" to "accuracy ${pct(run.accuracy)}  ·  macro F1 ${fmt(run.macroF1)}  ·  ${run.labels.size} labels: ${run.labels.keys.joinToString()}",
         )
         run.warnings.forEach { Hint("warning: $it") }
+        if (run.candidates.isNotEmpty()) Section("HEADS COMPARED", key = "${model.name}:candidates:$index") {
+            Hint("every head trained on the same rows and scored on the same ${run.validationSize} validation rows; the chosen one was validated once more and is the model")
+            CandidatesTable(run.candidates)
+        }
         val metricsStamp = File(model.dir, "metrics.json").lastModified()
         var runPlots by remember(model.name) { mutableStateOf<List<MetricsPlot>>(emptyList()) }
         LaunchedEffect(model.name, index, metricsStamp) {
@@ -1353,9 +1699,15 @@ private fun rememberCsv(file: File): CsvFacts? = remember(file.path, file.lastMo
  * on since: the texts its sessions were asked and the requests the server answered.
  */
 @Composable
-private fun DataBlock(model: ModelInfo) {
+private fun DataBlock(model: ModelInfo, building: Boolean, onRetrain: (File?) -> Unit) {
     val files = listOfNotNull(model.dataFile?.let { "trained on" to it }, model.validationFile?.takeIf { it != model.dataFile }?.let { "validated on" to it })
-    Section("FILES", key = "${model.name}:files") {
+    Section("FILES", key = "${model.name}:files", actions = {
+        // The model trained again: on its data as it is now (edited rows, new rows), or on another csv, under the same
+        // name, so nothing that opens it has to change
+        if (model.dataFile == null) SmallButton(if (building) "Building…" else "Retrain on file…", enabled = !building, icon = Icons.Default.Refresh, tip = "Pick a csv and train ${model.name} again on it under the same name; the metrics keep every earlier run") {
+            chooseFile("Training data", listOf("csv"))?.let { onRetrain(it) }
+        }
+    }) {
         if (files.isEmpty()) Hint(if (model.manifest.data != null) "${model.manifest.data} is not in AMP/ any more" else "no data file (the dummy is written, not trained)")
         files.forEach { (role, file) ->
             val facts = rememberCsv(file)
@@ -1365,6 +1717,12 @@ private fun DataBlock(model: ModelInfo) {
                 Spacer(Modifier.width(10.dp))
                 Meta(facts?.let { "${it.rows.size} rows · ${it.labels.size} labels" } ?: "no text and label columns")
                 Spacer(Modifier.weight(1f))
+                if (role == "trained on") {
+                    SmallButton(if (building) "Building…" else "Retrain", enabled = !building, icon = Icons.Default.Refresh, tip = "Train ${model.name} again on ${file.name} as it is now: edit or add rows to the file, then press this. The head is rebuilt under the same name, its sessions reopen on the new one, and the Metrics tab keeps every earlier run beside the new one") { onRetrain(file) }
+                    Spacer(Modifier.width(4.dp))
+                    SmallButton("Other file…", enabled = !building, icon = Icons.Default.FolderOpen, tip = "Train ${model.name} again on another csv; it is copied into AMP/ and becomes the model's data") { chooseFile("Training data", listOf("csv"))?.let { onRetrain(it) } }
+                    Spacer(Modifier.width(4.dp))
+                }
                 SmallButton("Open in viewer", icon = Icons.Default.OpenInNew, tip = "Open ${file.name} in whatever this machine uses for csv files") { openFile(file) }
             }
             if (facts != null) {
@@ -1444,11 +1802,17 @@ private fun RequirementsBlock(model: ModelInfo) {
     if (checks == null) { Hint("checking…"); return }
     val unmet = checks.count { it.ok == false }
     Hint(if (unmet == 0) "all met" else "$unmet not met")
+    RequirementRows(checks)
+}
+
+/** Requirement lines: a mark (met, not met, information), the name and the detail */
+@Composable
+private fun RequirementRows(checks: List<Requirement>) {
     Column(modifier = Modifier.fillMaxWidth()) {
         checks.forEachIndexed { i, r ->
             if (i > 0) Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(PanelBorder))
             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.Top) {
-                AppTooltip(when (r.ok) { true -> "met"; false -> "not met: initMod and Listen fail until this is fixed"; null -> "information, nothing to fix" }) {
+                AppTooltip(when (r.ok) { true -> "met"; false -> "not met"; null -> "information, nothing to fix" }) {
                     Box(modifier = Modifier.width(18.dp).height(16.dp), contentAlignment = Alignment.CenterStart) {
                         when (r.ok) {
                             true -> Icon(Icons.Default.CheckCircle, contentDescription = "met", tint = SuccessColor, modifier = Modifier.size(12.dp))
@@ -1554,6 +1918,47 @@ private fun BuildLine(build: ModelBuild) {
             color = ActiveColor,
             backgroundColor = PanelBorder,
         )
+        // Every head scored so far, as it finishes: the comparison is visible while the next one trains
+        if (build.candidates.isNotEmpty()) {
+            Spacer(Modifier.height(6.dp))
+            CandidatesTable(build.candidates, compact = true)
+        }
+    }
+}
+
+/**
+ * The heads a build compared, one line each: architecture, accuracy and macro F1 on the validation rows, train
+ * accuracy and final loss, the chosen one marked; under each, F1 per label and what the diagnostics said of it.
+ * Compact leaves out the per-label line for the build card.
+ */
+@Composable
+private fun CandidatesTable(candidates: List<org.example.project.components.terminal.window.controller.jetbrainDLBuilder.CandidateResult>, compact: Boolean = false) {
+    val width = (candidates.maxOf { it.architecture.length } * 7 + 10).coerceIn(60, 160).dp
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("head", color = MutedFontColor, fontSize = 10.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.width(width))
+            listOf("accuracy", "macro F1", "train", "loss").forEach { Text(it, color = MutedFontColor, fontSize = 10.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.width(62.dp)) }
+        }
+        candidates.forEach { c ->
+            val strong = c.chosen
+            AppTooltip(
+                "${c.architecture}: ${c.parameters} parameters, ${c.epochs} epochs" +
+                    (if (c.perLabelF1.isNotEmpty()) "\nF1 per label: " + c.perLabelF1.entries.joinToString(" · ") { "${it.key} ${fmt(it.value)}" } else "") +
+                    (if (c.chosen) "\nchosen: the best score on the validation rows; it is the head that was validated once more and exported" else "")
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(c.architecture, color = if (strong) FontColor else LogMessageColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, fontWeight = if (strong) FontWeight.SemiBold else FontWeight.Normal, modifier = Modifier.width(width))
+                    listOf(fmt(c.accuracy), fmt(c.macroF1), fmt(c.trainAccuracy), fmt(c.finalLoss)).forEach {
+                        Text(it, color = if (strong) FontColor else LogMessageColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.width(62.dp))
+                    }
+                    if (c.chosen) BadgeLabel("chosen", strong = true)
+                }
+            }
+            if (!compact && c.perLabelF1.isNotEmpty()) {
+                Text("F1 per label: " + c.perLabelF1.entries.joinToString(" · ") { "${it.key} ${fmt(it.value)}" }, color = MutedFontColor, fontSize = 10.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.padding(start = 12.dp))
+            }
+            c.insights.forEach { Text(it, color = MutedFontColor, fontSize = 10.sp, fontFamily = FontFamily.SansSerif, lineHeight = 14.sp, modifier = Modifier.padding(start = 12.dp)) }
+        }
     }
 }
 
@@ -1585,6 +1990,13 @@ private fun ColumnScope.PackagesTab(
     onSelect: (String) -> Unit,
     onAdd: () -> Unit,
     onFetch: (JarInfo) -> Unit,
+    /** Runs the tests the jar declares (or one call with "hello") on a fresh session */
+    onTest: (JarInfo) -> Unit,
+    /** Writes <jar>.package.json beside a jar that ships no metadata, to fill in */
+    onTemplate: (JarInfo) -> Unit,
+    /** Opens the strip that adds a coloured flag to the jar */
+    onFlag: (JarInfo) -> Unit,
+    onRemoveFlag: (JarInfo, String) -> Unit,
     /** Uploads a jar from this machine to the website under the signed-in account */
     onPublish: (JarInfo) -> Unit,
     signedIn: Boolean,
@@ -1643,7 +2055,7 @@ private fun ColumnScope.PackagesTab(
         when {
             newCollection -> NewCollectionPanel(snapshot.jars, Modifier.weight(1f).fillMaxHeight(), onCreate = { name, jars -> onCollection { PackageCollections.create(name, jars) }; newCollection = false }, onClose = { newCollection = false })
             fromMaven -> MavenPanel(pending, Modifier.weight(1f).fillMaxHeight(), declared = snapshot.mavenDeclared, onAdd = onMaven, onClose = { fromMaven = false })
-            selected != null -> JarDetail(selected, pending, Modifier.weight(1f).fillMaxHeight(), onFetch = { onFetch(selected) }, onPublish = { onPublish(selected) }, onRemove = { onRemoveMaven(selected) }, signedIn = signedIn, onTerminate = onTerminate)
+            selected != null -> JarDetail(selected, pending, Modifier.weight(1f).fillMaxHeight(), onFetch = { onFetch(selected) }, onPublish = { onPublish(selected) }, onRemove = { onRemoveMaven(selected) }, onTest = { onTest(selected) }, onTemplate = { onTemplate(selected) }, onFlag = { onFlag(selected) }, onRemoveFlag = { onRemoveFlag(selected, it) }, signedIn = signedIn, onTerminate = onTerminate)
             else -> Spacer(Modifier.weight(1f))
         }
     }
@@ -1651,9 +2063,13 @@ private fun ColumnScope.PackagesTab(
 
 /** The right-click actions of a package: the same as its detail panel's buttons, plus the copy of the call that opens it */
 @Composable
-private fun jarMenu(jar: JarInfo, onFetch: (() -> Unit)? = null, onDetach: (() -> Unit)? = null, onPublish: (() -> Unit)? = null, onRemove: (() -> Unit)? = null, signedIn: Boolean = true): List<ContextMenuItem> {
+private fun jarMenu(jar: JarInfo, onFetch: (() -> Unit)? = null, onDetach: (() -> Unit)? = null, onPublish: (() -> Unit)? = null, onRemove: (() -> Unit)? = null, onTest: (() -> Unit)? = null, onTemplate: (() -> Unit)? = null, onFlag: (() -> Unit)? = null, onRemoveFlag: ((String) -> Unit)? = null, signedIn: Boolean = true): List<ContextMenuItem> {
     val clipboard = LocalClipboardManager.current
     return listOfNotNull(
+        if (jar.local && !jar.maven && onFlag != null) ContextMenuItem("Add flag…", onFlag) else null,
+        if (jar.local && !jar.maven && onTest != null) ContextMenuItem(if (jar.meta?.tests.isNullOrEmpty()) "Test run (a call with \"hello\")" else "Test run (${jar.meta!!.tests.size} tests)", onTest) else null,
+        if (jar.local && !jar.maven && jar.meta == null && onTemplate != null) ContextMenuItem("Write metadata template", onTemplate) else null,
+        jar.configDir?.takeIf { jar.local && !jar.maven }?.let { d -> ContextMenuItem("Reveal config folder") { d.mkdirs(); openInBrowser(d.toURI().toString()) } },
         if (jar.maven) ContextMenuItem("Copy implementation(\"${jar.coordinate}\")") { clipboard.setText(AnnotatedString("implementation(\"${jar.coordinate}\")")) }
         else ContextMenuItem("Copy initMod(\"${jar.name}\")") { clipboard.setText(AnnotatedString("initMod(\"${jar.name}\")")) },
         ContextMenuItem(if (jar.maven) "Open its page on Maven Central" else "Open its page on the website") { openInBrowser(jar.page) },
@@ -1662,7 +2078,7 @@ private fun jarMenu(jar: JarInfo, onFetch: (() -> Unit)? = null, onDetach: (() -
         if (jar.local && !jar.maven && onPublish != null) ContextMenuItem(if (signedIn) "Publish to the website" else "Publish to the website (sign in)", onPublish) else null,
         jar.file?.let { f -> ContextMenuItem("Reveal file") { openInBrowser(f.parentFile.toURI().toString()) } },
         onDetach?.let { ContextMenuItem("Detach from collection", it) },
-    )
+    ) + (if (onRemoveFlag != null) (PackageMetadata.sidecar(jar.name)?.flags ?: emptyList()).map { f -> ContextMenuItem("Remove flag ${f.text}") { onRemoveFlag(f.text) } } else emptyList())
 }
 
 @Composable
@@ -1686,7 +2102,8 @@ private fun JarRow(jar: JarInfo, selected: Boolean, onDetach: (() -> Unit)? = nu
         underline = jar.open > 0,
         icon = Icons.Default.Inventory2,
         onDetach = onDetach,
-        menu = jarMenu(jar, onFetch, onDetach, onPublish, onRemove, signedIn),
+        menu = jarMenu(jar, onFetch, onDetach, onPublish, onRemove, signedIn = signedIn),
+        flags = jar.flags,
         onSelect = onSelect,
     )
 }
@@ -1882,12 +2299,15 @@ private fun MavenRow(name: String, version: String, meta: String, page: String?,
  * The selected package: what it is (status, Java it needs, language), the collections it is in, where it came
  * from, what built it, what it contains, and its sessions. A script opens it with initMod("name.jar").
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun JarDetail(jar: JarInfo, pending: Set<String>, modifier: Modifier = Modifier, onFetch: () -> Unit, onPublish: () -> Unit, onRemove: () -> Unit = {}, signedIn: Boolean, onTerminate: (SessionInfo) -> Unit) {
+private fun JarDetail(jar: JarInfo, pending: Set<String>, modifier: Modifier = Modifier, onFetch: () -> Unit, onPublish: () -> Unit, onRemove: () -> Unit = {}, onTest: () -> Unit = {}, onTemplate: () -> Unit = {}, onFlag: () -> Unit = {}, onRemoveFlag: (String) -> Unit = {}, signedIn: Boolean, onTerminate: (SessionInfo) -> Unit) {
     val contents = jar.contents
     val fetching = "fetch:${jar.name}" in pending
     val publishing = "publish:${jar.name}" in pending
     val removing = "maven-remove:${jar.coordinate}" in pending
+    val testing = "test:${jar.name}" in pending
+    val package_ = jar.local && !jar.maven
     DetailPanel(modifier) {
         DetailHeader(
             name = jar.name,
@@ -1898,10 +2318,19 @@ private fun JarDetail(jar: JarInfo, pending: Set<String>, modifier: Modifier = M
                 contents?.let { if (it.kotlin) "kotlin" else "java" },
                 jar.version?.let { "v$it" },
                 jar.collections.takeIf { it.isNotEmpty() }?.let { "in ${it.joinToString()}" },
+                if (package_ && jar.unmet > 0) "${jar.unmet} not met" else null,
+                jar.report?.let { r -> if (r.ok) "tests pass" else "tests fail" },
             ).joinToString(" · "),
             statusTip = if (jar.maven) "a library from Maven Central in the env: a script imports its classes, no initMod needed" else "a script opens it with initMod(\"${jar.name}\"); every call is a fresh instance and its own session",
-            menu = jarMenu(jar, onFetch = onFetch, onPublish = onPublish, onRemove = onRemove, signedIn = signedIn),
+            menu = jarMenu(jar, onFetch = onFetch, onPublish = onPublish, onRemove = onRemove, onTest = onTest, onTemplate = onTemplate, onFlag = onFlag, onRemoveFlag = onRemoveFlag, signedIn = signedIn),
         ) {
+            if (package_) SmallButton(
+                if (testing) "Testing…" else "Test run",
+                enabled = !testing,
+                icon = Icons.Default.FactCheck,
+                tip = if (jar.meta?.tests.isNullOrEmpty()) "Open a fresh session as initMod would (configuration included), call run(\"hello\") and close it; no tests are declared, so the call must only answer" else "Open a fresh session as initMod would (configuration included), run the ${jar.meta!!.tests.size} test${if (jar.meta.tests.size == 1) "" else "s"} the jar declares and close it; the TESTS block shows every answer",
+                onClick = onTest,
+            )
             if (jar.maven) SmallButton(if (removing) "Removing…" else "Remove", enabled = !removing, icon = Icons.Default.Delete, tip = "Take the library out of the env; its files stay in AMP/env/caches", onClick = onRemove)
             if (!jar.local && !jar.maven) AccentButton(if (fetching) "Fetching…" else "Fetch", enabled = !fetching, icon = Icons.Default.Download, tip = "Download the jar from the server into AMP/pluginDir", onClick = onFetch)
             if (jar.local && !jar.maven) SmallButton(
@@ -1914,6 +2343,11 @@ private fun JarDetail(jar: JarInfo, pending: Set<String>, modifier: Modifier = M
         }
 
         Column(modifier = Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 14.dp).padding(top = 10.dp, bottom = 14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            // What it works with, as flags: version, Java, language, tests, and the custom ones; Add flag puts one more on
+            if (package_ || jar.flags.isNotEmpty()) FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(bottom = 2.dp)) {
+                jar.flags.forEach { FlagBadge(it) }
+                if (package_) SmallButton("Add flag", icon = Icons.Default.Flag, tip = "Tag the jar with a word in a colour of your choice (stable, needs key, v2 api…); kept in ${PackageMetadata.sidecarFile(jar.name).name}", onClick = onFlag)
+            }
             if (jar.maven) KeyValues("used with" to "implementation(\"${jar.coordinate}\") is in the env: the script's import lines can name its classes from the next run")
             else KeyValues("opens with" to "initMod(\"${jar.name}\"), a fresh instance per call")
 
@@ -1934,6 +2368,70 @@ private fun JarDetail(jar: JarInfo, pending: Set<String>, modifier: Modifier = M
                     jar.file?.let { "file" to it.absolutePath },
                 ).toTypedArray(),
             ) }
+
+            if (package_) {
+                val meta = jar.meta
+                Fold("REQUIREMENTS", jar.unmet.takeIf { it > 0 }, open = jar.unmet > 0 || meta != null, key = "${jar.name}:requirements") {
+                    Hint(if (jar.unmet == 0) "all met" else "${jar.unmet} not met: initMod opens the jar, but it may not find what it needs")
+                    RequirementRows(jar.requirements)
+                }
+                Fold("CONFIG", meta?.config?.size, open = !meta?.config.isNullOrEmpty(), key = "${jar.name}:config") {
+                    val dir = jar.configDir!!
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        SelectionContainer(modifier = Modifier.weight(1f)) {
+                            Text(dir.absolutePath, color = LogMessageColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        SmallButton("Reveal folder", icon = Icons.Default.FolderOpen, tip = "Show the config folder in the file browser; what the package reads is put here") { dir.mkdirs(); openInBrowser(dir.toURI().toString()) }
+                    }
+                    Hint("the package finds this folder as the first root of its class loader (getResource), as the amie.package.config system property, and through a configure(File | Path | String | Map) method when it has one")
+                    if (meta == null) Hint("no metadata, so no config files are declared; ⋯ > Write metadata template makes ${PackageMetadata.sidecarFile(jar.name).name} to say what the jar needs")
+                    else if (meta.config.isEmpty()) Hint("the metadata declares no config files")
+                    else KeyValues(*meta.config.map { c ->
+                        val f = File(dir, c.file)
+                        c.file to listOfNotNull(
+                            if (f.isFile) "present" else if (c.template != null) "missing; the template is written on the next open" else "missing",
+                            if (c.required) "required" else "optional",
+                            c.description,
+                        ).joinToString(" · ")
+                    }.toTypedArray())
+                    if (meta != null && meta.env.isNotEmpty()) KeyValues(*meta.env.map { v -> "\$${v.name}" to listOfNotNull(if (System.getenv(v.name).isNullOrEmpty()) "not set" else "set", if (v.required) "required" else "optional", v.description).joinToString(" · ") }.toTypedArray())
+                    if (meta?.notes != null) Hint(meta.notes)
+                }
+                Fold("TESTS", meta?.tests?.size, open = jar.report != null, key = "${jar.name}:tests") {
+                    if (meta == null || meta.tests.isEmpty()) Hint("no tests declared in the metadata; Test run makes one call with \"hello\" that must answer")
+                    else KeyValues(*meta.tests.map { t -> t.title to listOfNotNull("run(\"${t.input.take(60)}\")", t.expect?.let { "expect \"$it\"" }, t.contains?.let { "contains \"$it\"" }, t.lines?.let { "$it line${if (it == 1) "" else "s"}" }).joinToString(" · ") }.toTypedArray())
+                    val report = jar.report
+                    if (report == null) Hint("not run yet")
+                    else {
+                        Hint("last run ${report.ranAt.take(19).replace('T', ' ')}: ${report.summary().substringAfter(": ")}" + (report.entryClass?.let { " · on $it" } ?: ""))
+                        if (report.error != null) Text(report.error, color = LogErrorTextColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp)
+                        // Every test with what it was asked and the whole answer, line by line, so what the jar actually said is in view
+                        report.results.forEachIndexed { i, r ->
+                            if (i > 0) Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(PanelBorder))
+                            Column(modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    AppTooltip(if (r.passed) "passed" else "failed: ${r.reason}") {
+                                        Icon(if (r.passed) Icons.Default.CheckCircle else Icons.Default.Cancel, contentDescription = if (r.passed) "passed" else "failed", tint = if (r.passed) SuccessColor else DangerColor, modifier = Modifier.size(12.dp))
+                                    }
+                                    Spacer(Modifier.width(6.dp))
+                                    Text(r.name, color = FontColor, fontSize = 12.sp, fontFamily = FontFamily.SansSerif, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Spacer(Modifier.width(10.dp))
+                                    Meta("${r.millis} ms")
+                                }
+                                KeyValues("asked" to "run(\"${r.input}\")")
+                                Text("answered" + if (r.answer.isEmpty()) ": nothing" else " ${r.answer.size} line${if (r.answer.size == 1) "" else "s"}", color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+                                if (r.answer.isNotEmpty()) SelectionContainer {
+                                    Column(modifier = Modifier.fillMaxWidth().background(CodeBackground, RectangleShape).border(1.dp, ConsoleBorderColor, RectangleShape).padding(horizontal = 10.dp, vertical = 6.dp)) {
+                                        r.answer.forEach { line -> Text(line, color = LogMessageColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp) }
+                                    }
+                                }
+                                r.reason?.let { Text(it, color = LogErrorTextColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp) }
+                            }
+                        }
+                    }
+                }
+            }
 
             if (contents == null) {
                 Fold("CONTENTS", null, open = true, key = "${jar.name}:none") {
@@ -2198,15 +2696,34 @@ private fun pct(value: Double) = "${(value * 100).toInt()}%"
  * underlined in green; a stopped one is not. With onDetach, a Detach button appears while the pointer is over it.
  */
 @Composable
-private fun ListRow(name: String, active: Boolean, selected: Boolean, meta: String, status: String, statusTip: String? = null, underline: Boolean = false, icon: ImageVector? = null, onDetach: (() -> Unit)? = null, menu: List<ContextMenuItem> = emptyList(), onSelect: () -> Unit) {
+private fun ListRow(name: String, active: Boolean, selected: Boolean, meta: String, status: String, statusTip: String? = null, underline: Boolean = false, icon: ImageVector? = null, onDetach: (() -> Unit)? = null, menu: List<ContextMenuItem> = emptyList(), flags: List<Flag> = emptyList(), drag: DragState? = null, dragKey: String? = null, dropKey: String? = null, onSelect: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val hovered by interactionSource.collectIsHoveredAsState()
+    // Where the row is on the window, for the drag that starts on it and the drop that lands on it
+    var rowOrigin by remember { mutableStateOf(Offset.Zero) }
+    val over = drag != null && dropKey != null && drag.dragging != null && drag.over == dropKey
+    if (drag != null && dropKey != null) DisposableEffect(dropKey) { onDispose { drag.targets.remove(dropKey) } }
     ContextMenuArea(items = { menu }) { Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(when { selected -> PanelSurfaceSelected; hovered -> PanelSurface; else -> Color.Transparent })
+            .onGloballyPositioned { c ->
+                rowOrigin = c.positionInRoot()
+                if (drag != null && dropKey != null) drag.targets[dropKey] = c.boundsInRoot()
+            }
+            .background(when { over -> AccentSoft; selected -> PanelSurfaceSelected; hovered -> PanelSurface; else -> Color.Transparent })
+            .then(if (over) Modifier.border(1.dp, PageAccent, RectangleShape) else Modifier)
             .hoverable(interactionSource)
             .clickable(interactionSource = interactionSource, indication = null) { onSelect() }
+            .then(
+                if (drag != null && dragKey != null) Modifier.pointerInput(dragKey) {
+                    detectDragGestures(
+                        onDragStart = { start -> drag.start(dragKey, rowOrigin + start) },
+                        onDrag = { change, delta -> change.consume(); drag.position += delta },
+                        onDragEnd = { drag.drop() },
+                        onDragCancel = { drag.cancel() },
+                    )
+                } else Modifier
+            )
     ) {
         Row(modifier = Modifier.fillMaxWidth().padding(start = 10.dp, end = 4.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             if (icon != null) {
@@ -2214,7 +2731,10 @@ private fun ListRow(name: String, active: Boolean, selected: Boolean, meta: Stri
                 Spacer(Modifier.width(7.dp))
             }
             Column(modifier = Modifier.weight(1f)) {
-                Text(name, color = FontColor, fontSize = 12.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal, fontFamily = FontFamily.SansSerif, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(name, color = FontColor, fontSize = 12.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal, fontFamily = FontFamily.SansSerif, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                    flags.forEach { f -> Spacer(Modifier.width(4.dp)); FlagBadge(f) }
+                }
                 if (meta.isNotEmpty()) Meta(meta)
             }
             Spacer(Modifier.width(6.dp))
@@ -2316,7 +2836,7 @@ private fun DetailPanel(modifier: Modifier = Modifier, content: @Composable Colu
 
 /** Name and one status line on the left of a detail panel's header, the actions on the right, then the ⋯ menu */
 @Composable
-private fun DetailHeader(name: String, active: Boolean, status: String, statusTip: String? = null, menu: List<ContextMenuItem> = emptyList(), mark: Boolean = true, actions: @Composable () -> Unit) {
+private fun DetailHeader(name: String, active: Boolean, status: String, statusTip: String? = null, menu: List<ContextMenuItem> = emptyList(), mark: Boolean = true, icon: ImageVector? = null, actions: @Composable () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -2326,6 +2846,7 @@ private fun DetailHeader(name: String, active: Boolean, status: String, statusTi
             StatusMark(active, statusTip)
             Spacer(Modifier.width(2.dp))
         }
+        if (icon != null) Icon(icon, contentDescription = null, tint = if (active) FontColor else MutedFontColor, modifier = Modifier.size(15.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(name, color = FontColor, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.SansSerif, maxLines = 1, overflow = TextOverflow.Ellipsis)
             AppTooltip(statusTip) { Meta(status) }
@@ -2334,6 +2855,60 @@ private fun DetailHeader(name: String, active: Boolean, status: String, statusTi
         if (menu.isNotEmpty()) MoreButton(menu, tip = "Every action of $name, the same list the right-click on its row opens")
     }
     Box(modifier = Modifier.fillMaxWidth().height(if (active) 2.dp else 1.dp).background(if (active) SuccessColor else PanelBorder))
+}
+
+/** A coloured tag: a square of its colour with the text on it, the tooltip saying what it stands for */
+@Composable
+private fun FlagBadge(flag: Flag) {
+    AppTooltip(flag.tip) {
+        Text(
+            text = flag.text,
+            color = FontColor,
+            fontSize = 10.sp,
+            fontFamily = FontFamily.Monospace,
+            maxLines = 1,
+            modifier = Modifier
+                .background(flag.color.copy(alpha = 0.22f), RectangleShape)
+                .border(1.dp, flag.color.copy(alpha = 0.7f), RectangleShape)
+                .padding(horizontal = 5.dp, vertical = 1.dp)
+        )
+    }
+}
+
+/**
+ * A model row being dragged over the list: dropped on a group it joins it, on another model the two make a new
+ * group, on the drop zone over the list a new group with it. The rows register where they are; the ghost label
+ * follows the pointer; the row under it is lit.
+ */
+private class DragState(private val onDrop: (model: String, target: String) -> Unit) {
+    var dragging by mutableStateOf<String?>(null)
+    var position by mutableStateOf(Offset.Zero)
+    val targets = mutableStateMapOf<String, Rect>()
+
+    /** The drop key under the pointer, never the row being dragged */
+    val over: String? get() = dragging?.let { d -> targets.entries.firstOrNull { (key, bounds) -> key != "model:$d" && bounds.contains(position) }?.key }
+
+    fun start(key: String, at: Offset) { dragging = key; position = at }
+    fun drop() { val model = dragging; val target = over; dragging = null; if (model != null && target != null) onDrop(model, target) }
+    fun cancel() { dragging = null }
+}
+
+/** The zone over the list that takes a dragged model for a new group; only there while something is dragged */
+@Composable
+private fun NewGroupDropZone(drag: DragState) {
+    val over = drag.over == "new-group"
+    DisposableEffect(Unit) { onDispose { drag.targets.remove("new-group") } }
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .onGloballyPositioned { drag.targets["new-group"] = it.boundsInRoot() }
+            .background(if (over) AccentSoft else PanelSurface, RectangleShape)
+            .border(1.dp, if (over) PageAccent else PanelBorder, RectangleShape)
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Text("drop here for a new group · on a group to join it · on a model to pair them", color = if (over) FontColor else MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.SansSerif)
+    }
 }
 
 /** A small label on a faint square; strong is white text, the rest gray */
@@ -2641,6 +3216,257 @@ private fun ConfirmBar(text: String, confirm: String, onConfirm: () -> Unit, onK
         DangerButton(confirm, icon = Icons.Default.Delete, tip = "Do it; this cannot be undone", onClick = onConfirm)
         Spacer(Modifier.width(4.dp))
         SmallButton("Keep", tip = "Change nothing", onClick = onKeep)
+        Spacer(Modifier.width(4.dp))
+    }
+}
+
+/**
+ * The selected group: its icon and status in the header, Open swarm / Terminate swarm, then its models (each a
+ * row that selects the model, with Detach to take it out), the models that can still be added, the icon picker,
+ * where the group lives (its env's groups.json) and the swarm's log while it is open.
+ */
+@Composable
+private fun GroupDetail(
+    group: GroupInfo,
+    models: List<ModelInfo>,
+    pending: Set<String>,
+    menu: List<ContextMenuItem>,
+    modifier: Modifier = Modifier,
+    onOpen: () -> Unit,
+    onTerminate: () -> Unit,
+    onAdd: (ModelInfo) -> Unit,
+    onRemove: (String) -> Unit,
+    onIcon: (String?) -> Unit,
+    onSelectModel: (String) -> Unit,
+    onTerminateSession: (SessionInfo) -> Unit,
+) {
+    val opening = "open:group:${group.name}" in pending
+    val terminating = "terminate:group:${group.name}" in pending
+    val members = group.group.models.map { name -> name to models.firstOrNull { it.name == name } }
+    val others = models.filter { it.name !in group.group.models }
+    DetailPanel(modifier) {
+        DetailHeader(
+            name = group.name,
+            icon = group.icon,
+            active = group.open,
+            status = listOfNotNull(
+                if (group.open) "open as swarm #${group.swarm?.id}" else "closed",
+                "env ${group.env}",
+                when (group.group.models.size) { 0 -> "no models"; 1 -> "1 model"; else -> "${group.group.models.size} models" },
+            ).joinToString(" · "),
+            statusTip = if (group.open) "open: group(\"${group.name}\") in a script gets this swarm; ${group.present.size} models answer together" else "closed: Open swarm, or group(\"${group.name}\") in a script, opens a session per model and asks them together",
+            menu = menu,
+        ) {
+            if (group.open) DangerButton(if (terminating) "Terminating…" else "Terminate swarm", enabled = !terminating, icon = Icons.Default.StopCircle, tip = "Close the swarm and the model sessions it opened; a script holding it gets an error on its next call", onClick = onTerminate)
+            else AccentButton(if (opening) "Opening…" else "Open swarm", enabled = !opening && group.present.isNotEmpty(), icon = Icons.Default.PlayArrow, tip = if (group.present.isEmpty()) "no model of the group is exported" else "Open a session on every model of the group and ask them together, the same as group(\"${group.name}\") in a script", onClick = onOpen)
+        }
+        Column(modifier = Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 14.dp).padding(top = 10.dp, bottom = 14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Section("MODELS", key = "group:${group.name}:models", actions = {
+                if (others.isNotEmpty()) DropButton("Add model", icon = Icons.Default.PlaylistAdd, tip = "Put one more model in the group; a swarm already open does not change until it is opened again", items = others.map { m -> ContextMenuItem(m.name) { onAdd(m) } })
+            }) {
+                if (members.isEmpty()) Hint("no models yet: Add model, or Add to group on a model's ⋯ menu")
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    members.forEach { (name, model) ->
+                        ListRow(
+                            name = name,
+                            active = model?.running == true,
+                            selected = false,
+                            meta = model?.let { m -> listOfNotNull(m.lastRun?.let { "accuracy ${pct(it.accuracy)}" } ?: "not validated", "${m.manifest.labels.size} labels").joinToString(" · ") } ?: "not in AMP/modules any more",
+                            status = model?.status ?: "missing",
+                            statusTip = model?.let { statusTip(it) } ?: "missing: the model was destroyed or renamed; take it out, or build one with this name",
+                            underline = model?.running == true,
+                            icon = model?.icon ?: Icons.Default.Memory,
+                            onDetach = { onRemove(name) },
+                            menu = listOfNotNull(model?.let { ContextMenuItem("Show $name") { onSelectModel(name) } }, ContextMenuItem("Take $name out") { onRemove(name) }),
+                        ) { if (model != null) onSelectModel(name) }
+                    }
+                }
+                if (members.size > 1) Hint("asked together: predict is the best score across them, vote the label most of them give, each every model's own label")
+            }
+            Section("ICON", key = "group:${group.name}:icon") {
+                IconPicker(chosen = group.group.icon, default = "hub") { onIcon(it) }
+            }
+            Section("WHERE", key = "group:${group.name}:where") {
+                KeyValues(
+                    "env" to group.env,
+                    "file" to File(ModelGroups.dirOf(group.env), "groups.json").absolutePath,
+                    "created" to group.group.createdAt.take(19).replace('T', ' '),
+                    "script" to "group(\"${group.name}\")" + (if (group.env != org.example.project.components.terminal.window.controller.envBuilder.DEFAULT_ENV) "  in a script sourced with environment(SettingsEnv(\"${group.env}\"))" else ""),
+                )
+            }
+            group.swarm?.let { SessionsOf(listOf(it), onTerminateSession) }
+        }
+    }
+}
+
+/** The catalog as a row of chips, the chosen one lit; the default is chosen when nothing is kept, and choosing it clears the field */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun IconPicker(chosen: String?, default: String, onChoose: (String?) -> Unit) {
+    val current = chosen ?: default
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        iconCatalog.forEach { (name, icon) ->
+            IconChip(icon, tip = if (name == default) "$name (the default)" else name, active = name == current) { onChoose(if (name == default) null else name) }
+        }
+    }
+}
+
+/**
+ * A new group around a model: its name and the env it belongs to (the default one, or any env that has a folder;
+ * a script sourced in that env finds it with group("name")). Create is enabled once the name is a group name no
+ * group of that env has.
+ */
+@Composable
+private fun NewGroupBar(models: List<String>, envs: List<String>, taken: List<Pair<String, String>>, onCreate: (String, String) -> Unit, onCancel: () -> Unit) {
+    val model = models.joinToString(" + ")
+    var text by remember(model) { mutableStateOf("") }
+    var env by remember(model) { mutableStateOf(ModelGroups.currentEnv) }
+    val value = text.trim()
+    val problem = when {
+        value.isEmpty() -> "name the group"
+        !GROUP_NAME.matches(value) -> "letters, digits, dots, dashes, underscores and spaces, up to 64"
+        (value to env) in taken -> "a group named $value exists in env $env already"
+        else -> null
+    }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 6.dp)
+            .height(IntrinsicSize.Min)
+            .background(PanelSurface, RectangleShape)
+    ) {
+        Box(modifier = Modifier.width(2.dp).fillMaxHeight().background(PanelBorderSelected))
+        Spacer(Modifier.width(10.dp))
+        Text("New group with $model", color = LogMessageColor, fontSize = 12.sp, fontFamily = FontFamily.SansSerif, modifier = Modifier.padding(vertical = 6.dp))
+        Spacer(Modifier.width(10.dp))
+        BasicTextField(
+            value = text,
+            onValueChange = { text = it.filter { c -> c.isLetterOrDigit() || c in "._- " } },
+            singleLine = true,
+            textStyle = TextStyle(color = FontColor, fontSize = 12.sp, fontFamily = FontFamily.Monospace),
+            cursorBrush = SolidColor(FontColor),
+            modifier = Modifier
+                .width(220.dp)
+                .background(CodeBackground, RectangleShape)
+                .border(1.dp, ConsoleBorderColor, RectangleShape)
+                .padding(horizontal = 8.dp, vertical = 5.dp),
+            decorationBox = { inner -> if (text.isEmpty()) Text("group name", color = MutedFontColor, fontSize = 12.sp, fontFamily = FontFamily.Monospace); inner() },
+        )
+        Spacer(Modifier.width(8.dp))
+        DropButton("env $env", accent = false, tip = "The env the group belongs to: a script sourced in it finds the group with group(\"name\"); groups.json of that env keeps it", items = envs.map { e -> ContextMenuItem(e) { env = e } })
+        Spacer(Modifier.width(10.dp))
+        Text(problem ?: "kept in AMP/env/$env/groups.json; more models join from their ⋯ menu", color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.SansSerif, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+        Spacer(Modifier.width(8.dp))
+        AccentButton("Create", enabled = problem == null, icon = Icons.Default.Add, tip = problem ?: "Make the group $value in env $env with $model in it") { onCreate(value, env) }
+        Spacer(Modifier.width(4.dp))
+        SmallButton("Cancel", tip = "Make no group", onClick = onCancel)
+        Spacer(Modifier.width(4.dp))
+    }
+}
+
+/**
+ * A flag for a jar: a word and a colour from the six; it goes beside the version flags of the jar and is kept
+ * in the sidecar metadata next to the jar.
+ */
+@Composable
+private fun FlagBar(jar: String, onAdd: (String, String) -> Unit, onCancel: () -> Unit) {
+    var text by remember(jar) { mutableStateOf("") }
+    var color by remember(jar) { mutableStateOf("slate") }
+    val value = text.trim()
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 6.dp)
+            .height(IntrinsicSize.Min)
+            .background(PanelSurface, RectangleShape)
+    ) {
+        Box(modifier = Modifier.width(2.dp).fillMaxHeight().background(flagColor(color)))
+        Spacer(Modifier.width(10.dp))
+        Text("Flag $jar", color = LogMessageColor, fontSize = 12.sp, fontFamily = FontFamily.SansSerif, modifier = Modifier.padding(vertical = 6.dp))
+        Spacer(Modifier.width(10.dp))
+        BasicTextField(
+            value = text,
+            onValueChange = { text = it.take(24) },
+            singleLine = true,
+            textStyle = TextStyle(color = FontColor, fontSize = 12.sp, fontFamily = FontFamily.Monospace),
+            cursorBrush = SolidColor(FontColor),
+            modifier = Modifier
+                .width(180.dp)
+                .background(CodeBackground, RectangleShape)
+                .border(1.dp, ConsoleBorderColor, RectangleShape)
+                .padding(horizontal = 8.dp, vertical = 5.dp),
+            decorationBox = { inner -> if (text.isEmpty()) Text("stable, needs key, v2 api…", color = MutedFontColor, fontSize = 12.sp, fontFamily = FontFamily.Monospace); inner() },
+        )
+        Spacer(Modifier.width(10.dp))
+        flagColors.forEach { (name, c) ->
+            AppTooltip(name) {
+                Box(
+                    modifier = Modifier
+                        .size(16.dp)
+                        .background(c.copy(alpha = if (name == color) 0.9f else 0.35f), RectangleShape)
+                        .border(1.dp, if (name == color) FontColor else c, RectangleShape)
+                        .pointerHoverIcon(PointerIcon.Hand)
+                        .clickable { color = name }
+                )
+            }
+            Spacer(Modifier.width(4.dp))
+        }
+        Spacer(Modifier.width(6.dp))
+        if (value.isNotEmpty()) FlagBadge(Flag(value, flagColor(color)))
+        Spacer(Modifier.weight(1f))
+        AccentButton("Add flag", enabled = value.isNotEmpty(), icon = Icons.Default.Flag, tip = if (value.isEmpty()) "type the flag" else "Put the flag $value on $jar") { onAdd(value, color) }
+        Spacer(Modifier.width(4.dp))
+        SmallButton("Cancel", tip = "No flag", onClick = onCancel)
+        Spacer(Modifier.width(4.dp))
+    }
+}
+
+/**
+ * A new name for a model: the field starts with the current one; Rename is enabled once the name is a module name
+ * that no other model has. The folder moves, the sessions on it are closed, and a listener comes back under the new name.
+ */
+@Composable
+private fun RenameBar(name: String, taken: List<String>, onRename: (String) -> Unit, onCancel: () -> Unit) {
+    var text by remember(name) { mutableStateOf(name) }
+    val value = text.trim()
+    val problem = when {
+        value == name -> "type the new name"
+        !MODULE_NAME.matches(value) -> "letters, digits, dots, dashes and underscores, up to 64"
+        value in taken -> "a model named $value exists already"
+        else -> null
+    }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 6.dp)
+            .height(IntrinsicSize.Min)
+            .background(PanelSurface, RectangleShape)
+    ) {
+        Box(modifier = Modifier.width(2.dp).fillMaxHeight().background(PanelBorderSelected))
+        Spacer(Modifier.width(10.dp))
+        Text("Rename $name", color = LogMessageColor, fontSize = 12.sp, fontFamily = FontFamily.SansSerif, modifier = Modifier.padding(vertical = 6.dp))
+        Spacer(Modifier.width(10.dp))
+        BasicTextField(
+            value = text,
+            onValueChange = { text = it.filter { c -> c.isLetterOrDigit() || c in "._-" } },
+            singleLine = true,
+            textStyle = TextStyle(color = FontColor, fontSize = 12.sp, fontFamily = FontFamily.Monospace),
+            cursorBrush = SolidColor(FontColor),
+            modifier = Modifier
+                .width(260.dp)
+                .background(CodeBackground, RectangleShape)
+                .border(1.dp, ConsoleBorderColor, RectangleShape)
+                .padding(horizontal = 8.dp, vertical = 5.dp),
+        )
+        Spacer(Modifier.width(10.dp))
+        Text(problem ?: "its sessions close and a listener comes back under the new name; scripts then open it with initMod(\"$value\")", color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.SansSerif, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+        Spacer(Modifier.width(8.dp))
+        AccentButton("Rename", enabled = problem == null, icon = Icons.Default.DriveFileRenameOutline, tip = problem ?: "Rename $name to $value") { onRename(value) }
+        Spacer(Modifier.width(4.dp))
+        SmallButton("Cancel", tip = "Keep the name", onClick = onCancel)
         Spacer(Modifier.width(4.dp))
     }
 }

@@ -178,8 +178,14 @@ class ScriptEnvironment internal constructor(val name: String, private var activ
         } else {
             resolve(declared)
         }
-        logInternal("env '$name': sourced ${sourced.size} packages, ${lock.packages.size} in environment")
+        val groups = groups()
+        logInternal("env '$name': sourced ${sourced.size} packages, ${lock.packages.size} in environment" +
+            (if (groups.isEmpty()) "" else ", ${groups.size} model group${if (groups.size == 1) "" else "s"}: ${groups.joinToString { it.name }}"))
     }
+
+    /** The model groups kept in this env (AMP/env/<name>/groups.json), what `group("name")` opens */
+    fun groups(): List<org.example.project.components.terminal.window.controller.modules.ModelGroup> =
+        org.example.project.components.terminal.window.controller.modules.ModelGroups.of(name)
 
     /** A runtime import that wasn't declared literally: added to the env now, on the compile classpath from the next run */
     @Synchronized
@@ -241,6 +247,9 @@ class ScriptEnvironment internal constructor(val name: String, private var activ
                 val size = p.files.sumOf { File(envRoot, it).length() }
                 add("  ${p.coordinate}  ${if (p.files.isEmpty()) "(metadata only)" else "${size / 1024} KB"}${if (p.coordinate in lock.declared) "  declared" else ""}")
             }
+            val groups = groups()
+            add("model groups (${groups.size}):" + if (groups.isEmpty()) "  none; groups.create(\"name\", listOf(\"model\")) makes one here" else "")
+            groups.forEach { g -> add("  ${g.name}: ${g.models.ifEmpty { listOf("no models") }.joinToString()}  (group(\"${g.name}\"))") }
         }
         logInternal(lines.joinToString("\n"))
         return packages
