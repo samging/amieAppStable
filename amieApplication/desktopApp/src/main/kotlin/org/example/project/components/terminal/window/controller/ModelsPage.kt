@@ -2,7 +2,8 @@ package org.example.project.components.terminal.window.controller
 
 import androidx.compose.foundation.ContextMenuArea
 import androidx.compose.foundation.ContextMenuItem
-import androidx.compose.foundation.DarkDefaultContextMenuRepresentation
+import androidx.compose.foundation.ContextMenuRepresentation
+import androidx.compose.foundation.ContextMenuState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.LocalContextMenuRepresentation
 import androidx.compose.foundation.background
@@ -33,7 +34,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
@@ -57,10 +57,10 @@ import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Inventory2
-import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LinkOff
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Notes
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.PlayArrow
@@ -81,8 +81,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -100,7 +100,15 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupPositionProvider
+import androidx.compose.ui.window.PopupProperties
+import androidx.compose.ui.window.rememberCursorPositionProvider
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import kotlinx.coroutines.Dispatchers
@@ -120,7 +128,6 @@ import org.example.project.components.terminal.window.controller.modelLoaders.Or
 import org.example.project.components.terminal.window.controller.modules.MetricsImages
 import org.example.project.components.terminal.window.controller.modules.MetricsPlot
 import org.example.project.components.terminal.window.controller.modules.MetricsRun
-import org.example.project.components.terminal.window.controller.modules.LoggedRun
 import org.example.project.components.terminal.window.controller.modules.ModelRequirements
 import org.example.project.components.terminal.window.controller.modules.Requirement
 import org.example.project.components.terminal.window.controller.modules.SessionRuns
@@ -156,24 +163,30 @@ import org.example.project.components.terminal.window.controller.pluginEngine.Se
 import org.example.project.components.terminal.window.controller.sourceFile.DataSource
 import org.example.project.components.terminal.window.controller.sourceFile.inferStructure
 import org.example.project.components.terminal.window.controller.sourceFile.parseCsv
+import org.example.project.components.ui.viewport.AccentButton
+import org.example.project.components.ui.viewport.AppTooltip
+import org.example.project.components.ui.viewport.DangerButton
+import org.example.project.components.ui.viewport.IconChip
+import org.example.project.components.ui.viewport.SmallButton
+import org.example.project.components.ui.viewport.Toggle
 import org.example.project.components.ui.viewport.NavigationSidebar
 import org.example.project.getDirectory
-import org.example.project.ui.theme.AccentButtonHover
 import org.example.project.ui.theme.ActiveColor
 import org.example.project.ui.theme.ChartAccent
-import org.example.project.ui.theme.DangerButton
-import org.example.project.ui.theme.DangerButtonBorder
-import org.example.project.ui.theme.DangerButtonHover
 import org.example.project.ui.theme.DangerColor
 import org.example.project.ui.theme.ChipBackground
 import org.example.project.ui.theme.ChipBorderColor
 import org.example.project.ui.theme.ChipHoverBackground
 import org.example.project.ui.theme.CodeBackground
+import org.example.project.ui.theme.CompletionBackground
+import org.example.project.ui.theme.CompletionBorder
+import org.example.project.ui.theme.CompletionSelected
 import org.example.project.ui.theme.ConsoleBackground
 import org.example.project.ui.theme.ConsoleBorderColor
 import org.example.project.ui.theme.EditorBackground
 import org.example.project.ui.theme.FontColor
 import org.example.project.ui.theme.IdleColor
+import org.example.project.ui.theme.LogErrorColor
 import org.example.project.ui.theme.LogErrorTextColor
 import org.example.project.ui.theme.LogMessageColor
 import org.example.project.ui.theme.LogTimestampColor
@@ -200,7 +213,13 @@ import java.util.Locale
 
 /* ---------- what the page shows, read off the UI thread ---------- */
 
-private enum class PageTab(val title: String, val icon: ImageVector) { MODELS("Models", Icons.Default.Memory), PACKAGES("Packages", Icons.Default.Inventory2), SESSIONS("Sessions", Icons.Default.Sensors), GUIDE("Help", Icons.Default.HelpOutline) }
+/** The sections of the page; the tip is what the tab's tooltip says */
+private enum class PageTab(val title: String, val icon: ImageVector, val tip: String) {
+    MODELS("Models", Icons.Default.Memory, "Intent models: build one from a csv, then validate, serve and publish it"),
+    PACKAGES("Packages", Icons.Default.Inventory2, "Package jars a script opens with initMod(\"name.jar\"), in collections and by where they live"),
+    SESSIONS("Sessions", Icons.Default.Sensors, "Everything open right now: model, package and ONNX sessions, each with its log and Terminate"),
+    GUIDE("Help", Icons.Default.HelpOutline, "How the page works: models, metrics, serving, scripts, packages, sessions and memory"),
+}
 
 /** Any open session on this page, named after its owner: an intent model, a package jar or a bare ONNX file */
 private data class SessionInfo(
@@ -381,13 +400,15 @@ private fun readSnapshot(remote: Boolean): ModelsSnapshot {
  * the data it was trained, validated and run on, what it needs to run, the console lines about it, and its
  * sessions; a new one is built from a csv with the form. PACKAGES: the package jars a script can open, in
  * collections (folders) and by where they live, each with what it contains and the Java it needs. SESSIONS: every
- * open session with its own log, each of which can be terminated here.
+ * open session with its own log, each of which can be terminated here. Every button, tab and status word says
+ * what it means when the pointer rests on it; every row and panel header has a ⋯ button with the same actions
+ * the right-click menu has, so nothing is reachable only by right-click.
  */
 @Composable
 fun ModelsPage(navController: NavController) {
     val session by AuthState.session.collectAsState()
 
-    CompositionLocalProvider(LocalContextMenuRepresentation provides DarkDefaultContextMenuRepresentation) {
+    CompositionLocalProvider(LocalContextMenuRepresentation provides SquareContextMenu) {
     Row(modifier = Modifier.fillMaxSize().background(EditorBackground)) {
         NavigationSidebar(
             selectedIndex = -1,
@@ -407,8 +428,10 @@ fun ModelsPage(navController: NavController) {
 private fun ModelsContent(user: String?, onLogin: () -> Unit) {
     var snapshot by remember { mutableStateOf(ModelsCache.snapshot) }
     var refresh by remember { mutableStateOf(0) }
-    var notice by remember { mutableStateOf<String?>(null) }
+    var notice by remember { mutableStateOf<Notice?>(null) }
     var destroying by remember { mutableStateOf<String?>(null) }
+    // The keys of the actions running right now (open:<model>, publish:<jar>, …), so their buttons can say so
+    var pending by remember { mutableStateOf(setOf<String>()) }
     var tab by remember { mutableStateOf(PageTab.MODELS) }
     var selectedModel by remember { mutableStateOf<String?>(null) }
     var selectedJar by remember { mutableStateOf<String?>(null) }
@@ -429,13 +452,17 @@ private fun ModelsContent(user: String?, onLogin: () -> Unit) {
         }
     }
 
-    fun background(block: suspend () -> Unit) = scope.launch {
+    // Runs an action off the UI thread. With a key the action is pending until it ends, so the button that started
+    // it can say so (Opening…, Publishing…); a failure becomes a red notice and a console line
+    fun background(key: String? = null, block: suspend () -> Unit) = scope.launch {
+        if (key != null) pending = pending + key
         withContext(Dispatchers.IO) {
             runCatching { block() }.onFailure {
                 logInternal("models: ${it.message}", LogLevel.ERROR)
-                notice = it.message
+                notice = Notice(it.message ?: "something went wrong; the Console tab has the details", error = true)
             }
         }
+        if (key != null) pending = pending - key
         refresh++
     }
 
@@ -443,9 +470,7 @@ private fun ModelsContent(user: String?, onLogin: () -> Unit) {
         PageTabs(
             tab = tab,
             counts = mapOf(PageTab.MODELS to snapshot.models.size, PageTab.PACKAGES to snapshot.jars.size, PageTab.SESSIONS to snapshot.sessions.size),
-            signedIn = user != null,
             onTab = { tab = it },
-            onWebsite = { background { openInBrowser(AmieBackend.websiteUrl(AmieBackend.config.siteDashboardPath(user))) } },
         )
 
         Column(
@@ -454,25 +479,18 @@ private fun ModelsContent(user: String?, onLogin: () -> Unit) {
                 .weight(1f)
                 .padding(horizontal = 10.dp, vertical = 6.dp)
         ) {
-            notice?.let {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
-                    Meta(it)
-                    Spacer(Modifier.width(8.dp))
-                    SmallButton("Dismiss") { notice = null }
-                }
-            }
+            notice?.let { NoticeBar(it) { notice = null } }
             destroying?.let { name ->
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
-                    Meta("destroy $name? its folder AMP/modules/$name, every run and its logs go; a session or listener on it is closed first")
-                    Spacer(Modifier.width(8.dp))
-                    DangerButton("Destroy $name", icon = Icons.Default.Delete) {
+                ConfirmBar(
+                    text = "Destroy $name? Its folder AMP/modules/$name goes, with every run and its logs. A session or listener on it is closed first. This cannot be undone.",
+                    confirm = "Destroy $name",
+                    onConfirm = {
                         destroying = null
                         if (selectedModel == name) selectedModel = null
-                        background { if (!deleteModule(name)) error("$name could not be removed entirely; see the console") }
-                    }
-                    Spacer(Modifier.width(6.dp))
-                    SmallButton("Keep") { destroying = null }
-                }
+                        background("destroy:$name") { if (!deleteModule(name)) error("$name could not be removed entirely; see the console") }
+                    },
+                    onKeep = { destroying = null },
+                )
             }
 
             when (tab) {
@@ -480,95 +498,97 @@ private fun ModelsContent(user: String?, onLogin: () -> Unit) {
                     snapshot = snapshot,
                     build = build,
                     validating = validating,
+                    pending = pending,
                     selectedName = selectedModel,
                     signedIn = user != null,
                     creating = creating || (snapshot.models.isEmpty() && build == null),
                     onCreating = { creating = it },
                     onSelect = { selectedModel = it },
                     onBuild = { name, data, test, description ->
-                        if (build != null) notice = "a build is already running: ${build?.modelName}"
-                        else background {
+                        if (build != null) notice = Notice("a build is already running: ${build?.modelName}; wait for it to end")
+                        else background("build") {
                             val source = DataSource.read(data.absolutePath) ?: error("${data.name} has no text and label columns the builder can use")
                             test?.let { source.relate(it.absolutePath) }
                             buildClassifier(source.samples(), name, validation = source.related?.samples(), validationName = source.related?.name, dataName = data.name, description = description)
-                                ?: error("model '$name' was not built; the output below says why")
+                                ?: error("model '$name' was not built; its Console tab says why")
                             selectedModel = name
                             creating = false
                         }
                     },
                     onValidate = { model, data ->
-                        if (validating != null) notice = "a validation is already running: ${validating?.model}"
-                        else background { ModelValidation.validate(model.name, data) }
+                        if (validating != null) notice = Notice("a validation is already running: ${validating?.model}; wait for it to end")
+                        else background("validate:${model.name}") { ModelValidation.validate(model.name, data) }
                     },
-                    onSave = { model, settings -> background { writeServing(model.name, settings.copy(enabled = model.listening)) } },
-                    onDescribe = { model, text -> background { updateModule(model.name) { it.copy(description = text.trim().ifEmpty { null }) } } },
-                    onListen = { model, on, settings -> background { if (on) ModelServer.start(model.name, settings) else ModelServer.stop(model.name) } },
-                    onOpen = { model -> background { ModelSessions.open(model.name) } },
-                    onTerminate = { session -> background { session.terminate() } },
-                    onTerminateModel = { model -> background { ModelServer.stop(model.name); model.sessions.forEach { it.terminate() } } },
+                    onSave = { model, settings -> background("save:${model.name}") { writeServing(model.name, settings.copy(enabled = model.listening)) } },
+                    onDescribe = { model, text -> background("describe:${model.name}") { updateModule(model.name) { it.copy(description = text.trim().ifEmpty { null }) } } },
+                    onListen = { model, on, settings -> background("listen:${model.name}") { if (on) ModelServer.start(model.name, settings) else ModelServer.stop(model.name) } },
+                    onOpen = { model -> background("open:${model.name}") { ModelSessions.open(model.name) } },
+                    onTerminate = { session -> background("terminate:${session.key}") { session.terminate() } },
+                    onTerminateModel = { model -> background("terminate:${model.name}") { ModelServer.stop(model.name); model.sessions.forEach { it.terminate() } } },
                     onDestroy = { model -> destroying = model.name },
                     onUnpublish = { model ->
                         val signedIn = user
                         if (signedIn == null) onLogin()
-                        else background {
+                        else background("unpublish:${model.name}") {
                             val removed = AmieBackend.unpublishModule(model.name, signedIn)
-                            notice = if (removed > 0) "${model.name} removed from ${AmieBackend.config.base}" else "${model.name} was not on ${AmieBackend.config.base}"
+                            notice = Notice(if (removed > 0) "${model.name} was removed from ${AmieBackend.config.base}" else "${model.name} was not on ${AmieBackend.config.base}")
                         }
                     },
                     onPublish = { model ->
                         val signedIn = user
                         if (signedIn == null) onLogin()
-                        else background {
+                        else background("publish:${model.name}") {
                             val (dir, _) = readModule(model.name) ?: error("module '${model.name}' not found")
                             val published = AmieBackend.publishModule(model.name, dir, signedIn)
-                            notice = when (published.onWebsite) {
-                                true -> "${model.name} published (${published.files.joinToString(", ")}); the website lists it at ${published.dashboardUrl}"
-                                false -> "${model.name} published to ${AmieBackend.config.base}, but the website does not list it yet; see ${published.dashboardUrl}"
-                                null -> "${model.name} published to ${AmieBackend.config.base}; the website at ${AmieBackend.config.site} could not be asked, see ${published.dashboardUrl}"
-                            }
+                            notice = Notice(when (published.onWebsite) {
+                                true -> "${model.name} is on the website (${published.files.joinToString(", ")}); it is listed at ${published.dashboardUrl}"
+                                false -> "${model.name} was stored by ${AmieBackend.config.base}, but the website does not list it yet; refresh ${published.dashboardUrl} in a minute"
+                                null -> "${model.name} was stored by ${AmieBackend.config.base}; the website at ${AmieBackend.config.site} could not be asked, see ${published.dashboardUrl}"
+                            })
                         }
                     },
                 )
                 PageTab.PACKAGES -> PackagesTab(
                     snapshot = snapshot,
+                    pending = pending,
                     selectedName = selectedJar,
                     onSelect = { selectedJar = it },
                     onAdd = {
                         val chosen = chooseFile("Add jar", listOf("jar")) ?: return@PackagesTab
-                        background { addJar(chosen); selectedJar = chosen.name }
+                        background("addjar") { addJar(chosen); selectedJar = chosen.name }
                     },
-                    onFetch = { jar -> background { JarPackages.fetch(jar.name) ?: error("${jar.name} is not on the server") } },
+                    onFetch = { jar -> background("fetch:${jar.name}") { JarPackages.fetch(jar.name) ?: error("${jar.name} is not on the server") } },
                     onPublish = { jar ->
                         val signedIn = user
                         val file = jar.file
                         when {
                             signedIn == null -> onLogin()
-                            file == null -> notice = "${jar.name} is on the server already; Fetch it first to publish a copy"
-                            else -> background {
+                            file == null -> notice = Notice("${jar.name} is on the server already; Fetch it first to publish a copy")
+                            else -> background("publish:${jar.name}") {
                                 val published = AmieBackend.publishJar(file, signedIn)
                                 JarPackages.available(refresh = true)
-                                notice = when (published.onWebsite) {
-                                    true -> "${jar.name} published; the website lists it at ${published.dashboardUrl}"
-                                    false -> "${jar.name} published to ${AmieBackend.config.base}, but the website does not list it yet; see ${published.dashboardUrl}"
-                                    null -> "${jar.name} published to ${AmieBackend.config.base}; the website at ${AmieBackend.config.site} could not be asked, see ${published.dashboardUrl}"
-                                }
+                                notice = Notice(when (published.onWebsite) {
+                                    true -> "${jar.name} is on the website; it is listed at ${published.dashboardUrl}"
+                                    false -> "${jar.name} was stored by ${AmieBackend.config.base}, but the website does not list it yet; refresh ${published.dashboardUrl} in a minute"
+                                    null -> "${jar.name} was stored by ${AmieBackend.config.base}; the website at ${AmieBackend.config.site} could not be asked, see ${published.dashboardUrl}"
+                                })
                             }
                         }
                     },
                     signedIn = user != null,
-                    onTerminate = { session -> background { session.terminate() } },
+                    onTerminate = { session -> background("terminate:${session.key}") { session.terminate() } },
                     onCollection = { action -> background { action() } },
                 )
                 PageTab.SESSIONS -> SessionsTab(
                     sessions = snapshot.sessions,
-                    onTerminate = { session -> background { session.terminate() } },
-                    onTerminateAll = { background { ModelSessions.closeAll(); JarPackages.closeAll(); OrtSessions.cancelAll() } },
+                    onTerminate = { session -> background("terminate:${session.key}") { session.terminate() } },
+                    onTerminateAll = { background("terminate:all") { ModelSessions.closeAll(); JarPackages.closeAll(); OrtSessions.cancelAll() } },
                 )
                 PageTab.GUIDE -> GuideTab()
             }
         }
 
-        MemoryFooter(openSessions = snapshot.sessions.count { it.kind == KIND_MODEL })
+        MemoryFooter()
     }
 }
 
@@ -578,7 +598,7 @@ private fun ModelsContent(user: String?, onLogin: () -> Unit) {
  * it. Read every two seconds; the bar turns red near the limit, where the next session or build runs out.
  */
 @Composable
-private fun MemoryFooter(openSessions: Int) {
+private fun MemoryFooter() {
     var stats by remember { mutableStateOf<SystemStats?>(null) }
     var encoders by remember { mutableStateOf<List<LoadedEncoder>>(emptyList()) }
     LaunchedEffect(Unit) {
@@ -594,55 +614,54 @@ private fun MemoryFooter(openSessions: Int) {
     val tight = share > 0.85 || (s?.heapShare ?: 0.0) > 0.9
     Column(modifier = Modifier.fillMaxWidth().background(ConsoleBackground)) {
         Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(ConsoleBorderColor))
-        Row(modifier = Modifier.fillMaxWidth().height(30.dp).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+        AppTooltip(
+            "What this process holds of the machine's RAM (the bar), the Java heap against its -Xmx limit, the native memory " +
+                "outside the heap, and the BERT encoders loaded: the heavy part, shared by every session, listener, validation " +
+                "and build on them. It turns red near the limit; then close sessions and stop listeners you don't need."
+        ) {
+        Row(modifier = Modifier.fillMaxWidth().height(28.dp).padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("RAM", color = if (tight) DangerColor else MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.SansSerif, letterSpacing = 1.sp)
-            Spacer(Modifier.width(12.dp))
-            Box(modifier = Modifier.width(140.dp).height(6.dp).clip(RectangleShape).background(PanelBorder)) {
-                if (share >= 0) Box(modifier = Modifier.fillMaxHeight().fillMaxWidth(share.toFloat().coerceIn(0f, 1f)).clip(RectangleShape).background(if (tight) DangerColor else ChartAccent))
+            Spacer(Modifier.width(10.dp))
+            Box(modifier = Modifier.width(100.dp).height(5.dp).background(PanelBorder, RectangleShape)) {
+                if (share >= 0) Box(modifier = Modifier.fillMaxHeight().fillMaxWidth(share.toFloat().coerceIn(0f, 1f)).background(if (tight) DangerColor else ChartAccent, RectangleShape))
             }
-            Spacer(Modifier.width(12.dp))
-            if (s == null) Meta("reading…")
+            Spacer(Modifier.width(10.dp))
+            if (s == null) Meta("…")
             else {
-                Text(
+                Meta(
                     listOfNotNull(
-                        if (s.residentBytes > 0 && s.physicalBytes > 0) "process ${bytes(s.residentBytes)} of ${bytes(s.physicalBytes)}" else null,
-                        "heap ${bytes(s.heapUsedBytes)} of ${bytes(s.heapMaxBytes)} limit",
+                        if (s.residentBytes > 0 && s.physicalBytes > 0) "${bytes(s.residentBytes)} of ${bytes(s.physicalBytes)}" else null,
+                        "heap ${bytes(s.heapUsedBytes)} / ${bytes(s.heapMaxBytes)}",
                         "native ${bytes(s.nonHeapUsedBytes)}",
-                        if (encoders.isNotEmpty()) "${encoders.size} encoder${if (encoders.size == 1) "" else "s"} ≈ ${bytes(encoderBytes)} shared by ${encoders.sumOf { it.holders }} holder${if (encoders.sumOf { it.holders } == 1) "" else "s"}" else "no encoder loaded",
-                    ).joinToString(" · "),
-                    color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false),
+                        if (encoders.isNotEmpty()) "${encoders.size} encoder${if (encoders.size == 1) "" else "s"} ${bytes(encoderBytes)}" else null,
+                    ).joinToString(" · ")
                 )
-                Spacer(Modifier.width(16.dp))
-                if (tight) Meta("close sessions and stop listeners you don't need; the heap limit is the JVM's -Xmx")
-                else if (openSessions > 0) Meta("sessions share the encoder; close() what a script no longer needs")
+                if (tight) {
+                    Spacer(Modifier.width(12.dp))
+                    Text("near the limit", color = DangerColor, fontSize = 11.sp, fontFamily = FontFamily.SansSerif)
+                }
             }
+        }
         }
     }
 }
 
-/**
- * The strip under the window header: one tab per section with its count, and the website at the right end. Signed
- * in, the website opens signed in as the same account (the app hands its session over); a guest gets the public page.
- */
+/** The strip under the window header: one tab per section with its count, nothing else */
 @Composable
-private fun PageTabs(tab: PageTab, counts: Map<PageTab, Int?>, signedIn: Boolean, onTab: (PageTab) -> Unit, onWebsite: () -> Unit) {
+private fun PageTabs(tab: PageTab, counts: Map<PageTab, Int?>, onTab: (PageTab) -> Unit) {
     Column(modifier = Modifier.fillMaxWidth().background(TabBarBackground)) {
         Row(modifier = Modifier.fillMaxWidth().height(32.dp), verticalAlignment = Alignment.CenterVertically) {
-            PageTab.entries.forEach { t -> TabCell(t.title, t.icon, counts[t], selected = t == tab) { onTab(t) } }
-            Spacer(Modifier.weight(1f))
-            SmallButton(if (signedIn) "Open website" else "Open website (as guest)", icon = Icons.Default.Language, onClick = onWebsite)
-            Spacer(Modifier.width(10.dp))
+            PageTab.entries.forEach { t -> TabCell(t.title, t.icon, counts[t], selected = t == tab, tip = t.tip) { onTab(t) } }
         }
         Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(UnifiedBorderColor))
     }
 }
 
 @Composable
-private fun TabCell(title: String, icon: ImageVector?, count: Int?, selected: Boolean, onClick: () -> Unit) {
+private fun TabCell(title: String, icon: ImageVector?, count: Int?, selected: Boolean, tip: String? = null, onClick: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val hovered by interactionSource.collectIsHoveredAsState()
-    Column(
+    AppTooltip(tip) { Column(
         modifier = Modifier
             .fillMaxHeight()
             .width(IntrinsicSize.Max)
@@ -662,7 +681,7 @@ private fun TabCell(title: String, icon: ImageVector?, count: Int?, selected: Bo
                 Text(count.toString(), color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.SansSerif)
             }
         }
-    }
+    } }
 }
 
 /* ---------- MODELS ---------- */
@@ -672,6 +691,7 @@ private fun ColumnScope.ModelsTab(
     snapshot: ModelsSnapshot,
     build: ModelBuild?,
     validating: ValidationProgress?,
+    pending: Set<String>,
     selectedName: String?,
     signedIn: Boolean,
     creating: Boolean,
@@ -690,14 +710,20 @@ private fun ColumnScope.ModelsTab(
     onPublish: (ModelInfo) -> Unit,
 ) {
     val clipboard = LocalClipboardManager.current
-    SectionTitle("INTENT MODELS", snapshot.models.size) {
-        if (build == null) AccentButton(if (creating) "Close" else "New model", icon = if (creating) Icons.Default.Close else Icons.Default.Add) { onCreating(!creating) }
-    }
-    build?.let { BuildCard(it); Spacer(Modifier.height(8.dp)) }
-    if (creating && build == null) {
-        NewModelForm(onBuild = onBuild)
-        Spacer(Modifier.height(8.dp))
-    }
+
+    // The actions of a model: one list for its row's right-click, its ⋯ button and its panel header
+    fun menuOf(model: ModelInfo): List<ContextMenuItem> = listOfNotNull(
+        if (model.sessions.isEmpty()) ContextMenuItem("Open session") { onOpen(model) } else null,
+        ContextMenuItem(if (model.listening) "Stop listening" else "Listen on :${model.serving.port}") { onListen(model, !model.listening, model.serving) },
+        ContextMenuItem("Validate on sample data") { onValidate(model, ensureSampleData()) },
+        ContextMenuItem("Validate on file…") { chooseFile("Validation data", listOf("csv"))?.let { onValidate(model, it) } },
+        ContextMenuItem(if (signedIn) "Publish to the website" else "Publish to the website (sign in)") { onPublish(model) },
+        ContextMenuItem(if (signedIn) "Remove from the website" else "Remove from the website (sign in)") { onUnpublish(model) },
+        ContextMenuItem("Reveal folder") { openInBrowser(model.dir.toURI().toString()) },
+        ContextMenuItem("Copy initMod(\"${model.name}\")") { clipboard.setText(AnnotatedString("initMod(\"${model.name}\")")) },
+        if (model.running) ContextMenuItem("Terminate model") { onTerminateModel(model) } else null,
+        ContextMenuItem("Destroy model…") { onDestroy(model) },
+    )
 
     // The list is grouped by the data the models were trained on, so the same data trained twice sits together;
     // groups with a running model come first, and inside a group the running ones, then the most accurate
@@ -705,11 +731,20 @@ private fun ColumnScope.ModelsTab(
     val shown = snapshot.models.filter { it.matches(query) }
     val ordered = shown.sortedWith(compareByDescending<ModelInfo> { it.running }.thenByDescending { it.accuracy }.thenBy { it.name })
     val selected = snapshot.models.firstOrNull { it.name == selectedName } ?: ordered.firstOrNull()
-    if (snapshot.models.isNotEmpty()) Row(modifier = Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+    Row(modifier = Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         var listWidth by remember { mutableStateOf(ModelsCache.listWidth) }
         Column(modifier = Modifier.width(listWidth.dp).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            SearchField(query) { query = it }
-            if (shown.isEmpty()) Hint("no matches")
+            // The filter and the one action of the list on a single line; the form opens in the panel on the right
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Box(modifier = Modifier.weight(1f)) { SearchField(query, tip = "Filter the models by name, label, status, training data or validation file") { query = it } }
+                if (build == null) AccentButton(
+                    if (creating) "Close" else "New model",
+                    icon = if (creating) Icons.Default.Close else Icons.Default.Add,
+                    tip = if (creating) "Close the form" else "Build a model from a csv with a text column and a label column; the sample data works too",
+                ) { onCreating(!creating) }
+            }
+            build?.let { BuildLine(it) }
+            if (shown.isEmpty()) { if (query.isNotBlank()) NoMatches(query) { query = "" } else Hint("no models yet") }
             val groups = ordered.groupBy { it.dataName }
             val groupOrder = groups.keys.sortedWith(compareByDescending<String> { groups.getValue(it).any { m -> m.running } }.thenByDescending { groups.getValue(it).maxOf { m -> m.accuracy } })
             groupOrder.forEach { data ->
@@ -723,24 +758,14 @@ private fun ColumnScope.ModelsTab(
                                 selected = model.name == selected?.name,
                                 meta = listOfNotNull(
                                     model.lastRun?.let { "accuracy ${pct(it.accuracy)}" } ?: "not validated",
-                                    if (model.listening) ":${model.serving.port}" else null,
+                                    if (model.listening) "serving :${model.serving.port}" else null,
                                     when (model.sessions.size) { 0 -> null; 1 -> "1 session"; else -> "${model.sessions.size} sessions" },
                                 ).joinToString(" · "),
                                 status = model.status,
+                                statusTip = statusTip(model),
                                 underline = model.running,
                                 icon = Icons.Default.Memory,
-                                menu = listOfNotNull(
-                                    if (model.sessions.isEmpty()) ContextMenuItem("Open session") { onOpen(model) } else null,
-                                    ContextMenuItem(if (model.listening) "Stop listening" else "Listen on :${model.serving.port}") { onListen(model, !model.listening, model.serving) },
-                                    ContextMenuItem("Validate on sample data") { onValidate(model, ensureSampleData()) },
-                                    ContextMenuItem("Validate on file…") { chooseFile("Validation data", listOf("csv"))?.let { onValidate(model, it) } },
-                                    ContextMenuItem(if (signedIn) "Publish" else "Publish (sign in)") { onPublish(model) },
-                                    ContextMenuItem(if (signedIn) "Remove from the website" else "Remove from the website (sign in)") { onUnpublish(model) },
-                                    ContextMenuItem("Reveal folder") { openInBrowser(model.dir.toURI().toString()) },
-                                    ContextMenuItem("Copy initMod(\"${model.name}\")") { clipboard.setText(AnnotatedString("initMod(\"${model.name}\")")) },
-                                    if (model.running) ContextMenuItem("Terminate model") { onTerminateModel(model) } else null,
-                                    ContextMenuItem("Destroy model…") { onDestroy(model) },
-                                ),
+                                menu = menuOf(model),
                             ) { onSelect(model.name) }
                         }
                     }
@@ -748,29 +773,47 @@ private fun ColumnScope.ModelsTab(
             }
         }
         VerticalSeparator { listWidth = it; ModelsCache.listWidth = it }
-        if (selected != null) ModelDetail(
-            model = selected,
-            signedIn = signedIn,
-            validating = validating?.takeIf { it.model == selected.name },
-            modifier = Modifier.weight(1f).fillMaxHeight(),
-            onValidate = { data -> onValidate(selected, data) },
-            onSave = { onSave(selected, it) },
-            onDescribe = { onDescribe(selected, it) },
-            onListen = { on, settings -> onListen(selected, on, settings) },
-            onOpen = { onOpen(selected) },
-            onTerminate = onTerminate,
-            onPublish = { onPublish(selected) },
-        )
+        when {
+            creating && build == null -> NewModelPanel(Modifier.weight(1f).fillMaxHeight(), onBuild = onBuild, onClose = { onCreating(false) })
+            selected != null -> ModelDetail(
+                model = selected,
+                signedIn = signedIn,
+                validating = validating?.takeIf { it.model == selected.name },
+                pending = pending,
+                menu = menuOf(selected),
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+                onValidate = { data -> onValidate(selected, data) },
+                onSave = { onSave(selected, it) },
+                onDescribe = { onDescribe(selected, it) },
+                onListen = { on, settings -> onListen(selected, on, settings) },
+                onOpen = { onOpen(selected) },
+                onTerminate = onTerminate,
+                onPublish = { onPublish(selected) },
+            )
+            else -> Spacer(Modifier.weight(1f))
+        }
     }
 }
 
+/** What a model's status word means right now, for the tooltip on it */
+private fun statusTip(model: ModelInfo): String = when {
+    model.busy -> "inferring: answering a request right now"
+    model.running -> "running: " + listOfNotNull(
+        if (model.listening) "serving on ${model.serving.host}:${model.serving.port}" else null,
+        when (model.sessions.size) { 0 -> null; 1 -> "one session open"; else -> "${model.sessions.size} sessions open" },
+    ).joinToString(" and ")
+    else -> "stopped: not serving and no session open. Open session or Listen starts it"
+}
+
 /**
- * Builds a model from a data file: name, the csv with text and label columns, an optional test file. What the
- * file holds is read as soon as it is chosen so the labels are visible before Build; the build itself is the same
- * `buildClassifier` the sandbox's modelBuilder runs, and the BUILDING card and the output strip follow it.
+ * Builds a model from a data file, in the place of the detail panel: name, a sentence about it, the csv with text
+ * and label columns (or the sample data), an optional test file. What the file holds is read as soon as it is
+ * chosen so the labels are visible before Build; while Build is disabled the line beside it says what is missing.
+ * The build itself is the same `buildClassifier` the sandbox's modelBuilder runs; the line at the top of the
+ * list follows it.
  */
 @Composable
-private fun NewModelForm(onBuild: (String, File, File?, String) -> Unit) {
+private fun NewModelPanel(modifier: Modifier, onBuild: (String, File, File?, String) -> Unit, onClose: () -> Unit) {
     var name by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var data by remember { mutableStateOf<File?>(null) }
@@ -786,33 +829,60 @@ private fun NewModelForm(onBuild: (String, File, File?, String) -> Unit) {
             }
         }
     }
-    val ready = name.isNotBlank() && data != null && preview?.startsWith("no ") == false
+    // What still keeps Build from running, so the disabled button never has to be guessed at
+    val chosen = data
+    val read = preview
+    val missing = when {
+        chosen == null -> "choose a data file, or take the sample data"
+        read == null -> "reading ${chosen.name}…"
+        read.startsWith("no ") -> read
+        name.isBlank() -> "give the model a name"
+        else -> null
+    }
+    val ready = missing == null
 
-    Card {
-        SubTitle("NEW MODEL")
-        Spacer(Modifier.height(6.dp))
-        SettingField("Name", name) { name = it.filter { c -> c.isLetterOrDigit() || c in "._-" } }
-        SettingField("About", description) { description = it }
-        fun pick(f: File) {
-            data = f
-            if (name.isBlank()) name = f.nameWithoutExtension.filter { c -> c.isLetterOrDigit() || c in "._-" }
+    DetailPanel(modifier) {
+        DetailHeader(name = "New model", active = false, status = "a csv with a text column and a label column", mark = false) {
+            SmallButton("Close", icon = Icons.Default.Close, tip = "Close the form; nothing is kept", onClick = onClose)
         }
-        FileField("Data", data, "csv with text and label columns", sample = { pick(ensureSampleData()) }) {
-            chooseFile("Training data", listOf("csv"))?.let { pick(it) }
-        }
-        FileField("Test", test, "optional, else a 20% split", onClear = { test = null }) {
-            chooseFile("Test data", listOf("csv"))?.let { test = it }
-        }
-        Spacer(Modifier.height(4.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Meta(preview ?: "")
-            Spacer(Modifier.weight(1f))
-            AccentButton("Build", enabled = ready) { onBuild(name.trim(), data!!, test, description) }
+        Column(modifier = Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 10.dp).padding(top = 8.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            SettingField("Name", name) { name = it.filter { c -> c.isLetterOrDigit() || c in "._-" } }
+            SettingField("About", description) { description = it }
+            fun pick(f: File) {
+                data = f
+                if (name.isBlank()) name = f.nameWithoutExtension.filter { c -> c.isLetterOrDigit() || c in "._-" }
+            }
+            FileField("Data", data, "csv with text and label columns", sample = { pick(ensureSampleData()) }, chooseTip = "Pick the csv the model learns from", sampleTip = "Use AMP/sample-intents.csv: 45 rows over greeting, lights and weather") {
+                chooseFile("Training data", listOf("csv"))?.let { pick(it) }
+            }
+            FileField("Test", test, "optional, else a 20% split", onClear = { test = null }, chooseTip = "Pick a csv to score the model on instead of holding out 20% of the data") {
+                chooseFile("Test data", listOf("csv"))?.let { test = it }
+            }
+            Spacer(Modifier.height(6.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Hint(missing ?: read ?: "")
+                Spacer(Modifier.weight(1f))
+                AccentButton(
+                    "Build",
+                    enabled = ready,
+                    icon = Icons.Default.PlayArrow,
+                    tip = missing ?: "Embed every row with the encoder, fit the head, validate it and export it; runs in the background, the line at the top of the list follows it",
+                ) { onBuild(name.trim(), chosen!!, test, description) }
+            }
         }
     }
 }
 
-private enum class DetailTab(val title: String, val icon: ImageVector) { ABOUT("About", Icons.Default.Info), GUIDE("Guide", Icons.Default.MenuBook), METRICS("Metrics", Icons.Default.BarChart), DATA("Data", Icons.Default.TableChart), REQUIREMENTS("Requirements", Icons.Default.Checklist), CONSOLE("Console", Icons.Default.Terminal), SESSIONS("Sessions", Icons.Default.Sensors) }
+/** The tabs of a model's panel; the tip is what the tab's tooltip says */
+private enum class DetailTab(val title: String, val icon: ImageVector, val tip: String) {
+    ABOUT("About", Icons.Default.Info, "What the model is: its description, where it lives, its encoder and head, and how it was trained"),
+    GUIDE("Guide", Icons.Default.MenuBook, "The guide shipped inside the model (guide.md); it can be edited here and goes along when published"),
+    METRICS("Metrics", Icons.Default.BarChart, "The scores of every validation run as charts: per label, the confusion matrix, and how they changed over the runs"),
+    DATA("Data", Icons.Default.TableChart, "The csv files it was trained and validated on, and what it has run on since"),
+    REQUIREMENTS("Requirements", Icons.Default.Checklist, "What it needs to run, checked on this machine: encoder, head, labels, runtime, Java, memory and port"),
+    CONSOLE("Console", Icons.Default.Terminal, "The console lines that name this model"),
+    SESSIONS("Sessions", Icons.Default.Sensors, "The sessions this model has open, with their logs"),
+}
 
 /**
  * The selected model: name, status and actions in the header; the serving settings when Configure is on; then
@@ -826,6 +896,8 @@ private fun ModelDetail(
     model: ModelInfo,
     signedIn: Boolean,
     validating: ValidationProgress?,
+    pending: Set<String>,
+    menu: List<ContextMenuItem>,
     modifier: Modifier = Modifier,
     onValidate: (File) -> Unit,
     onSave: (ServingSettings) -> Unit,
@@ -850,6 +922,20 @@ private fun ModelDetail(
         methods = listOfNotNull("POST".takeIf { allowPost }, "GET".takeIf { allowGet }).ifEmpty { listOf("POST") },
     )
     val consoleLines = consoleLinesAbout(model.name)
+    val url = settings.url(model.name)
+    // The slow actions say so on their button while they run
+    val opening = "open:${model.name}" in pending
+    val switching = "listen:${model.name}" in pending
+    val publishing = "publish:${model.name}" in pending
+    val terminating = "terminate:${model.name}" in pending || model.sessions.any { "terminate:${it.key}" in pending }
+    val saving = "save:${model.name}" in pending
+    var justSaved by remember(model.name) { mutableStateOf(false) }
+    var wasSaving by remember(model.name) { mutableStateOf(false) }
+    LaunchedEffect(saving) {
+        val was = wasSaving
+        wasSaving = saving
+        if (was && !saving) { justSaved = true; delay(1500); justSaved = false }
+    }
 
     DetailPanel(modifier) {
         DetailHeader(
@@ -860,28 +946,38 @@ private fun ModelDetail(
                 if (model.listening) "listening ${model.serving.host}:${model.serving.port}" else "not serving",
                 "trained on ${model.dataName}",
             ).joinToString(" · "),
+            statusTip = statusTip(model),
+            menu = menu,
         ) {
-            SmallButton("Configure", icon = Icons.Default.Tune) { configuring = !configuring }
-            if (model.listening) DangerButton("Stop", icon = Icons.Default.Stop) { onListen(false, settings) }
-            else SmallButton("Listen", icon = Icons.Default.Sensors) { onListen(true, settings) }
-            if (model.sessions.isEmpty()) AccentButton("Open session", icon = Icons.Default.PlayArrow, onClick = onOpen)
-            else DangerButton("Terminate session", icon = Icons.Default.StopCircle) { model.sessions.forEach(onTerminate) }
-            SmallButton(if (signedIn) "Publish" else "Publish (sign in)", icon = Icons.Default.CloudUpload, onClick = onPublish)
+            if (model.sessions.isEmpty()) AccentButton(if (opening) "Opening…" else "Open session", enabled = !opening, icon = Icons.Default.PlayArrow, tip = "Load the model into memory as a session, the same as initMod(\"${model.name}\") in a script. A model has one session at most; Sessions lists it", onClick = onOpen)
+            else DangerButton(if (terminating) "Terminating…" else "Terminate session", enabled = !terminating, icon = Icons.Default.StopCircle, tip = "Close the model's session; its memory is freed once nothing else uses the encoder") { model.sessions.forEach(onTerminate) }
+            if (model.listening) DangerButton(if (switching) "Stopping…" else "Stop", enabled = !switching, icon = Icons.Default.Stop, tip = "Stop serving the model at ${model.serving.host}:${model.serving.port}") { onListen(false, settings) }
+            else SmallButton(if (switching) "Starting…" else "Listen on :${settings.port}", enabled = !switching, icon = Icons.Default.Sensors, tip = "Serve the model over HTTP at $url: POST {\"text\": \"…\"} or GET ?text=… answers with the scores. The gear sets the address") { onListen(true, settings) }
+            IconChip(Icons.Default.Tune, tip = "Where Listen serves the model: host, port, path and methods", active = configuring) { configuring = !configuring }
+            SmallButton(
+                when { publishing -> "Publishing…"; signedIn -> "Publish"; else -> "Publish (sign in)" },
+                enabled = !publishing,
+                icon = Icons.Default.CloudUpload,
+                tip = if (signedIn) "Upload model.onnx, module.json and guide.md to the Amie server under your account; the website lists it" else "Publish uploads the model under your account, so it opens the sign-in page first",
+                onClick = onPublish,
+            )
         }
 
         if (configuring) Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp).padding(top = 6.dp, bottom = 6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             SettingField("Host", host) { host = it }
             SettingField("Port", port) { port = it.filter(Char::isDigit).take(5) }
+            val portOk = port.trim().toIntOrNull()?.let { it in 1..65535 } == true
+            if (!portOk) Text("the port must be a number from 1 to 65535", color = LogErrorTextColor, fontSize = 11.sp, modifier = Modifier.padding(start = 56.dp))
             SettingField("Path", path) { path = it }
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
                 Text("Methods", color = MutedFontColor, fontSize = 11.sp, modifier = Modifier.width(56.dp))
-                Toggle("POST", allowPost) { allowPost = it }
+                Toggle("POST", allowPost, tip = "Accept POST with the JSON body {\"text\": \"…\"}") { allowPost = it }
                 Spacer(Modifier.width(6.dp))
-                Toggle("GET", allowGet) { allowGet = it }
+                Toggle("GET", allowGet, tip = "Accept GET with ?text=…") { allowGet = it }
                 Spacer(Modifier.weight(1f))
-                SmallButton("Save", icon = Icons.Default.Save) { onSave(settings) }
+                if (justSaved) { Meta("saved"); Spacer(Modifier.width(6.dp)) }
+                SmallButton(if (saving) "Saving…" else "Save", enabled = portOk && !saving, icon = Icons.Default.Save, tip = if (portOk) "Write host, port, path and methods to serving.json" else "Fix the port first") { onSave(settings) }
             }
-            val url = settings.url(model.name)
             if (allowPost) CopyLine("POST", url, curl = "curl -s -X POST '$url' -H 'Content-Type: application/json' -d '{\"text\": \"turn the lights on\"}'")
             if (allowGet) CopyLine("GET", "$url?text=…", copy = "$url?text=", curl = "curl -s '$url?text=turn%20the%20lights%20on'")
             if (model.listening) Hint("applies after Stop and Listen")
@@ -908,7 +1004,7 @@ private fun ModelDetail(
                 DetailTab.DATA -> DataBlock(model)
                 DetailTab.REQUIREMENTS -> RequirementsBlock(model)
                 DetailTab.CONSOLE -> ConsoleBlock(model.name, consoleLines)
-                DetailTab.SESSIONS -> SessionsOf(model.sessions, onTerminate)
+                DetailTab.SESSIONS -> SessionsOf(model.sessions, onTerminate, title = false)
             }
         }
     }
@@ -923,7 +1019,7 @@ private fun DetailTabs(tabs: List<Pair<DetailTab, Int?>>, selected: DetailTab, o
                 val interactionSource = remember { MutableInteractionSource() }
                 val hovered by interactionSource.collectIsHoveredAsState()
                 val on = t == selected
-                Column(
+                AppTooltip(t.tip) { Column(
                     modifier = Modifier
                         .fillMaxHeight()
                         .width(IntrinsicSize.Max)
@@ -940,7 +1036,7 @@ private fun DetailTabs(tabs: List<Pair<DetailTab, Int?>>, selected: DetailTab, o
                         }
                     }
                     Box(modifier = Modifier.fillMaxWidth().height(2.dp).background(if (on) TabActiveIndicator else Color.Transparent))
-                }
+                } }
             }
         }
         Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(PanelBorder))
@@ -956,11 +1052,6 @@ private fun AboutBlock(model: ModelInfo, onDescribe: (String) -> Unit) {
     val m = model.manifest
     var text by remember(model.name, m.description) { mutableStateOf(m.description ?: "") }
     val dirty = text.trim() != (m.description ?: "")
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        SubTitle("ABOUT")
-        Spacer(Modifier.weight(1f))
-        if (dirty) AccentButton("Save description", icon = Icons.Default.Save) { onDescribe(text) }
-    }
     BasicTextField(
         value = text,
         onValueChange = { text = it },
@@ -973,10 +1064,14 @@ private fun AboutBlock(model: ModelInfo, onDescribe: (String) -> Unit) {
             .border(1.dp, ConsoleBorderColor, RectangleShape)
             .padding(horizontal = 10.dp, vertical = 7.dp),
         decorationBox = { inner ->
-            if (text.isEmpty()) Text("no description yet: write what this model is for and what it was trained on", color = MutedFontColor, fontSize = 12.sp, fontFamily = FontFamily.SansSerif)
+            if (text.isEmpty()) Text("what this model is for…", color = MutedFontColor, fontSize = 12.sp, fontFamily = FontFamily.SansSerif)
             inner()
         },
     )
+    if (dirty) Row(modifier = Modifier.fillMaxWidth()) {
+        Spacer(Modifier.weight(1f))
+        AccentButton("Save description", icon = Icons.Default.Save, tip = "Write the description to module.json") { onDescribe(text) }
+    }
 
     SubTitle("WHERE")
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -984,7 +1079,7 @@ private fun AboutBlock(model: ModelInfo, onDescribe: (String) -> Unit) {
             Text(model.dir.absolutePath, color = LogMessageColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         Spacer(Modifier.width(8.dp))
-        SmallButton("Reveal folder", icon = Icons.Default.FolderOpen) { openInBrowser(model.dir.toURI().toString()) }
+        SmallButton("Reveal folder", icon = Icons.Default.FolderOpen, tip = "Show the model's folder in the file browser") { openInBrowser(model.dir.toURI().toString()) }
     }
     KeyValues(
         "created" to m.createdAt.take(19).replace('T', ' '),
@@ -994,11 +1089,11 @@ private fun AboutBlock(model: ModelInfo, onDescribe: (String) -> Unit) {
     )
 
     SubTitle("TRAINING")
-    if (m.epochs == null && m.architecture == null) Hint("not recorded: this model was built before the training details were kept; build it again to have them")
+    if (m.epochs == null && m.architecture == null) Hint("not recorded (built before the training details were kept)")
     KeyValues(
         *listOfNotNull(
             m.architecture?.let { "architecture" to it },
-            "data" to (m.data ?: if (model.name == "dummy") "none, the weights are written, not trained" else "unknown"),
+            "data" to (m.data ?: if (model.name == "dummy") "none: written, not trained" else "unknown"),
             m.trainRows?.let { "train rows" to it.toString() },
             m.validationRows?.let { "validation" to "$it rows of ${m.validation ?: "a split"}" },
             m.epochs?.let { "epochs" to it.toString() },
@@ -1024,15 +1119,13 @@ private fun GuideBlock(model: ModelInfo) {
     var editing by remember(model.name) { mutableStateOf(false) }
     var text by remember(model.name, stamp) { mutableStateOf(stored ?: defaultGuide(model.manifest)) }
     Row(verticalAlignment = Alignment.CenterVertically) {
-        SubTitle("GUIDE")
-        Spacer(Modifier.width(10.dp))
-        Meta(if (stored == null) "none in the model yet; this is the default, Save keeps it" else file.name)
+        Meta(if (stored == null) "default guide, not saved yet" else file.name)
         Spacer(Modifier.weight(1f))
         if (editing) {
-            AccentButton("Save", icon = Icons.Default.Save) { runCatching { file.writeText(text) }.onFailure { logInternal("guide: couldn't write ${file.name}: ${it.message}", LogLevel.ERROR) }; editing = false }
+            AccentButton("Save", icon = Icons.Default.Save, tip = "Write the guide to ${file.name}; it goes along when the model is published") { runCatching { file.writeText(text) }.onFailure { logInternal("guide: couldn't write ${file.name}: ${it.message}", LogLevel.ERROR) }; editing = false }
             Spacer(Modifier.width(6.dp))
-            SmallButton("Cancel") { text = stored ?: defaultGuide(model.manifest); editing = false }
-        } else SmallButton(if (stored == null) "Edit and save" else "Edit") { editing = true }
+            SmallButton("Cancel", tip = "Drop the changes") { text = stored ?: defaultGuide(model.manifest); editing = false }
+        } else SmallButton(if (stored == null) "Edit and save" else "Edit", tip = "Edit the guide as markdown: # headings, - bullets, ``` code") { editing = true }
     }
     if (editing) {
         BasicTextField(
@@ -1103,30 +1196,41 @@ private fun guideBlocks(text: String): List<Pair<String, String>> {
 @Composable
 private fun MetricsBlock(model: ModelInfo, validating: ValidationProgress?, onValidate: (File) -> Unit) {
     val runs = model.metrics
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        SubTitle("METRICS")
-        Spacer(Modifier.weight(1f))
-        if (validating != null) Meta("validating ${validating.done}/${validating.total}")
-        else {
-            AccentButton("Validate on sample data", icon = Icons.Default.FactCheck) { onValidate(ensureSampleData()) }
-            Spacer(Modifier.width(6.dp))
-            AccentButton("Validate on file", icon = Icons.Default.FactCheck) { chooseFile("Validation data", listOf("csv"))?.let(onValidate) }
-        }
-    }
+    var index by remember(model.name) { mutableStateOf(runs.lastIndex) }
+    // A new run (after Validate) is shown at once; otherwise the chosen one stays
+    var seen by remember(model.name) { mutableStateOf(runs.size) }
+    if (runs.size != seen || index !in runs.indices) { seen = runs.size; index = runs.lastIndex }
     fun plot(name: String) = model.plots.firstOrNull { it.file.name == name }
 
-    if (runs.isEmpty()) Hint("no validation yet: validate on the sample data or on a csv of your own")
-    else {
-        var index by remember(model.name) { mutableStateOf(runs.lastIndex) }
-        if (index > runs.lastIndex) index = runs.lastIndex
-        val run = runs[index]
-        // The runs as a strip, the latest first; every one says what it was validated on when hovered
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("run", color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.width(40.dp))
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                runs.indices.reversed().forEach { i -> Toggle("${i + 1}", i == index) { index = i } }
+    // One line: the runs as chips (the latest first, each saying what it was validated on when hovered) and Validate
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        if (runs.isEmpty()) {
+            Hint("no validation yet")
+            Spacer(Modifier.weight(1f))
+        } else {
+            Text("run", color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.width(32.dp))
+            FlowRow(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                runs.indices.reversed().forEach { i ->
+                    val r = runs[i]
+                    Toggle("${i + 1}", i == index, tip = "run ${i + 1}: ${r.validationSize} rows of ${r.validation}, accuracy ${pct(r.accuracy)}, ${r.createdAt.take(16).replace('T', ' ')}") { index = i }
+                }
             }
         }
+        Spacer(Modifier.width(8.dp))
+        if (validating != null) Meta("validating ${validating.done}/${validating.total}")
+        else DropButton(
+            "Validate",
+            icon = Icons.Default.FactCheck,
+            tip = "Score the model on a csv and add a run with its charts: the sample data (45 rows: greeting, lights, weather) or a file of yours",
+            items = listOf(
+                ContextMenuItem("On the sample data") { onValidate(ensureSampleData()) },
+                ContextMenuItem("On a file…") { chooseFile("Validation data", listOf("csv"))?.let(onValidate) },
+            ),
+        )
+    }
+
+    if (runs.isNotEmpty()) {
+        val run = runs[index]
         KeyValues(
             "when" to run.createdAt.take(19).replace('T', ' '),
             "on" to "${run.validationSize} rows of ${run.validation}${if (run.trainSize > 0) " · trained on ${run.trainSize}" else ""}",
@@ -1180,8 +1284,8 @@ private fun rememberCsv(file: File): CsvFacts? = remember(file.path, file.lastMo
 @Composable
 private fun DataBlock(model: ModelInfo) {
     val files = listOfNotNull(model.dataFile?.let { "trained on" to it }, model.validationFile?.takeIf { it != model.dataFile }?.let { "validated on" to it })
-    SubTitle("DATA FILES")
-    if (files.isEmpty()) Hint(if (model.manifest.data != null) "${model.manifest.data} is not in AMP/ any more" else "no data file recorded; the dummy's head is written, not trained")
+    SubTitle("FILES")
+    if (files.isEmpty()) Hint(if (model.manifest.data != null) "${model.manifest.data} is not in AMP/ any more" else "no data file (the dummy is written, not trained)")
     files.forEach { (role, file) ->
         val facts = rememberCsv(file)
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1190,7 +1294,7 @@ private fun DataBlock(model: ModelInfo) {
             Spacer(Modifier.width(10.dp))
             Meta(facts?.let { "${it.rows.size} rows · ${it.labels.size} labels" } ?: "no text and label columns")
             Spacer(Modifier.weight(1f))
-            AccentButton("Open in viewer", icon = Icons.Default.OpenInNew) { openFile(file) }
+            SmallButton("Open in viewer", icon = Icons.Default.OpenInNew, tip = "Open ${file.name} in whatever this machine uses for csv files") { openFile(file) }
         }
         if (facts != null) {
             val known = model.manifest.labels.toSet()
@@ -1214,7 +1318,7 @@ private fun DataBlock(model: ModelInfo) {
     val incomingFile = SessionRuns.incomingFile(model.dir)
     val incoming = remember(model.name, incomingFile.lastModified()) { SessionRuns.incoming(model.dir) }
     SubTitle("RAN ON")
-    if (logged.isEmpty() && incoming == 0) Hint("nothing yet: open a session or listen and send it text")
+    if (logged.isEmpty() && incoming == 0) Hint("nothing yet")
     else {
         KeyValues(
             "sessions" to "${logged.size} texts answered, in ${logFile.name}",
@@ -1264,19 +1368,20 @@ private fun RequirementsBlock(model: ModelInfo) {
         requirements = withContext(Dispatchers.IO) { runCatching { ModelRequirements.check(model.dir, model.manifest, model.serving, model.listening) }.getOrDefault(emptyList()) }
     }
     val checks = requirements
-    SubTitle("REQUIREMENTS")
     if (checks == null) { Hint("checking…"); return }
     val unmet = checks.count { it.ok == false }
-    Hint(if (unmet == 0) "everything the model needs is here" else "$unmet not met: initMod and Listen will fail until they are")
+    Hint(if (unmet == 0) "all met" else "$unmet not met")
     Column(modifier = Modifier.fillMaxWidth()) {
         checks.forEachIndexed { i, r ->
             if (i > 0) Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(PanelBorder))
             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.Top) {
-                Box(modifier = Modifier.width(18.dp).height(16.dp), contentAlignment = Alignment.CenterStart) {
-                    when (r.ok) {
-                        true -> Icon(Icons.Default.CheckCircle, contentDescription = "met", tint = SuccessColor, modifier = Modifier.size(12.dp))
-                        false -> Icon(Icons.Default.Cancel, contentDescription = "not met", tint = DangerColor, modifier = Modifier.size(12.dp))
-                        null -> Icon(Icons.Default.Info, contentDescription = "information", tint = MutedFontColor, modifier = Modifier.size(12.dp))
+                AppTooltip(when (r.ok) { true -> "met"; false -> "not met: initMod and Listen fail until this is fixed"; null -> "information, nothing to fix" }) {
+                    Box(modifier = Modifier.width(18.dp).height(16.dp), contentAlignment = Alignment.CenterStart) {
+                        when (r.ok) {
+                            true -> Icon(Icons.Default.CheckCircle, contentDescription = "met", tint = SuccessColor, modifier = Modifier.size(12.dp))
+                            false -> Icon(Icons.Default.Cancel, contentDescription = "not met", tint = DangerColor, modifier = Modifier.size(12.dp))
+                            null -> Icon(Icons.Default.Info, contentDescription = "information", tint = MutedFontColor, modifier = Modifier.size(12.dp))
+                        }
                     }
                 }
                 Text(r.name, color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.width(110.dp))
@@ -1307,13 +1412,11 @@ private fun ConsoleBlock(name: String, mine: List<ResponseDto>) {
     LaunchedEffect(lines.size, all) { scroll.scrollTo(scroll.maxValue) }
     val time = remember { DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.systemDefault()) }
     Row(verticalAlignment = Alignment.CenterVertically) {
-        SubTitle("CONSOLE")
-        Spacer(Modifier.width(10.dp))
         Meta("${lines.size} lines")
         Spacer(Modifier.weight(1f))
-        Toggle("this model", !all) { all = false }
+        Toggle("this model", !all, tip = "Only the lines that name $name") { all = false }
         Spacer(Modifier.width(6.dp))
-        Toggle("all models", all) { all = true }
+        Toggle("all models", all, tip = "Everything the models, packages, sessions, builds and validations logged") { all = true }
     }
     var height by remember { mutableStateOf(ModelsCache.consoleHeight) }
     Column(
@@ -1326,7 +1429,7 @@ private fun ConsoleBlock(name: String, mine: List<ResponseDto>) {
             .verticalScroll(scroll)
             .padding(horizontal = 10.dp, vertical = 6.dp)
     ) {
-        if (lines.isEmpty()) Meta(if (all) "nothing yet" else "nothing about $name yet: open a session, listen or validate")
+        if (lines.isEmpty()) Meta(if (all) "nothing yet" else "nothing about $name yet")
         SelectionContainer {
             Column {
                 lines.forEach { e ->
@@ -1355,27 +1458,26 @@ private fun CsvPreview(file: File) {
         Column(modifier = Modifier.fillMaxWidth().clip(RectangleShape).background(CodeBackground).border(1.dp, ConsoleBorderColor, RectangleShape).padding(8.dp)) {
             Text(line(table.first()), color = FontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp, maxLines = 1)
             table.drop(1).take(20).forEach { Text(line(it), color = LogMessageColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp, maxLines = 1) }
-            if (table.size > 21) Meta("… ${table.size - 21} more rows, Open in viewer for all")
+            if (table.size > 21) Meta("… ${table.size - 21} more rows")
         }
     }
 }
 
-/** A model while modelBuilder builds it: phase, step and a progress bar */
+/** A model while modelBuilder builds it, at the top of the list: its name, the phase, and a thin progress bar */
 @Composable
-private fun BuildCard(build: ModelBuild) {
-    Card {
+private fun BuildLine(build: ModelBuild) {
+    Column(modifier = Modifier.fillMaxWidth().background(PanelSurface, RectangleShape).padding(horizontal = 8.dp, vertical = 6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            StatusDot(true)
+            StatusMark(true, "building: the model appears in the list when the build ends")
             Spacer(Modifier.width(8.dp))
-            Text("building ${build.modelName}", color = FontColor, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+            Text("building ${build.modelName}", color = FontColor, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
             Meta("${(build.fraction * 100).toInt()}%")
         }
-        Spacer(Modifier.height(4.dp))
         Meta(build.describe())
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(5.dp))
         LinearProgressIndicator(
             progress = build.fraction,
-            modifier = Modifier.fillMaxWidth().height(3.dp),
+            modifier = Modifier.fillMaxWidth().height(2.dp),
             color = ActiveColor,
             backgroundColor = PanelBorder,
         )
@@ -1405,6 +1507,7 @@ private fun PlotImage(plot: MetricsPlot) {
 @Composable
 private fun ColumnScope.PackagesTab(
     snapshot: ModelsSnapshot,
+    pending: Set<String>,
     selectedName: String?,
     onSelect: (String) -> Unit,
     onAdd: () -> Unit,
@@ -1417,19 +1520,6 @@ private fun ColumnScope.PackagesTab(
     onCollection: (suspend () -> Unit) -> Unit,
 ) {
     var newCollection by remember { mutableStateOf(false) }
-    SectionTitle("PACKAGES", snapshot.jars.size) {
-        AccentButton(if (newCollection) "Close" else "New collection", icon = if (newCollection) Icons.Default.Close else Icons.Default.Add) { newCollection = !newCollection }
-        Spacer(Modifier.width(6.dp))
-        AccentButton("Add jar", icon = Icons.Default.Add, onClick = onAdd)
-    }
-    if (newCollection) {
-        NewCollectionForm(snapshot.jars, onCreate = { name, jars -> onCollection { PackageCollections.create(name, jars) }; newCollection = false })
-        Spacer(Modifier.height(8.dp))
-    }
-    if (snapshot.jars.isEmpty()) {
-        Hint("no packages: add a jar, put one in AMP/pluginDir, or upload one on the website")
-        return
-    }
     // The list is searched by name, Java, collection, class or resource. Collections come first as folders a jar
     // can be added to or detached from; then every jar by where it lives
     var query by remember { mutableStateOf("") }
@@ -1438,8 +1528,22 @@ private fun ColumnScope.PackagesTab(
     Row(modifier = Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         var listWidth by remember { mutableStateOf(ModelsCache.listWidth) }
         Column(modifier = Modifier.width(listWidth.dp).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            SearchField(query) { query = it }
-            if (shown.isEmpty()) Hint("no matches")
+            // The filter and one Add button that offers both: a jar from this machine, or a new collection
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Box(modifier = Modifier.weight(1f)) { SearchField(query, tip = "Filter the jars by name, version, Java, collection, the class a session opens on, or any class or resource inside") { query = it } }
+                DropButton(
+                    "Add",
+                    icon = Icons.Default.Add,
+                    enabled = "addjar" !in pending,
+                    tip = if ("addjar" in pending) "copying the jar…" else "Add a jar from this machine (copied into AMP/pluginDir and imported into the env), or make a collection: a folder of jars that belong together",
+                    items = listOf(
+                        ContextMenuItem("Jar from this machine…") { onAdd() },
+                        ContextMenuItem("New collection…") { newCollection = true },
+                    ),
+                )
+            }
+            if (snapshot.jars.isEmpty()) Hint("no packages yet: Add a jar, or put one in AMP/pluginDir")
+            else if (shown.isEmpty()) NoMatches(query) { query = "" }
             snapshot.collections.forEach { collection ->
                 val members = shown.filter { it.name in collection.jars }
                 if (members.isEmpty() && query.isNotBlank()) return@forEach
@@ -1454,9 +1558,14 @@ private fun ColumnScope.PackagesTab(
                     }
                 }
             }
+            if (!ModelsCache.remoteLoaded) Hint("asking the server…")
         }
         VerticalSeparator { listWidth = it; ModelsCache.listWidth = it }
-        if (selected != null) JarDetail(selected, Modifier.weight(1f).fillMaxHeight(), onFetch = { onFetch(selected) }, onPublish = { onPublish(selected) }, signedIn = signedIn, onTerminate = onTerminate)
+        when {
+            newCollection -> NewCollectionPanel(snapshot.jars, Modifier.weight(1f).fillMaxHeight(), onCreate = { name, jars -> onCollection { PackageCollections.create(name, jars) }; newCollection = false }, onClose = { newCollection = false })
+            selected != null -> JarDetail(selected, pending, Modifier.weight(1f).fillMaxHeight(), onFetch = { onFetch(selected) }, onPublish = { onPublish(selected) }, signedIn = signedIn, onTerminate = onTerminate)
+            else -> Spacer(Modifier.weight(1f))
+        }
     }
 }
 
@@ -1466,8 +1575,8 @@ private fun jarMenu(jar: JarInfo, onFetch: (() -> Unit)? = null, onDetach: (() -
     val clipboard = LocalClipboardManager.current
     return listOfNotNull(
         ContextMenuItem("Copy initMod(\"${jar.name}\")") { clipboard.setText(AnnotatedString("initMod(\"${jar.name}\")")) },
-        ContextMenuItem("Open page") { openInBrowser(jar.page) },
-        if (!jar.local && onFetch != null) ContextMenuItem("Fetch", onFetch) else null,
+        ContextMenuItem("Open its page on the website") { openInBrowser(jar.page) },
+        if (!jar.local && onFetch != null) ContextMenuItem("Fetch from the server", onFetch) else null,
         if (jar.local && onPublish != null) ContextMenuItem(if (signedIn) "Publish to the website" else "Publish to the website (sign in)", onPublish) else null,
         jar.file?.let { f -> ContextMenuItem("Reveal file") { openInBrowser(f.parentFile.toURI().toString()) } },
         onDetach?.let { ContextMenuItem("Detach from collection", it) },
@@ -1482,6 +1591,12 @@ private fun JarRow(jar: JarInfo, selected: Boolean, onDetach: (() -> Unit)? = nu
         selected = selected,
         meta = listOfNotNull(jar.contents?.minJava?.let { "java $it+" }, jar.version?.let { "v$it" }).joinToString(" · "),
         status = jar.status,
+        statusTip = when {
+            jar.sessions.any { it.running } -> "inferring: a session on it is answering right now"
+            jar.open > 0 -> "${jar.open} open: sessions a script opened with initMod(\"${jar.name}\"); each is its own instance"
+            jar.local -> "idle: on this machine, no session open"
+            else -> "on the server: not on this machine yet; Fetch downloads it, and the first initMod does too"
+        },
         underline = jar.open > 0,
         icon = Icons.Default.Inventory2,
         onDetach = onDetach,
@@ -1507,14 +1622,14 @@ private fun CollectionFolder(
     Fold(collection.name, collection.jars.size, open = true, key = "collection:${collection.name}") {
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(bottom = 2.dp)) {
-                AccentButton(if (adding) "Close" else "Add", icon = if (adding) Icons.Default.Close else Icons.Default.Add) { adding = !adding }
-                SmallButton("Delete folder", icon = Icons.Default.Delete) { onCollection { PackageCollections.delete(collection.name) } }
+                SmallButton(if (adding) "Close" else "Add jar", icon = if (adding) Icons.Default.Close else Icons.Default.Add, tip = if (adding) "Close the list" else "Put another jar into this collection") { adding = !adding }
+                SmallButton("Delete folder", icon = Icons.Default.Delete, tip = "Remove the collection; its jars stay where they are") { onCollection { PackageCollections.delete(collection.name) } }
             }
             if (adding) {
                 val candidates = all.filter { it.name !in collection.jars }
                 if (candidates.isEmpty()) Hint("every jar is in it")
                 candidates.forEach { jar ->
-                    SmallButton("+ ${jar.name}") { onCollection { PackageCollections.add(collection.name, jar.name) } }
+                    SmallButton("+ ${jar.name}", tip = "Add ${jar.name} to ${collection.name}") { onCollection { PackageCollections.add(collection.name, jar.name) } }
                 }
                 Spacer(Modifier.height(2.dp))
             }
@@ -1526,38 +1641,46 @@ private fun CollectionFolder(
     }
 }
 
-/** A new collection: a name, the jars to put in it, and a shortcut per Java version that picks every jar it fits */
+/**
+ * A new collection, in the place of the detail panel: a name, the jars to put in it, and a shortcut per Java
+ * version that picks every jar that runs on it
+ */
 @Composable
-private fun NewCollectionForm(jars: List<JarInfo>, onCreate: (String, List<String>) -> Unit) {
+private fun NewCollectionPanel(jars: List<JarInfo>, modifier: Modifier, onCreate: (String, List<String>) -> Unit, onClose: () -> Unit) {
     var name by remember { mutableStateOf("") }
     var chosen by remember { mutableStateOf(setOf<String>()) }
     val versions = jars.mapNotNull { it.contents?.minJava }.distinct().sorted()
-    Card {
-        SubTitle("NEW COLLECTION")
-        Spacer(Modifier.height(6.dp))
-        SettingField("Name", name) { name = it }
-        if (versions.isNotEmpty()) Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
-            Text("By Java", color = MutedFontColor, fontSize = 11.sp, modifier = Modifier.width(56.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                versions.forEach { v ->
-                    // Every jar that runs on Java v: the ones that need v or older
-                    SmallButton("jvm$v") {
-                        name = "jvm$v"
-                        chosen = jars.filter { (it.contents?.minJava ?: Int.MAX_VALUE) <= v }.map { it.name }.toSet()
+    DetailPanel(modifier) {
+        DetailHeader(name = "New collection", active = false, status = "a folder of jars that belong together", mark = false) {
+            SmallButton("Close", icon = Icons.Default.Close, tip = "Close the form; nothing is kept", onClick = onClose)
+        }
+        Column(modifier = Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 10.dp).padding(top = 8.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            SettingField("Name", name) { name = it }
+            if (versions.isNotEmpty()) Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
+                Text("By Java", color = MutedFontColor, fontSize = 11.sp, modifier = Modifier.width(56.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    versions.forEach { v ->
+                        // Every jar that runs on Java v: the ones that need v or older
+                        SmallButton("jvm$v", tip = "Name it jvm$v and pick every jar that runs on Java $v") {
+                            name = "jvm$v"
+                            chosen = jars.filter { (it.contents?.minJava ?: Int.MAX_VALUE) <= v }.map { it.name }.toSet()
+                        }
                     }
                 }
             }
-        }
-        Row(verticalAlignment = Alignment.Top, modifier = Modifier.padding(vertical = 2.dp)) {
-            Text("Jars", color = MutedFontColor, fontSize = 11.sp, modifier = Modifier.width(56.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                jars.forEach { jar -> Toggle(jar.name, jar.name in chosen) { on -> chosen = if (on) chosen + jar.name else chosen - jar.name } }
+            Row(verticalAlignment = Alignment.Top, modifier = Modifier.padding(vertical = 2.dp)) {
+                Text("Jars", color = MutedFontColor, fontSize = 11.sp, modifier = Modifier.width(56.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    if (jars.isEmpty()) Hint("no jars yet")
+                    jars.forEach { jar -> Toggle(jar.name, jar.name in chosen, tip = if (jar.name in chosen) "in the collection; click to leave it out" else "click to put it in") { on -> chosen = if (on) chosen + jar.name else chosen - jar.name } }
+                }
             }
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Meta("${chosen.size} jars")
-            Spacer(Modifier.weight(1f))
-            AccentButton("Create", enabled = name.isNotBlank() && chosen.isNotEmpty()) { onCreate(name.trim(), chosen.toList()) }
+            Spacer(Modifier.height(6.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Meta("${chosen.size} jars")
+                Spacer(Modifier.weight(1f))
+                AccentButton("Create", enabled = name.isNotBlank() && chosen.isNotEmpty(), tip = when { name.isBlank() -> "give the collection a name"; chosen.isEmpty() -> "pick at least one jar"; else -> "Make the collection; it is kept in AMP/pluginDir/collections.json" }) { onCreate(name.trim(), chosen.toList()) }
+            }
         }
     }
 }
@@ -1567,8 +1690,10 @@ private fun NewCollectionForm(jars: List<JarInfo>, onCreate: (String, List<Strin
  * from, what built it, what it contains, and its sessions. A script opens it with initMod("name.jar").
  */
 @Composable
-private fun JarDetail(jar: JarInfo, modifier: Modifier = Modifier, onFetch: () -> Unit, onPublish: () -> Unit, signedIn: Boolean, onTerminate: (SessionInfo) -> Unit) {
+private fun JarDetail(jar: JarInfo, pending: Set<String>, modifier: Modifier = Modifier, onFetch: () -> Unit, onPublish: () -> Unit, signedIn: Boolean, onTerminate: (SessionInfo) -> Unit) {
     val contents = jar.contents
+    val fetching = "fetch:${jar.name}" in pending
+    val publishing = "publish:${jar.name}" in pending
     DetailPanel(modifier) {
         DetailHeader(
             name = jar.name,
@@ -1580,11 +1705,17 @@ private fun JarDetail(jar: JarInfo, modifier: Modifier = Modifier, onFetch: () -
                 jar.version?.let { "v$it" },
                 jar.collections.takeIf { it.isNotEmpty() }?.let { "in ${it.joinToString()}" },
             ).joinToString(" · "),
+            statusTip = "a script opens it with initMod(\"${jar.name}\"); every call is a fresh instance and its own session",
+            menu = jarMenu(jar, onFetch = onFetch, onPublish = onPublish, signedIn = signedIn),
         ) {
-            SmallButton("Open page", icon = Icons.Default.Language) { openInBrowser(jar.page) }
-            if (!jar.local) AccentButton("Fetch", icon = Icons.Default.Download, onClick = onFetch)
-            if (jar.local) SmallButton(if (signedIn) "Publish" else "Publish (sign in)", icon = Icons.Default.CloudUpload, onClick = onPublish)
-            jar.file?.let { f -> SmallButton("Reveal file", icon = Icons.Default.FolderOpen) { openInBrowser(f.parentFile.toURI().toString()) } }
+            if (!jar.local) AccentButton(if (fetching) "Fetching…" else "Fetch", enabled = !fetching, icon = Icons.Default.Download, tip = "Download the jar from the server into AMP/pluginDir", onClick = onFetch)
+            if (jar.local) SmallButton(
+                when { publishing -> "Publishing…"; signedIn -> "Publish"; else -> "Publish (sign in)" },
+                enabled = !publishing,
+                icon = Icons.Default.CloudUpload,
+                tip = if (signedIn) "Upload the jar to the website under your account; the server takes only a jar with run(String) and close()" else "Publish uploads the jar under your account, so it opens the sign-in page first",
+                onClick = onPublish,
+            )
         }
 
         Column(modifier = Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 10.dp).padding(top = 6.dp, bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -1632,28 +1763,30 @@ private fun JarDetail(jar: JarInfo, modifier: Modifier = Modifier, onFetch: () -
 
 @Composable
 private fun SessionsTab(sessions: List<SessionInfo>, onTerminate: (SessionInfo) -> Unit, onTerminateAll: () -> Unit) {
-    SectionTitle("SESSIONS", sessions.size) { if (sessions.isNotEmpty()) DangerButton("Terminate all", icon = Icons.Default.StopCircle, onClick = onTerminateAll) }
-    if (sessions.isEmpty()) {
-        Hint("no open sessions")
-        return
-    }
     var query by remember { mutableStateOf("") }
     val q = query.trim().lowercase()
     val shown = sessions.filter { q.isEmpty() || it.owner.lowercase().contains(q) || it.kind.lowercase().contains(q) || "#${it.id}".contains(q) }
     Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        if (sessions.size > 4) SearchField(query) { query = it }
-        if (shown.isEmpty()) Hint("no matches")
-        SessionList(shown, showOwner = true, onTerminate)
+        if (sessions.isEmpty()) Hint("no open sessions · Open session on a model, or initMod(\"name\") in a script, opens one")
+        else {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                if (sessions.size > 4) Box(modifier = Modifier.weight(1f).widthIn(max = 420.dp)) { SearchField(query, tip = "Filter by owner, kind or #id") { query = it } }
+                else Spacer(Modifier.weight(1f))
+                DangerButton("Terminate all", icon = Icons.Default.StopCircle, tip = "Close every open session: models, packages and bare ONNX files", onClick = onTerminateAll)
+            }
+            if (shown.isEmpty()) NoMatches(query) { query = "" }
+            SessionList(shown, showOwner = true, onTerminate)
+        }
     }
 }
 
-/** The sessions one owner has open, inside its detail panel */
+/** The sessions one owner has open, inside its detail panel; without [title] where a tab already names them */
 @Composable
-private fun SessionsOf(sessions: List<SessionInfo>, onTerminate: (SessionInfo) -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
-        SubTitle("SESSIONS  ${sessions.size}")
+private fun SessionsOf(sessions: List<SessionInfo>, onTerminate: (SessionInfo) -> Unit, title: Boolean = true) {
+    if (title || sessions.size > 1) Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
+        if (title) SubTitle("SESSIONS  ${sessions.size}")
         Spacer(Modifier.weight(1f))
-        if (sessions.size > 1) DangerButton("Terminate all", icon = Icons.Default.StopCircle) { sessions.forEach(onTerminate) }
+        if (sessions.size > 1) DangerButton("Terminate all", icon = Icons.Default.StopCircle, tip = "Close every session of it") { sessions.forEach(onTerminate) }
     }
     if (sessions.isEmpty()) Hint("none open")
     else SessionList(sessions, showOwner = false, onTerminate)
@@ -1683,17 +1816,17 @@ private fun SessionRow(session: SessionInfo, showOwner: Boolean, onTerminate: ()
     )
     ContextMenuArea(items = { menu }) { Column(modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            StatusDot(session.running)
+            StatusMark(session.running, if (session.running) "inferring: answering right now" else "idle: open and waiting for the next inference")
             Spacer(Modifier.width(8.dp))
             Text(if (showOwner) "${session.owner}  #${session.id}" else "#${session.id}", color = FontColor, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.width(10.dp))
             Meta(listOfNotNull(if (showOwner) session.kind else null, if (session.running) "inferring" else "idle", "${session.runs} runs", uptime(Duration.between(session.openedAt, Instant.now()))).joinToString(" · "))
             Spacer(Modifier.weight(1f))
             if (session.hasLog) {
-                SmallButton(if (showLog) "Hide log" else "Log ${session.log.size}", icon = Icons.Default.Notes) { showLog = !showLog }
+                SmallButton(if (showLog) "Hide log" else "Log ${session.log.size}", icon = Icons.Default.Notes, tip = "What this session was asked and answered, with the time of each") { showLog = !showLog }
                 Spacer(Modifier.width(6.dp))
             }
-            DangerButton("Terminate", icon = Icons.Default.StopCircle, onClick = onTerminate)
+            DangerButton("Terminate", icon = Icons.Default.StopCircle, tip = "Close this session; a script holding it gets an error on its next call", onClick = onTerminate)
         }
         if (showLog) {
             Spacer(Modifier.height(6.dp))
@@ -1715,7 +1848,7 @@ private fun LogBox(entries: List<SessionLogEntry>) {
     ) {
         if (entries.isEmpty()) Meta("nothing yet")
         val shown = entries.takeLast(60)
-        if (shown.size < entries.size) Meta("… ${entries.size - shown.size} earlier lines in the sessions.log file")
+        if (shown.size < entries.size) Meta("… ${entries.size - shown.size} earlier lines in sessions.log")
         SelectionContainer {
             Column {
                 shown.forEach { e ->
@@ -1763,7 +1896,6 @@ private fun Lines(vararg lines: String) {
  */
 @Composable
 private fun GuideTab() {
-    SectionTitle("HELP", null)
     Column(modifier = Modifier.widthIn(max = 860.dp).verticalScroll(rememberScrollState()).padding(bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Fold("What an intent model is", null, open = true, key = "guide:model") {
             Para("An intent model turns a sentence into one of a few labels, like greeting, lights or weather. It has two parts: the encoder, a BERT model (bge) that turns the text into 768 numbers, and the head, a small dense network trained on your rows that turns those numbers into a score per label. Only the head is yours: it lives in AMP/modules/<name>/ as model.onnx with module.json (name, labels, encoder, how it was trained), metrics.json (every validation), serving.json and sessions.log. The encoder is shared by every model and loaded once.")
@@ -1771,7 +1903,7 @@ private fun GuideTab() {
         }
         Fold("Building one", null, open = false, key = "guide:build") {
             Para("Press + New model. Give it a name, a sentence about what it is for, and a csv with a text column and a label column (the columns are inferred from the header; Sample data writes AMP/sample-intents.csv with 45 rows over three labels). A test csv is optional; without one, 20% of the rows are held out. Build embeds every row through the encoder, fits the head for 150 epochs, validates it and exports it. The card above the list follows the build; the console lines of the model say the rest.")
-            Para("The list groups models by the data they were trained on, running ones first, then by accuracy. Search matches names, labels, status and data files. Right-click a row for its actions.")
+            Para("The list groups models by the data they were trained on, running ones first, then by accuracy. Search matches names, labels, status and data files. Right-click a row, or press its ⋯ button, for its actions; the panel header has the same button. Rest the pointer on any button, tab or status word and it says what it does.")
         }
         Fold("Reading the metrics", null, open = false, key = "guide:metrics") {
             Para("Every validation is a run; Validate on sample data or Validate on file adds one, and a build adds the first. Pick a run on the strip. Scores per label: for every label, precision (of what the model called that label, how much really was), recall (of the rows of that label, how much it found) and F1 (their harmonic mean) on one 0 to 1 axis, with the row count; the macro row averages the labels. Confusion matrix: every actual label in a row, what the model answered in the columns; the diagonal is right, a bright cell off it is the confusion to fix, and the caption names the biggest.")
@@ -1779,7 +1911,7 @@ private fun GuideTab() {
         }
         Fold("Serving it", null, open = false, key = "guide:serve") {
             Para("Listen starts an HTTP server for the model on the host, port and path in Configure (loopback by default), with POST {\"text\": \"…\"} or GET ?text=… returning the scores as JSON. Copy and Copy curl in Configure give the address and a working call. What it answers is appended to incoming.jsonl, so it can be reviewed and labeled later. Listening resumes when the app starts again, until Stop.")
-            Para("Publish sends the module to the Amie server under your account (sign in first). Open website opens the site signed in as that account: the app hands its session to the browser, so the dashboard, uploads and profile are yours there without signing in again. A jar on the Packages tab has Publish too; the server only takes a jar with run(String): List and close().")
+            Para("Publish sends the module to the Amie server under your account (sign in first); the website lists it. A jar on the Packages tab has Publish too; the server only takes a jar with run(String): List and close().")
         }
         Fold("From a script", null, open = false, key = "guide:script") {
             Para("In the sandbox, amie is the API; every name below is also reachable without the prefix. initMod(name) gives the session of an exported model. A model has one session at most: the one already open is returned, so running a script again, or Open session on the page, never opens another. inference(text) returns \"label:score\" strings, best first. close() closes it; the Sessions tab can terminate it too.")
@@ -1860,22 +1992,22 @@ private fun pct(value: Double) = "${(value * 100).toInt()}%"
 /* ---------- pieces ---------- */
 
 /**
- * One line of a list: name, a short meta line and the status at the right; click to select. A running one is
+ * One line of a list: name, a short meta line, the status word at the right (its tooltip says what it means) and
+ * a ⋯ button with the row's actions, the same ones right-click opens; click to select. A running one is
  * underlined in green; a stopped one is not. With onDetach, a Detach button appears while the pointer is over it.
  */
 @Composable
-private fun ListRow(name: String, active: Boolean, selected: Boolean, meta: String, status: String, underline: Boolean = false, icon: ImageVector? = null, onDetach: (() -> Unit)? = null, menu: List<ContextMenuItem> = emptyList(), onSelect: () -> Unit) {
+private fun ListRow(name: String, active: Boolean, selected: Boolean, meta: String, status: String, statusTip: String? = null, underline: Boolean = false, icon: ImageVector? = null, onDetach: (() -> Unit)? = null, menu: List<ContextMenuItem> = emptyList(), onSelect: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val hovered by interactionSource.collectIsHoveredAsState()
     ContextMenuArea(items = { menu }) { Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RectangleShape)
             .background(when { selected -> PanelSurfaceSelected; hovered -> PanelSurface; else -> Color.Transparent })
             .hoverable(interactionSource)
             .clickable(interactionSource = interactionSource, indication = null) { onSelect() }
     ) {
-        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(modifier = Modifier.fillMaxWidth().padding(start = 8.dp, end = 4.dp, top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             if (icon != null) {
                 Icon(icon, contentDescription = null, tint = if (active) FontColor else MutedFontColor, modifier = Modifier.size(13.dp))
                 Spacer(Modifier.width(7.dp))
@@ -1886,9 +2018,15 @@ private fun ListRow(name: String, active: Boolean, selected: Boolean, meta: Stri
             }
             Spacer(Modifier.width(6.dp))
             if (hovered && onDetach != null) {
-                SmallButton("Detach", icon = Icons.Default.LinkOff, onClick = onDetach)
+                SmallButton("Detach", icon = Icons.Default.LinkOff, tip = "Take it out of this collection; the file stays", onClick = onDetach)
             } else {
-                Text(status, color = if (active) FontColor else MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, maxLines = 1)
+                AppTooltip(statusTip) {
+                    Text(status, color = if (active) FontColor else MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, maxLines = 1)
+                }
+            }
+            if (menu.isNotEmpty()) {
+                Spacer(Modifier.width(4.dp))
+                MoreButton(menu, shown = hovered || selected)
             }
         }
         Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp).height(2.dp).background(if (underline) SuccessColor else Color.Transparent))
@@ -1975,26 +2113,29 @@ private fun DetailPanel(modifier: Modifier = Modifier, content: @Composable Colu
     ) { content() }
 }
 
-/** Name and one status line on the left of a detail panel's header, the actions on the right */
+/** Name and one status line on the left of a detail panel's header, the actions on the right, then the ⋯ menu */
 @Composable
-private fun DetailHeader(name: String, active: Boolean, status: String, actions: @Composable () -> Unit) {
+private fun DetailHeader(name: String, active: Boolean, status: String, statusTip: String? = null, menu: List<ContextMenuItem> = emptyList(), mark: Boolean = true, actions: @Composable () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        StatusDot(active)
-        Spacer(Modifier.width(2.dp))
+        if (mark) {
+            StatusMark(active, statusTip)
+            Spacer(Modifier.width(2.dp))
+        }
         Column(modifier = Modifier.weight(1f)) {
             Text(name, color = FontColor, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.SansSerif, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Meta(status)
+            AppTooltip(statusTip) { Meta(status) }
         }
         actions()
+        if (menu.isNotEmpty()) MoreButton(menu, tip = "Every action of $name, the same list the right-click on its row opens")
     }
     Box(modifier = Modifier.fillMaxWidth().height(if (active) 2.dp else 1.dp).background(if (active) SuccessColor else PanelBorder))
 }
 
-/** A small bordered label; strong is white text, the rest gray */
+/** A small label on a faint square; strong is white text, the rest gray */
 @Composable
 private fun BadgeLabel(text: String, strong: Boolean = false) {
     Text(
@@ -2004,8 +2145,7 @@ private fun BadgeLabel(text: String, strong: Boolean = false) {
         fontFamily = FontFamily.Monospace,
         maxLines = 1,
         modifier = Modifier
-            .clip(RectangleShape)
-            .border(1.dp, if (strong) PanelBorderSelected else PanelBorder, RectangleShape)
+            .background(ChipBackground, RectangleShape)
             .padding(horizontal = 5.dp, vertical = 1.dp)
     )
 }
@@ -2034,7 +2174,7 @@ private fun Fold(title: String, count: Int?, open: Boolean, key: Any, content: @
     var expanded by remember(key) { mutableStateOf(open) }
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier.fillMaxWidth().clip(RectangleShape).clickable { expanded = !expanded }.padding(vertical = 2.dp),
+            modifier = Modifier.fillMaxWidth().pointerHoverIcon(PointerIcon.Hand).clickable { expanded = !expanded }.padding(vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
@@ -2054,15 +2194,15 @@ private fun Fold(title: String, count: Int?, open: Boolean, key: Any, content: @
     }
 }
 
-/** A one-line filter over a list: an icon, the text, and a clear button once there is text */
+/** A one-line filter over a list: an icon, the text, and a clear button once there is text; the tip says what it matches */
 @Composable
-private fun SearchField(value: String, onChange: (String) -> Unit) {
+private fun SearchField(value: String, tip: String? = null, onChange: (String) -> Unit) {
     var focused by remember { mutableStateOf(false) }
-    Row(
+    AppTooltip(tip) { Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(CodeBackground, RectangleShape)
-            .border(1.dp, if (focused || value.isNotEmpty()) PageAccent else PanelBorderSelected, RectangleShape)
+            .border(1.dp, when { focused -> PageAccent; value.isNotEmpty() -> PanelBorderSelected; else -> PanelBorder }, RectangleShape)
             .padding(horizontal = 8.dp, vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -2076,8 +2216,8 @@ private fun SearchField(value: String, onChange: (String) -> Unit) {
             cursorBrush = SolidColor(FontColor),
             modifier = Modifier.weight(1f).onFocusChanged { focused = it.isFocused }
         )
-        if (value.isNotEmpty()) SmallButton("×") { onChange("") }
-    }
+        if (value.isNotEmpty()) SmallButton("×", tip = "Clear the filter") { onChange("") }
+    } }
 }
 
 /**
@@ -2160,7 +2300,7 @@ private fun ContentLine(name: String, mark: String?, onClick: () -> Unit) {
 
 /** A file picker line: label, the chosen file or a hint, Choose and an optional Clear */
 @Composable
-private fun FileField(label: String, file: File?, hint: String, onClear: (() -> Unit)? = null, sample: (() -> Unit)? = null, onChoose: () -> Unit) {
+private fun FileField(label: String, file: File?, hint: String, onClear: (() -> Unit)? = null, sample: (() -> Unit)? = null, chooseTip: String? = null, sampleTip: String? = null, onChoose: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
         Text(label, color = MutedFontColor, fontSize = 11.sp, modifier = Modifier.width(56.dp))
         Text(
@@ -2178,44 +2318,21 @@ private fun FileField(label: String, file: File?, hint: String, onClear: (() -> 
                 .padding(horizontal = 8.dp, vertical = 5.dp)
         )
         Spacer(Modifier.width(6.dp))
-        SmallButton("Choose", onClick = onChoose)
+        SmallButton("Choose", icon = Icons.Default.FolderOpen, tip = chooseTip, onClick = onChoose)
         if (sample != null) {
             Spacer(Modifier.width(6.dp))
-            AccentButton("Sample data", onClick = sample)
+            SmallButton("Sample data", icon = Icons.Default.TableChart, tip = sampleTip, onClick = sample)
         }
         if (file != null && onClear != null) {
             Spacer(Modifier.width(6.dp))
-            SmallButton("Clear", onClick = onClear)
+            SmallButton("Clear", tip = "Use no $label file", onClick = onClear)
         }
-    }
-}
-
-@Composable
-private fun SectionTitle(title: String, count: Int?, action: @Composable () -> Unit = {}) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(if (count == null) title else "$title  $count", color = FontColor, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.6.sp, modifier = Modifier.weight(1f))
-        action()
     }
 }
 
 @Composable
 private fun SubTitle(title: String) {
     Text(title, color = FontColor, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.6.sp)
-}
-
-@Composable
-private fun Card(content: @Composable () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RectangleShape)
-            .background(PanelSurface)
-            .border(1.dp, PanelBorder, RectangleShape)
-            .padding(10.dp)
-    ) { content() }
 }
 
 @Composable
@@ -2228,9 +2345,10 @@ private fun Meta(text: String) {
     Text(text, color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
 }
 
+/** A 7dp square: the running green when active, gray when not; the tip says what that means where it stands */
 @Composable
-private fun StatusDot(active: Boolean) {
-    Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(if (active) SuccessColor else IdleColor))
+private fun StatusMark(active: Boolean, tip: String? = null) {
+    AppTooltip(tip) { Box(modifier = Modifier.size(7.dp).background(if (active) SuccessColor else IdleColor, RectangleShape)) }
 }
 
 @Composable
@@ -2253,80 +2371,174 @@ private fun SettingField(label: String, value: String, onChange: (String) -> Uni
     }
 }
 
+/** A button that opens a short menu under itself instead of doing one thing: Validate (sample data or a file), Add (a jar or a collection) */
 @Composable
-private fun Toggle(label: String, on: Boolean, onChange: (Boolean) -> Unit) {
+private fun DropButton(label: String, icon: ImageVector? = null, tip: String? = null, enabled: Boolean = true, accent: Boolean = true, items: List<ContextMenuItem>) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        if (accent) AccentButton(label, enabled = enabled, icon = icon, tip = if (open) null else tip, arrow = true) { open = !open }
+        else SmallButton(label, enabled = enabled, icon = icon, tip = if (open) null else tip, arrow = true) { open = !open }
+        if (open) Popup(popupPositionProvider = BelowButton, onDismissRequest = { open = false }, properties = PopupProperties(focusable = true)) {
+            MenuBox(items) { open = false }
+        }
+    }
+}
+
+/* ---------- notices ---------- */
+
+/** A message for the user at the top of the page: what an action did, or (in red) why it failed */
+private data class Notice(val text: String, val error: Boolean = false)
+
+/** The notice as a strip under the tabs: a bar at its left edge (red for a failure), the whole text (it wraps, it can be selected) and Dismiss */
+@Composable
+private fun NoticeBar(notice: Notice, onDismiss: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 6.dp)
+            .height(IntrinsicSize.Min)
+            .background(PanelSurface, RectangleShape)
+    ) {
+        Box(modifier = Modifier.width(2.dp).fillMaxHeight().background(if (notice.error) LogErrorColor else PanelBorderSelected))
+        Spacer(Modifier.width(10.dp))
+        SelectionContainer(modifier = Modifier.weight(1f).padding(vertical = 6.dp)) {
+            Text(notice.text, color = if (notice.error) LogErrorTextColor else LogMessageColor, fontSize = 12.sp, fontFamily = FontFamily.SansSerif, lineHeight = 17.sp)
+        }
+        Spacer(Modifier.width(8.dp))
+        SmallButton("Dismiss", tip = "Hide this message", onClick = onDismiss)
+        Spacer(Modifier.width(4.dp))
+    }
+}
+
+/** A question before something that cannot be undone: a red bar, the whole text, a red button that does it, and Keep */
+@Composable
+private fun ConfirmBar(text: String, confirm: String, onConfirm: () -> Unit, onKeep: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 6.dp)
+            .height(IntrinsicSize.Min)
+            .background(PanelSurface, RectangleShape)
+    ) {
+        Box(modifier = Modifier.width(2.dp).fillMaxHeight().background(LogErrorColor))
+        Spacer(Modifier.width(10.dp))
+        Text(text, color = LogMessageColor, fontSize = 12.sp, fontFamily = FontFamily.SansSerif, lineHeight = 17.sp, modifier = Modifier.weight(1f).padding(vertical = 6.dp))
+        Spacer(Modifier.width(8.dp))
+        DangerButton(confirm, icon = Icons.Default.Delete, tip = "Do it; this cannot be undone", onClick = onConfirm)
+        Spacer(Modifier.width(4.dp))
+        SmallButton("Keep", tip = "Change nothing", onClick = onKeep)
+        Spacer(Modifier.width(4.dp))
+    }
+}
+
+/** When a filter leaves nothing: says so, with the query, and clears it */
+@Composable
+private fun NoMatches(query: String, onClear: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
+        Hint("nothing matches “${query.trim()}”")
+        Spacer(Modifier.width(8.dp))
+        SmallButton("Clear", tip = "Show everything again", onClick = onClear)
+    }
+}
+
+/* ---------- menus ---------- */
+
+/**
+ * The page's menus: a square dark box with one line per action, the ones that end or remove something in red.
+ * Right-click opens it under the pointer on every row; the ⋯ button on a row or a panel header opens the same
+ * one under itself, so nothing is reachable only by right-click. Esc or a click elsewhere closes it.
+ */
+private object SquareContextMenu : ContextMenuRepresentation {
+    @Composable
+    override fun Representation(state: ContextMenuState, items: () -> List<ContextMenuItem>) {
+        if (state.status !is ContextMenuState.Status.Open) return
+        Popup(
+            popupPositionProvider = rememberCursorPositionProvider(),
+            onDismissRequest = { state.status = ContextMenuState.Status.Closed },
+            properties = PopupProperties(focusable = true),
+        ) {
+            MenuBox(items()) { state.status = ContextMenuState.Status.Closed }
+        }
+    }
+}
+
+/** Places a menu under its button with their right edges aligned; above the button when the window ends too soon */
+private object BelowButton : PopupPositionProvider {
+    override fun calculatePosition(anchorBounds: IntRect, windowSize: IntSize, layoutDirection: LayoutDirection, popupContentSize: IntSize): IntOffset {
+        var x = anchorBounds.right - popupContentSize.width
+        if (x < 0) x = anchorBounds.left.coerceAtMost((windowSize.width - popupContentSize.width).coerceAtLeast(0))
+        var y = anchorBounds.bottom + 2
+        if (y + popupContentSize.height > windowSize.height) y = (anchorBounds.top - popupContentSize.height - 2).coerceAtLeast(0)
+        return IntOffset(x, y)
+    }
+}
+
+/** The actions whose menu line is red: they end, remove or detach something */
+private val endingActions = listOf("Terminate", "Destroy", "Remove", "Delete", "Stop", "Detach")
+
+@Composable
+private fun MenuBox(items: List<ContextMenuItem>, close: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .width(IntrinsicSize.Max)
+            .widthIn(min = 160.dp)
+            .background(CompletionBackground, RectangleShape)
+            .border(1.dp, CompletionBorder, RectangleShape)
+            .padding(vertical = 3.dp)
+    ) {
+        items.forEach { item -> MenuLine(item.label, ending = endingActions.any { item.label.startsWith(it) }) { close(); item.onClick() } }
+    }
+}
+
+@Composable
+private fun MenuLine(label: String, ending: Boolean, onClick: () -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
     Text(
         label,
-        color = if (on) FontColor else MutedFontColor,
-        fontSize = 11.sp,
-        fontFamily = FontFamily.Monospace,
+        color = if (ending) LogErrorTextColor else FontColor,
+        fontSize = 12.sp,
+        fontFamily = FontFamily.SansSerif,
+        maxLines = 1,
         modifier = Modifier
-            .clip(RectangleShape)
-            .background(if (on) PageAccent.copy(alpha = 0.35f) else CodeBackground)
-            .border(1.dp, if (on) PageAccent else ConsoleBorderColor, RectangleShape)
-            .clickable { onChange(!on) }
-            .padding(horizontal = 8.dp, vertical = 3.dp)
+            .fillMaxWidth()
+            .background(if (hovered) CompletionSelected else Color.Transparent)
+            .hoverable(interactionSource)
+            .pointerHoverIcon(PointerIcon.Hand)
+            .clickable(interactionSource = interactionSource, indication = null) { onClick() }
+            .padding(horizontal = 12.dp, vertical = 5.dp)
     )
 }
 
-/** The accent chip for the actions that create, build, validate, open or add: a dark blue that stays quiet */
+/**
+ * The ⋯ button: opens the same menu the right-click opens, under itself. With shown = false it is invisible but
+ * keeps its place, so a row's layout doesn't move when the pointer arrives; an open menu keeps it visible.
+ */
 @Composable
-private fun AccentButton(label: String, enabled: Boolean = true, icon: ImageVector? = null, onClick: () -> Unit) {
+private fun MoreButton(items: List<ContextMenuItem>, shown: Boolean = true, tip: String = "More actions, the same ones a right-click opens") {
+    var open by remember { mutableStateOf(false) }
     val interactionSource = remember { MutableInteractionSource() }
     val hovered by interactionSource.collectIsHoveredAsState()
-    val colour = if (enabled) Color.White else Color.White.copy(alpha = 0.5f)
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .clip(RectangleShape)
-            .background(when { !enabled -> PageAccent.copy(alpha = 0.35f); hovered -> AccentButtonHover; else -> PageAccent })
-            .hoverable(interactionSource)
-            .clickable(enabled = enabled, interactionSource = interactionSource, indication = null) { onClick() }
-            .padding(horizontal = 8.dp, vertical = 3.dp)
-    ) {
-        if (icon != null) { Icon(icon, contentDescription = null, tint = colour, modifier = Modifier.size(12.dp)); Spacer(Modifier.width(5.dp)) }
-        Text(label, color = colour, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
-    }
-}
-
-/** The chip of the actions that end something: Terminate, Destroy. A dark red that brightens on hover */
-@Composable
-private fun DangerButton(label: String, enabled: Boolean = true, icon: ImageVector? = null, onClick: () -> Unit) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val hovered by interactionSource.collectIsHoveredAsState()
-    val colour = if (enabled) FontColor else MutedFontColor.copy(alpha = 0.5f)
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .clip(RectangleShape)
-            .background(when { !enabled -> DangerButton.copy(alpha = 0.4f); hovered -> DangerButtonHover; else -> DangerButton })
-            .border(1.dp, if (enabled) DangerButtonBorder else PanelBorder, RectangleShape)
-            .hoverable(interactionSource)
-            .clickable(enabled = enabled, interactionSource = interactionSource, indication = null) { onClick() }
-            .padding(horizontal = 8.dp, vertical = 3.dp)
-    ) {
-        if (icon != null) { Icon(icon, contentDescription = null, tint = colour, modifier = Modifier.size(12.dp)); Spacer(Modifier.width(5.dp)) }
-        Text(label, color = colour, fontSize = 11.sp, fontWeight = FontWeight.Medium, maxLines = 1)
-    }
-}
-
-/** A gray chip like the editor's tabs; it brightens on hover instead of carrying a colour of its own */
-@Composable
-private fun SmallButton(label: String, enabled: Boolean = true, icon: ImageVector? = null, onClick: () -> Unit) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val hovered by interactionSource.collectIsHoveredAsState()
-    val colour = if (enabled) FontColor else MutedFontColor.copy(alpha = 0.5f)
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .clip(RectangleShape)
-            .background(if (enabled && hovered) ChipHoverBackground else ChipBackground)
-            .border(1.dp, if (enabled) ChipBorderColor else PanelBorder, RectangleShape)
-            .hoverable(interactionSource)
-            .clickable(enabled = enabled, interactionSource = interactionSource, indication = null) { onClick() }
-            .padding(horizontal = 8.dp, vertical = 3.dp)
-    ) {
-        if (icon != null) { Icon(icon, contentDescription = null, tint = colour, modifier = Modifier.size(12.dp)); Spacer(Modifier.width(5.dp)) }
-        Text(label, color = colour, fontSize = 11.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+    val visible = shown || open
+    Box {
+        AppTooltip(if (visible && !open) tip else null) {
+            Box(
+                modifier = Modifier
+                    .size(20.dp)
+                    .background(if (open || (hovered && visible)) ChipHoverBackground else Color.Transparent, RectangleShape)
+                    .border(1.dp, if (open || (hovered && visible)) ChipBorderColor else Color.Transparent, RectangleShape)
+                    .hoverable(interactionSource)
+                    .pointerHoverIcon(PointerIcon.Hand)
+                    .clickable(enabled = visible, interactionSource = interactionSource, indication = null) { open = !open },
+                contentAlignment = Alignment.Center,
+            ) {
+                if (visible) Icon(Icons.Default.MoreHoriz, contentDescription = "more actions", tint = if (hovered || open) FontColor else MutedFontColor, modifier = Modifier.size(14.dp))
+            }
+        }
+        if (open) Popup(popupPositionProvider = BelowButton, onDismissRequest = { open = false }, properties = PopupProperties(focusable = true)) {
+            MenuBox(items) { open = false }
+        }
     }
 }

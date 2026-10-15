@@ -18,7 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.window.WindowDraggableArea
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -70,7 +70,8 @@ fun main() = application {
         ),
         position = WindowPosition(Alignment.Center)
     )
-    val windowShape = RoundedCornerShape(12.dp)
+    // The window is a plain rectangle, like everything drawn inside it
+    val windowShape = RectangleShape
 
     Window(
         onCloseRequest = ::exitApplication,

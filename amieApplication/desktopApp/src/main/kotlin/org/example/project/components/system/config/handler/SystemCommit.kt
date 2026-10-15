@@ -1,5 +1,6 @@
 package org.example.project.components.system.config.handler
 
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -14,7 +15,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.shape.RoundedCornerShape
 import org.example.project.data.remote.parser.DeviceManager
 import org.example.project.data.remote.parser.DeviceManagerCsv
 import org.example.project.data.remote.parser.DeviceManagerJson
@@ -39,7 +39,7 @@ fun SystemCommit(
     Column(modifier = modifier) {
         Button(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(46.dp),
-            shape = RoundedCornerShape(10.dp),
+            shape = RectangleShape,
             onClick = {
                 deviceManager.writeConfig(
                     id = indexDevice,

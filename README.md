@@ -21,7 +21,7 @@ Documentation is a Markdown site in [`docs/`](docs/index.md) built with [MkDocs]
 | What the app writes to `AMP/` | [docs/amp-folder.md](docs/amp-folder.md) |
 | Keycloak realm and client setup | [docs/authentication.md](docs/authentication.md) |
 | Amie backend and website: addresses, bearer tokens, publishing | [docs/backend-integration.md](docs/backend-integration.md) |
-| Models page tiles | [docs/models-page.md](docs/models-page.md) |
+| Models page: models, packages, sessions, tooltips and menus | [docs/models-page.md](docs/models-page.md) |
 | Troubleshooting | [docs/troubleshooting.md](docs/troubleshooting.md) |
 
 ## Prerequisites
@@ -89,12 +89,13 @@ names another folder:
 
 1. **Welcome** → **Continue**. The first time you land on the login page; sign in with a Keycloak account, create
    one, or continue as a guest. The session is kept, so later starts skip the welcome screen and open the dashboard.
-2. **Sandbox** (the console icon in the left sidebar). Write a Kotlin script in `main.kts` and press the green
-   **Run** button at the bottom of the sidebar. While it runs the button turns into a progress ring and the status
-   line under the console header shows what is happening; `modelBuilder(...)` reports its phases there. The API
-   is called without a prefix (`source`, `modelBuilder`, `metricsChart`, …) and the editor completes it.
+2. **Sandbox** (the console icon in the left sidebar). Write a Kotlin script in `main.kts` and press **Run** over
+   the editor (or ⌘↵ / Ctrl+Enter, or the play button at the bottom of the sidebar). The strip over the console
+   says what is happening (`running 12s`, the phase of `modelBuilder(...)`, `finished in 41s`); the console shows
+   what the script logs, coloured by level. The API is called without a prefix (`source`, `modelBuilder`,
+   `metricsChart`, …), the editor completes it, boxes the current line and folds functions and classes.
    Details in [docs/sandbox.md](docs/sandbox.md) and [docs/sandbox-scripting.md](docs/sandbox-scripting.md).
-3. **Models** (the second sidebar icon), three tabs. **Models**: build one from a csv (**+ New model**, with a
+3. **Models** (the second sidebar icon), four tabs. **Models**: build one from a csv (**New model**, with a
    bundled sample set), validate any model on a csv to get its metrics as images, models grouped by the data
    they were trained on, and every intent model as a component: configure how it is served, listen or stop,
    open a session, publish it (Keycloak sign-in), open its csv. **Packages**: the jars a script can open, searchable down to a class name, in
@@ -111,9 +112,10 @@ amieApplication/
     main.kt                         window, chrome, entry point
     auth/                           Keycloak client, JWT verification, session store, config
     components/render/templates/    pages: Welcome, Login, Register, AppBaseTemplate (navigation)
-    components/ui/viewport/         window header, sidebar, device panels
+    components/ui/viewport/         window header, sidebar, device panels, tooltips (Tooltip.kt), buttons (Controls.kt)
     components/terminal/window/controller/
-      CodingSandbox.kt              editor + console + Run button + run status bar
+      CodingSandbox.kt              the sandbox page: editor strip with Run, console strip, resizable split
+      SandboxEditor.kt              the editor: highlighting, completion, current line box, folding (EditorFolding.kt)
       ModelsPage.kt                 model statistics route
       ScriptLogger.kt               the API scripts call (also bound as `amie`)
       SandboxApi.kt                 the API list: prelude for prefix-free calls and editor completion

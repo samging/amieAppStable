@@ -7,7 +7,7 @@ when `AMP/modules` is empty, so `initMod("dummy")` and the Models page work befo
 
 ## Building one
 
-From the Models page: **+ New model**, pick the csv (or **Sample data**, `AMP/sample-intents.csv`), Build. From
+From the Models page: **New model**, pick the csv (or **Sample data**, `AMP/sample-intents.csv`), Build. From
 a script:
 
 ```kotlin
@@ -103,12 +103,13 @@ was never built logs an error telling you to run `modelBuilder` first.
 
 ### On the Models page
 
-The **Models** page (second sidebar icon) shows the same numbers as bars: accuracy and macro F1 of the last
-build, F1 per label with precision, recall and support, and the accuracy of every build, read from
-`metrics.json`. The ASCII charts and the confusion matrix stay in the console. The page also builds a model from
-a csv (**+ New model**: name, data file, optional test file), and every model is a component with Configure,
-Listen / Stop, Open session and Publish (Keycloak sign-in) actions; every open session can be terminated there
-and its log (what it was asked and answered) read. Details in [Models page](models-page.md).
+The **Models** page (second sidebar icon) draws the same numbers as charts on the model's **Metrics** tab: the
+scores per label and the confusion matrix of every validation run, the scores across the runs, and from the
+sessions how sure the model is and how long an answer takes, read from `metrics.json` and `sessions.log`. The
+ASCII charts stay in the console. The page also builds a model from a csv (**New model**: name, a sentence about
+it, data file, optional test file), and every model is a component with **Open session**, **Listen**, the serving
+settings behind the gear, and **Publish** (Keycloak sign-in); every open session can be terminated there and its
+log (what it was asked and answered) read. Details in [Models page](models-page.md).
 
 ## Using a model from a script
 

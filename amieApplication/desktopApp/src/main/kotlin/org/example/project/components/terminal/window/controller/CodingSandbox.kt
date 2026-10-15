@@ -1,12 +1,27 @@
 package org.example.project.components.terminal.window.controller
 
 import androidx.compose.foundation.background
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.border
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.ViewColumn
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.style.TextOverflow
+import org.example.project.components.ui.viewport.AccentButton
+import org.example.project.components.ui.viewport.AppTooltip
+import org.example.project.components.ui.viewport.IconChip
+import org.example.project.components.ui.viewport.SmallButton
+import org.example.project.components.ui.viewport.Toggle
+import org.example.project.ui.theme.PanelBorderSelected
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -50,13 +65,7 @@ import org.example.project.components.terminal.integrations.amiePilot.*
 import org.slf4j.LoggerFactory
 import org.example.project.ui.theme.ConsoleBackground
 import org.example.project.ui.theme.ConsoleBorderColor
-import org.example.project.ui.theme.GutterBackground
-import org.example.project.ui.theme.LineNumberColor
 import org.example.project.ui.theme.PanelDividerColor
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.ui.text.style.TextAlign
 import org.example.project.ui.theme.ConsoleInputBackground
 import org.example.project.ui.theme.EditorBackground
 import org.example.project.ui.theme.TabActiveBackground
@@ -68,7 +77,6 @@ import org.example.project.ui.theme.UnifiedBorderColor
 import org.example.project.ui.theme.SuccessColor
 import org.example.project.ui.theme.DangerColor
 import androidx.compose.material.LinearProgressIndicator
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.collectAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -164,8 +172,11 @@ internal fun assembleScript(code: String): String {
 fun CodingSandbox(navController: NavController) {
     var selectedIndex by remember { mutableStateOf(1) }
     val codeField = remember { mutableStateOf("") }
-    var constraintSpecified by remember { mutableStateOf(true) }
-    var goalSpecified by remember { mutableStateOf(true) }
+    // The console shows the time, level and source columns only on request
+    var details by remember { mutableStateOf(false) }
+    // "saved" beside the file name for a moment after main.kts was written
+    var savedFlash by remember { mutableStateOf(false) }
+    val runShortcut = remember { if (System.getProperty("os.name").orEmpty().contains("mac", ignoreCase = true)) "⌘↵" else "Ctrl+Enter" }
     val loop = rememberCoroutineScope()
     var runJob by remember { mutableStateOf<Job?>(null) }
     // Observable mirror of runJob: isActive isn't state, so the UI couldn't follow it
@@ -213,8 +224,9 @@ fun CodingSandbox(navController: NavController) {
     // Save main.kts once typing pauses; a new keystroke cancels the pending write so saves can't land out of order
     LaunchedEffect(codeField.value) {
         if (codeField.value.isEmpty()) return@LaunchedEffect
+        savedFlash = false
         delay(300)
-        withContext(Dispatchers.IO) {
+        val written = withContext(Dispatchers.IO) {
             runCatching {
                 val withTargetFile = File(getDirectory().toString(), "pluginDir/main.kts")
                 withTargetFile.parentFile?.mkdirs()
@@ -222,16 +234,178 @@ fun CodingSandbox(navController: NavController) {
             }.onFailure { exception ->
                 logger.error("Failed to save main.kts: ${exception.message}")
                 logToConsole(ResponseDto(time = Instant.now(), message = "Failed to save main.kts: ${exception.message}", level = LogLevel.ERROR, source = SANDBOX_SOURCE))
-            }
+            }.isSuccess
         }
+        if (written) { savedFlash = true; delay(1500); savedFlash = false }
     }
 
-    LaunchedEffect(codeField.value, constraintSpecified, goalSpecified) {
-        val constraintFind = Regex("""val\s+constraints\s+\=\s+mutableListOf<String>(.*)""")
-        val goalFind = Regex("""val\s+goals\s+\=\s+mutableListOf<String>(.*)""")
+    /**
+     * Runs main.kts: the sidebar's play button, the Run button over the editor and Cmd/Ctrl+Enter all end here. A
+     * second press while it runs only says so. The console is emptied first; the log file keeps the earlier runs.
+     */
+    fun run() {
+        if (runJob?.isActive == true) {
+            val busy = build?.let { " (modelBuilder '${it.modelName}' ${it.describe()})" } ?: ""
+            logToConsole(ResponseDto(time = Instant.now(), message = "Script is already running$busy", source = SANDBOX_SOURCE))
+            return
+        }
+        // Snapshot the editor now: the debounced save may not have written main.kts yet
+        val code = highlights.getCode()
+        // Fresh output per run; previous runs stay in the log file
+        clearConsole(SANDBOX_SOURCE)
+        val startedAt = Instant.now()
+        running = true
+        runStartedAt = startedAt
+        runJob = loop.launch(Dispatchers.IO) {
+            logToConsole(ResponseDto(time = Instant.now(), message = "Running pluginDir/main.kts", source = SANDBOX_SOURCE))
+            val pluginPath = File(getDirectory().toString(), "pluginDir/main.kts")
+            val assemblyPath = File(getDirectory().toString(), "pluginDir/assembly.kts")
+            var failure: String? = null
 
-        constraintSpecified = constraintFind.containsMatchIn(codeField.value)
-        goalSpecified = goalFind.containsMatchIn(codeField.value)
+            try {
+                // Configuration phase: source the env with the script's imports before it compiles, as Gradle resolves before it runs
+                val plan = EnvPlan.scan(code)
+                val env = ScriptEnvironments.open(plan.envName, plan.activeProfile)
+                env.source(plan)
+                val envLoader = env.classLoader(ScriptEngineCache.classLoader)
+                val engine = ScriptEngineCache.engineFor(envLoader)
+                val gradleEngine = ScriptEngineCache.gradleEngine
+                val scriptScope = CoroutineScope(Dispatchers.IO)
+
+                val loggerObj = object : ScriptLogger {
+
+                    override fun log(message: String, level: LogLevel) {
+                        logToConsole(ResponseDto(time = Instant.now(), message = message, level = level, source = SCRIPT_SOURCE))
+                    }
+
+                    override fun initAmie(text: String) {
+                        val result = org.example.project.components.terminal.integrations.amiePilot.initAmie(text)
+                        logToConsole(ResponseDto(time = Instant.now(), message = result.joinToString("\n"), source = SCRIPT_SOURCE))
+                    }
+                    override  fun initMod() : InteractionModel {
+                        return org.example.project.components.terminal.integrations.amiePilot.InitMod().create()
+                    }
+                    override fun importModelTensorflow(it: Path) {
+                        val o = ModelBuilder(it).load()
+                    }
+
+                    override fun forwardContext(text: String, tokens: (matrix: LongArray) -> Unit): Array<Array<FloatArray>>? =
+                        org.example.project.components.terminal.integrations.amiePilot.initContext(text, tokens)
+
+                    override fun validateMetrics(
+                        modelPath: Path,
+                        train: Path,
+                        test: Path) {
+                        logToConsole(ResponseDto(time = Instant.now(), message = "validateMetrics", source = SCRIPT_SOURCE))
+                    }
+
+                    override fun implementation(it: BuildSettings) {
+                        scriptScope.launch {
+                            try {
+                                gradleEngine.eval(it.toString())
+                            } catch (e: Exception) {
+                                logToConsole(
+                                    ResponseDto(
+                                        time = Instant.now(),
+                                        message = "Error: ${e.message}",
+                                        level = LogLevel.ERROR,
+                                        source = SCRIPT_SOURCE
+                                    )
+                                )
+                            }
+                        }
+                        logToConsole(ResponseDto(time = Instant.now(), message = "implementation $it ", source = SCRIPT_SOURCE))
+                    }
+
+                    // Selecting an env is read before the run; at runtime it only reports what was sourced
+                    override fun import(it: SettingsEnv) {
+                        if (ScriptEnvironments.current?.name == it.envName) {
+                            logInternal("env '${it.envName}' (profile ${it.activeProfile}) is the sourced environment")
+                        } else {
+                            logInternal("env '${it.envName}' must be selected with a literal environment(SettingsEnv(\"${it.envName}\", ...)) or amie.import(SettingsEnv(...)) to be sourced", LogLevel.ERROR)
+                        }
+                    }
+
+                    override fun import(notation: String) {
+                        ScriptEnvironments.current?.import(notation)
+                        logToConsole(ResponseDto(time = Instant.now(), message = "import $notation", source = SCRIPT_SOURCE))
+                    }
+
+                    override fun internalEnv(): List<String> = env.print()
+
+                    override fun importPlugin(plugin: String) {
+                        // AMP/pluginDir/corePlugins.json names the core plugin set; absent on a fresh checkout
+                        val file = File(getDirectory().toString(), "pluginDir/corePlugins.json")
+                        if (file.isFile) DeviceManagerFactory.create(file).getPlugins()
+                        else logToConsole(ResponseDto(time = Instant.now(), message = "importPlugin: no ${file.path}", source = SCRIPT_SOURCE))
+                        logToConsole(ResponseDto(time = Instant.now(), message = "importPlugin $plugin", source = SCRIPT_SOURCE))
+                        val res = jars.run(plugin)
+                        logToConsole(ResponseDto( time = Instant.now(), message = res.toString(), source = SCRIPT_SOURCE))
+                    }
+
+
+                    override fun modelBuilder(modelName: String, it: (Any) -> Any): ModelCreationalInterface {
+                        // The lambda supplies labeled data: sourceFile rows of [text, label], List<Pair<text, label>> or Map<label, texts>
+                        // or amie.source("train.csv"), whose related test file becomes the validation set
+                        val produced = it(Pair(0, emptyList<String>()))
+                        val samples = org.example.project.components.terminal.window.controller.jetbrainDLBuilder.parseLabeledData(produced)
+                        val test = (produced as? org.example.project.components.terminal.window.controller.sourceFile.DataSource)?.related
+                        val exported = try {
+                            org.example.project.components.terminal.window.controller.jetbrainDLBuilder.buildClassifier(
+                                samples, modelName, validation = test?.samples(), validationName = test?.name,
+                                dataName = (produced as? org.example.project.components.terminal.window.controller.sourceFile.DataSource)?.name,
+                            )
+                        } catch (e: java.lang.reflect.InvocationTargetException) {
+                            e.cause?.printStackTrace()
+                            logInternal("modelBuilder failed: ${e.cause?.message}", LogLevel.ERROR)
+                            null
+                        } catch (e: Throwable) {
+                            e.printStackTrace()
+                            logInternal("modelBuilder failed: ${e.message}", LogLevel.ERROR)
+                            null
+                        }
+                        if (exported != null) {
+                            logToConsole(ResponseDto(time = Instant.now(), message = "model '$modelName' saved, load it with amie.initMod(\"$modelName\")", source = SCRIPT_SOURCE))
+                        }
+                        return object : ModelCreationalInterface() {
+                            override val modelName: String? = if (exported != null) modelName else null
+                        }
+                    }
+
+                }
+
+                val scriptBindings = engine.createBindings().apply {
+                    put("logger", loggerObj)
+                }
+
+                // Rebuild assembly.kts from the editor's current code on every run so it never evaluates a stale copy
+                pluginPath.parentFile?.mkdirs()
+                pluginPath.writeText(code)
+                assemblyPath.writeText(assembleScript(code))
+                try {
+                    // Execution phase: env packages are loaded through the env classloader
+                    withContextClassLoader(envLoader) {
+                        engine.eval(assemblyPath.readText(), scriptBindings)
+                    }
+                } finally {
+                    assemblyPath.writeText("")
+                }
+            } catch (e: Exception) {
+                failure = e.message ?: e.javaClass.simpleName
+                logger.error("Error running script: ${pluginPath}| ${e.message}")
+                logToConsole(ResponseDto(time = Instant.now(), message = "Error: ${e.message}", level = LogLevel.ERROR, source = SANDBOX_SOURCE))
+            } finally {
+                val took = Duration.between(startedAt, Instant.now())
+                lastRun = RunOutcome(ok = failure == null, took = took, detail = failure)
+                running = false
+                logToConsole(ResponseDto(
+                    time = Instant.now(),
+                    message = if (failure == null) "Finished in ${took.short()}" else "Failed after ${took.short()}",
+                    level = if (failure == null) LogLevel.INFO else LogLevel.ERROR,
+                    source = SANDBOX_SOURCE
+                ))
+            }
+        }
     }
 
     IntUiTheme(isDark = true) {
@@ -253,192 +427,26 @@ fun CodingSandbox(navController: NavController) {
                 running = running,
                 runProgress = build?.fraction,
 
-                showPlayCallback = {
-                    if (runJob?.isActive == true) {
-                        val busy = build?.let { " (modelBuilder '${it.modelName}' ${it.describe()})" } ?: ""
-                        logToConsole(ResponseDto(time = Instant.now(), message = "Script is already running$busy", source = SANDBOX_SOURCE))
-                        return@NavigationSidebar
-                    }
-                    // Snapshot the editor now: the debounced save may not have written main.kts yet
-                    val code = highlights.getCode()
-                    // Fresh output per run; previous runs stay in the log file
-                    clearConsole(SANDBOX_SOURCE)
-                    val startedAt = Instant.now()
-                    running = true
-                    runStartedAt = startedAt
-                    runJob = loop.launch(Dispatchers.IO) {
-                        logToConsole(ResponseDto(time = Instant.now(), message = "Running pluginDir/main.kts", source = SANDBOX_SOURCE))
-                        val pluginPath = File(getDirectory().toString(), "pluginDir/main.kts")
-                        val assemblyPath = File(getDirectory().toString(), "pluginDir/assembly.kts")
-                        var failure: String? = null
-
-                        try {
-                            // Configuration phase: source the env with the script's imports before it compiles, as Gradle resolves before it runs
-                            val plan = EnvPlan.scan(code)
-                            val env = ScriptEnvironments.open(plan.envName, plan.activeProfile)
-                            env.source(plan)
-                            val envLoader = env.classLoader(ScriptEngineCache.classLoader)
-                            val engine = ScriptEngineCache.engineFor(envLoader)
-                            val gradleEngine = ScriptEngineCache.gradleEngine
-                            val scriptScope = CoroutineScope(Dispatchers.IO)
-
-                            val loggerObj = object : ScriptLogger {
-
-                                override fun log(message: String, level: LogLevel) {
-                                    logToConsole(ResponseDto(time = Instant.now(), message = message, level = level, source = SCRIPT_SOURCE))
-                                }
-
-                                override fun initAmie(text: String) {
-                                    val result = org.example.project.components.terminal.integrations.amiePilot.initAmie(text)
-                                    logToConsole(ResponseDto(time = Instant.now(), message = result.joinToString("\n"), source = SCRIPT_SOURCE))
-                                }
-                                override  fun initMod() : InteractionModel {
-                                    return org.example.project.components.terminal.integrations.amiePilot.InitMod().create()
-                                }
-                                override fun importModelTensorflow(it: Path) {
-                                    val o = ModelBuilder(it).load()
-                                }
-
-                                override fun forwardContext(text: String, tokens: (matrix: LongArray) -> Unit): Array<Array<FloatArray>>? =
-                                    org.example.project.components.terminal.integrations.amiePilot.initContext(text, tokens)
-
-                                override fun validateMetrics(
-                                    modelPath: Path,
-                                    train: Path,
-                                    test: Path) {
-                                    logToConsole(ResponseDto(time = Instant.now(), message = "validateMetrics", source = SCRIPT_SOURCE))
-                                }
-
-                                override fun implementation(it: BuildSettings) {
-                                    scriptScope.launch {
-                                        try {
-                                            gradleEngine.eval(it.toString())
-                                        } catch (e: Exception) {
-                                            logToConsole(
-                                                ResponseDto(
-                                                    time = Instant.now(),
-                                                    message = "Error: ${e.message}",
-                                                    level = LogLevel.ERROR,
-                                                    source = SCRIPT_SOURCE
-                                                )
-                                            )
-                                        }
-                                    }
-                                    logToConsole(ResponseDto(time = Instant.now(), message = "implementation $it ", source = SCRIPT_SOURCE))
-                                }
-
-                                // Selecting an env is read before the run; at runtime it only reports what was sourced
-                                override fun import(it: SettingsEnv) {
-                                    if (ScriptEnvironments.current?.name == it.envName) {
-                                        logInternal("env '${it.envName}' (profile ${it.activeProfile}) is the sourced environment")
-                                    } else {
-                                        logInternal("env '${it.envName}' must be selected with a literal environment(SettingsEnv(\"${it.envName}\", ...)) or amie.import(SettingsEnv(...)) to be sourced", LogLevel.ERROR)
-                                    }
-                                }
-
-                                override fun import(notation: String) {
-                                    ScriptEnvironments.current?.import(notation)
-                                    logToConsole(ResponseDto(time = Instant.now(), message = "import $notation", source = SCRIPT_SOURCE))
-                                }
-
-                                override fun internalEnv(): List<String> = env.print()
-
-                                override fun importPlugin(plugin: String) {
-                                    // AMP/pluginDir/corePlugins.json names the core plugin set; absent on a fresh checkout
-                                    val file = File(getDirectory().toString(), "pluginDir/corePlugins.json")
-                                    if (file.isFile) DeviceManagerFactory.create(file).getPlugins()
-                                    else logToConsole(ResponseDto(time = Instant.now(), message = "importPlugin: no ${file.path}", source = SCRIPT_SOURCE))
-                                    logToConsole(ResponseDto(time = Instant.now(), message = "importPlugin $plugin", source = SCRIPT_SOURCE))
-                                    val res = jars.run(plugin)
-                                    logToConsole(ResponseDto( time = Instant.now(), message = res.toString(), source = SCRIPT_SOURCE))
-                                }
-
-
-                                override fun modelBuilder(modelName: String, it: (Any) -> Any): ModelCreationalInterface {
-                                    // The lambda supplies labeled data: sourceFile rows of [text, label], List<Pair<text, label>> or Map<label, texts>
-                                    // or amie.source("train.csv"), whose related test file becomes the validation set
-                                    val produced = it(Pair(0, emptyList<String>()))
-                                    val samples = org.example.project.components.terminal.window.controller.jetbrainDLBuilder.parseLabeledData(produced)
-                                    val test = (produced as? org.example.project.components.terminal.window.controller.sourceFile.DataSource)?.related
-                                    val exported = try {
-                                        org.example.project.components.terminal.window.controller.jetbrainDLBuilder.buildClassifier(
-                                            samples, modelName, validation = test?.samples(), validationName = test?.name,
-                                            dataName = (produced as? org.example.project.components.terminal.window.controller.sourceFile.DataSource)?.name,
-                                        )
-                                    } catch (e: java.lang.reflect.InvocationTargetException) {
-                                        e.cause?.printStackTrace()
-                                        logInternal("modelBuilder failed: ${e.cause?.message}", LogLevel.ERROR)
-                                        null
-                                    } catch (e: Throwable) {
-                                        e.printStackTrace()
-                                        logInternal("modelBuilder failed: ${e.message}", LogLevel.ERROR)
-                                        null
-                                    }
-                                    if (exported != null) {
-                                        logToConsole(ResponseDto(time = Instant.now(), message = "model '$modelName' saved, load it with amie.initMod(\"$modelName\")", source = SCRIPT_SOURCE))
-                                    }
-                                    return object : ModelCreationalInterface() {
-                                        override val modelName: String? = if (exported != null) modelName else null
-                                    }
-                                }
-
-                            }
-
-                            val scriptBindings = engine.createBindings().apply {
-                                put("logger", loggerObj)
-                            }
-
-                            // Rebuild assembly.kts from the editor's current code on every run so it never evaluates a stale copy
-                            pluginPath.parentFile?.mkdirs()
-                            pluginPath.writeText(code)
-                            assemblyPath.writeText(assembleScript(code))
-                            try {
-                                // Execution phase: env packages are loaded through the env classloader
-                                withContextClassLoader(envLoader) {
-                                    engine.eval(assemblyPath.readText(), scriptBindings)
-                                }
-                            } finally {
-                                assemblyPath.writeText("")
-                            }
-                        } catch (e: Exception) {
-                            failure = e.message ?: e.javaClass.simpleName
-                            logger.error("Error running script: ${pluginPath}| ${e.message}")
-                            logToConsole(ResponseDto(time = Instant.now(), message = "Error: ${e.message}", level = LogLevel.ERROR, source = SANDBOX_SOURCE))
-                        } finally {
-                            val took = Duration.between(startedAt, Instant.now())
-                            lastRun = RunOutcome(ok = failure == null, took = took, detail = failure)
-                            running = false
-                            logToConsole(ResponseDto(
-                                time = Instant.now(),
-                                message = if (failure == null) "Finished in ${took.short()}" else "Failed after ${took.short()}",
-                                level = if (failure == null) LogLevel.INFO else LogLevel.ERROR,
-                                source = SANDBOX_SOURCE
-                            ))
-                        }
-                    }
-                    return@NavigationSidebar
-                }
+                showPlayCallback = { run() },
             )
 
-            Column(modifier = Modifier.fillMaxWidth(0.6f)) {
-                PanelHeader(title = "main.kts", subtitle = "Kotlin script")
-                val editorTextStyle = TextStyle(
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 14.sp,
-                    lineHeight = 22.sp,
-                    color = FontColor
-                )
-                // Gutter and editor share one vertical scroll so numbers stay aligned with their lines;
-                // the editor scrolls sideways instead of wrapping, which would break that alignment
-                BoxWithConstraints(modifier = Modifier.fillMaxSize().background(EditorBackground)) {
-                    val viewportWidth = maxWidth
-                    val viewportHeight = maxHeight
-                    Row(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-                        LineNumberGutter(
-                            lineCount = highlights.getCode().count { it == '\n' } + 1,
-                            textStyle = editorTextStyle
+            // The editor and the console share the width at a rule that can be dragged; the split lasts while the app runs
+            BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                val total = maxWidth
+                val minPane = 320f
+                var editorWidth by remember { mutableStateOf(SandboxSplit.editorWidth.takeIf { it > 0f } ?: (total.value * 0.58f)) }
+                val width = editorWidth.coerceIn(minPane, (total.value - minPane).coerceAtLeast(minPane)).dp
+                Row(modifier = Modifier.fillMaxSize()) {
+                    Column(modifier = Modifier.width(width).fillMaxHeight()) {
+                        EditorHeader(saved = savedFlash, running = running, shortcut = runShortcut, onRun = { run() })
+                        val editorTextStyle = TextStyle(
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 14.sp,
+                            lineHeight = 22.sp,
+                            color = FontColor
                         )
-                        Box(modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState())) {
+                        // The editor draws its own gutter (numbers, fold markers) and scrolls sideways instead of wrapping
+                        BoxWithConstraints(modifier = Modifier.fillMaxSize().background(EditorBackground)) {
                             key(editorGeneration) {
                                 SandboxEditor(
                                     initialCode = highlights.getCode(),
@@ -452,99 +460,128 @@ fun CodingSandbox(navController: NavController) {
                                             .build()
                                     },
                                     textStyle = editorTextStyle,
-                                    modifier = Modifier
-                                        .widthIn(min = viewportWidth - GutterWidth)
-                                        .heightIn(min = viewportHeight),
+                                    viewportWidth = maxWidth,
+                                    viewportHeight = maxHeight,
+                                    onRun = { run() },
                                 )
                             }
                         }
                     }
+
+                    SplitHandle { delta ->
+                        editorWidth = (width.value + delta).coerceIn(minPane, (total.value - minPane).coerceAtLeast(minPane))
+                        SandboxSplit.editorWidth = editorWidth
+                    }
+
+                    Column(modifier = Modifier.weight(1f).fillMaxHeight().background(ConsoleBackground)) {
+                        ConsoleStrip(
+                            running = running,
+                            startedAt = runStartedAt,
+                            lastRun = lastRun,
+                            build = build,
+                            lastBuild = buildHistory.firstOrNull(),
+                            shortcut = runShortcut,
+                            levels = outputLevels,
+                            counts = consoleEntries(SANDBOX_SOURCE).groupingBy { it.level }.eachCount(),
+                            onToggle = { level -> outputLevels = if (level in outputLevels) outputLevels - level else outputLevels + level },
+                            onShowAll = { outputLevels = LogLevel.entries.toSet() },
+                            onClear = { clearConsole(SANDBOX_SOURCE) },
+                            details = details,
+                            onDetails = { details = it },
+                        )
+                        TerminalWindow(
+                            source = SANDBOX_SOURCE,
+                            loadHistory = false,
+                            levels = outputLevels,
+                            details = details,
+                            emptyHint = "run main.kts ($runShortcut) and what it logs appears here",
+                            containerColor = ConsoleBackground,
+                            inputColor = ConsoleInputBackground,
+                            inputBorderColor = ConsoleBorderColor
+                        )
+                    }
                 }
-            }
-
-
-            Box(modifier = Modifier.fillMaxHeight().width(2.dp).background(PanelDividerColor))
-
-            Column(modifier = Modifier.fillMaxWidth().background(ConsoleBackground)) {
-                ConsoleHeader(
-                    levels = outputLevels,
-                    counts = consoleEntries(SANDBOX_SOURCE).groupingBy { it.level }.eachCount(),
-                    onToggle = { level -> outputLevels = if (level in outputLevels) outputLevels - level else outputLevels + level },
-                    onShowAll = { outputLevels = LogLevel.entries.toSet() },
-                    onClear = { clearConsole(SANDBOX_SOURCE) },
-                )
-                RunStatusBar(
-                    running = running,
-                    startedAt = runStartedAt,
-                    lastRun = lastRun,
-                    build = build,
-                    lastBuild = buildHistory.firstOrNull(),
-                )
-//                Text(
-//                    text = "${codeField.value}",
-//                    modifier = Modifier.padding(bottom = 16.dp)
-//                )
-//                Row(
-//                    modifier = Modifier
-//                        .fillMaxWidth()
-//                ) {
-//                    Box(
-//                        modifier = Modifier
-//                            .size(10.dp)
-//                            .background(
-//                                color = if (constraintSpecified) Color.Green else Color.Red,
-//                                shape = CircleShape
-//                            )
-//                            .align(Alignment.CenterVertically)
-//                    ) {}
-//
-//                    Text(
-//                        text = " Constraint"
-//                    )
-//                }
-                //Spacer(modifier = Modifier.height(16.dp))
-//                Row(modifier = Modifier.fillMaxWidth().background(Color(0xFF1E1E1E))) {
-//                    Box(
-//                        modifier = Modifier
-//                            .size(10.dp)
-//                            .background(
-//                                color = if (goalSpecified) Color.Green else Color.Red,
-//                                shape = CircleShape
-//                            )
-//                            .align(Alignment.CenterVertically)
-//                    ) {}
-//                    Text(
-//                        text = " Goal",
-//                    )
-//                }
-//                Spacer(modifier = Modifier.height(16.dp))
-                TerminalWindow(
-                    source = SANDBOX_SOURCE,
-                    loadHistory = false,
-                    levels = outputLevels,
-                    containerColor = ConsoleBackground,
-                    inputColor = ConsoleInputBackground,
-                    inputBorderColor = ConsoleBorderColor
-                )
             }
         }
     }
 }
 
+/** The editor's share of the width, in dp, kept while the app runs; below zero until the user drags the rule */
 /** How the last Run ended */
 private data class RunOutcome(val ok: Boolean, val took: Duration, val detail: String?)
 
+private object SandboxSplit {
+    @Volatile var editorWidth = -1f
+}
+
 /**
- * One line under the console header that follows the Run button: the script's state and elapsed time,
- * and while amie.modelBuilder works, its phase, step and a progress bar.
+ * The strip over the editor: the one file as a tab, "saved" beside it for a moment after each write, and Run at
+ * the right end (Running… while the script runs; the console strip says how long).
  */
 @Composable
-private fun RunStatusBar(
+private fun EditorHeader(saved: Boolean, running: Boolean, shortcut: String, onRun: () -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth().background(TabBarBackground)) {
+        Row(modifier = Modifier.fillMaxWidth().height(32.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.fillMaxHeight().width(IntrinsicSize.Max).background(TabActiveBackground)) {
+                Box(modifier = Modifier.fillMaxWidth().height(2.dp).background(TabActiveIndicator))
+                Row(modifier = Modifier.weight(1f).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "main.kts", style = TextStyle(color = FontColor, fontSize = 12.sp, fontFamily = FontFamily.SansSerif))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = if (saved) "saved" else "Kotlin script", style = TextStyle(color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.SansSerif))
+                }
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            if (running) SmallButton("Running…", enabled = false, icon = Icons.Default.PlayArrow, tip = "main.kts is running; the console follows it") {}
+            else AccentButton("Run", icon = Icons.Default.PlayArrow, tip = "Run main.kts ($shortcut). The file is saved as you type") { onRun() }
+            Spacer(modifier = Modifier.width(8.dp))
+        }
+        Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(UnifiedBorderColor))
+    }
+}
+
+/** The rule between the editor and the console: dragged sideways to share the width; the cursor says so */
+@Composable
+private fun SplitHandle(onDrag: (Float) -> Unit) {
+    val density = LocalDensity.current.density
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
+    val drag = rememberDraggableState { delta -> onDrag(delta / density) }
+    Box(
+        modifier = Modifier
+            .fillMaxHeight()
+            .width(7.dp)
+            .background(EditorBackground)
+            .hoverable(interactionSource)
+            .pointerHoverIcon(PointerIcon(java.awt.Cursor(java.awt.Cursor.E_RESIZE_CURSOR)))
+            .draggable(drag, Orientation.Horizontal),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(modifier = Modifier.fillMaxHeight().width(1.dp).background(if (hovered) PanelBorderSelected else PanelDividerColor))
+    }
+}
+
+/**
+ * The one strip over the console. At the left what the script is doing: ready (and how to run it), running with
+ * the elapsed time and, while modelBuilder works, its phase and progress; finished or failed with the time it
+ * took, the detail in the tooltip. At the right the four levels as toggles with their counts, the details switch
+ * (time, level and source columns) and Clear. A thin bar under it moves while a run or a build is on.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ConsoleStrip(
     running: Boolean,
     startedAt: Instant?,
     lastRun: RunOutcome?,
     build: ModelBuild?,
     lastBuild: ModelBuild?,
+    shortcut: String,
+    levels: Set<LogLevel>,
+    counts: Map<LogLevel, Int>,
+    onToggle: (LogLevel) -> Unit,
+    onShowAll: () -> Unit,
+    onClear: () -> Unit,
+    details: Boolean,
+    onDetails: (Boolean) -> Unit,
 ) {
     // Ticks once a second while running so the elapsed time moves
     var now by remember { mutableStateOf(Instant.now()) }
@@ -555,73 +592,86 @@ private fun RunStatusBar(
         }
     }
     val elapsed = startedAt?.takeIf { running }?.let { Duration.between(it, now).short() }
-
+    val failed = lastRun?.ok == false || (lastBuild?.phase?.finished == true && !lastBuild.succeeded && lastRun?.ok != true)
     val statusColor = when {
         running -> SuccessColor
-        lastRun?.ok == false -> DangerColor
-        lastBuild?.phase?.finished == true && !lastBuild.succeeded && lastRun?.ok != true -> DangerColor
+        failed -> DangerColor
         else -> MutedFontColor
     }
     val status = when {
-        running && build != null -> "Running · ${elapsed ?: "0s"}"
-        running -> "Running main.kts · ${elapsed ?: "0s"}"
-        lastRun == null -> "Ready"
-        lastRun.ok -> "Finished in ${lastRun.took.short()}"
-        else -> "Failed after ${lastRun.took.short()}"
+        running && build != null -> "running ${elapsed ?: "0s"} · modelBuilder '${build.modelName}' ${build.describe()} · ${(build.fraction * 100).toInt()}%"
+        running -> "running ${elapsed ?: "0s"}"
+        lastRun == null -> "ready · $shortcut runs main.kts"
+        lastRun.ok -> "finished in ${lastRun.took.short()}"
+        else -> "failed after ${lastRun.took.short()}"
     }
-    val buildLine = when {
-        build != null -> "modelBuilder '${build.modelName}' · ${build.describe()}"
-        lastBuild != null -> "last build '${lastBuild.modelName}' ${lastBuild.phase.label} in ${lastBuild.elapsed.short()}" +
-                lastBuild.detail.takeIf { it.isNotBlank() }?.let { " · $it" }.orEmpty()
-        else -> null
-    }
+    val statusTip = listOfNotNull(
+        lastRun?.detail?.let { "last error: $it" },
+        lastBuild?.let { "last build '${it.modelName}' ${it.phase.label} in ${it.elapsed.short()}" + it.detail.takeIf { d -> d.isNotBlank() }?.let { d -> " · $d" }.orEmpty() },
+    ).joinToString("\n").ifEmpty { null }
 
-    Column(modifier = Modifier.fillMaxWidth().background(ConsoleBackground)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(start = 14.dp, end = 10.dp, top = 6.dp, bottom = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
+    Column(modifier = Modifier.fillMaxWidth().background(TabBarBackground)) {
+        // The toggles move under the status when the console is narrow instead of squeezing it
+        FlowRow(
+            modifier = Modifier.fillMaxWidth().heightIn(min = 32.dp).padding(start = 12.dp, end = 6.dp, top = 3.dp, bottom = 3.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            PulsingDot(color = statusColor, pulsing = running)
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = status,
-                style = TextStyle(color = if (running) FontColor else MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.SansSerif)
-            )
-            if (buildLine != null) {
-                Spacer(Modifier.width(12.dp))
-                Text(
-                    text = buildLine,
-                    maxLines = 1,
-                    style = TextStyle(color = if (build != null) FontColor else MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
-                )
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.height(26.dp)) {
+                PulsingDot(color = statusColor, pulsing = running)
+                Spacer(modifier = Modifier.width(8.dp))
+                AppTooltip(statusTip) {
+                    Text(
+                        text = status,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = TextStyle(color = if (running) FontColor else MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.SansSerif),
+                    )
+                }
             }
-            if (build != null) {
-                Spacer(Modifier.weight(1f))
-                Text(
-                    text = "${(build.fraction * 100).toInt()}%",
-                    style = TextStyle(color = SuccessColor, fontSize = 11.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace)
-                )
+            Spacer(modifier = Modifier.weight(1f))
+            for (level in listOf(LogLevel.INTERNAL, LogLevel.ERROR, LogLevel.DATA, LogLevel.INFO)) {
+                Box(modifier = Modifier.height(26.dp), contentAlignment = Alignment.CenterStart) {
+                    Toggle("${level.name.lowercase()} ${counts[level] ?: 0}", on = level in levels, tip = levelTip(level)) { onToggle(level) }
+                }
+            }
+            if (levels.size < LogLevel.entries.size) Box(modifier = Modifier.height(26.dp), contentAlignment = Alignment.CenterStart) {
+                SmallButton("all", tip = "Show every level again") { onShowAll() }
+            }
+            Box(modifier = Modifier.height(26.dp).padding(start = 4.dp), contentAlignment = Alignment.Center) {
+                IconChip(Icons.Default.ViewColumn, tip = "Show the time, the level and the source of every line, as the log file has them", active = details) { onDetails(!details) }
+            }
+            Box(modifier = Modifier.height(26.dp), contentAlignment = Alignment.CenterStart) {
+                SmallButton("Clear", tip = "Empty the console; AMP/logs.txt keeps everything") { onClear() }
             }
         }
         if (build != null) {
             LinearProgressIndicator(
                 progress = build.fraction,
-                modifier = Modifier.fillMaxWidth().height(3.dp),
+                modifier = Modifier.fillMaxWidth().height(2.dp),
                 color = SuccessColor,
                 backgroundColor = SuccessColor.copy(alpha = 0.15f),
                 strokeCap = StrokeCap.Square,
             )
         } else if (running) {
             LinearProgressIndicator(
-                modifier = Modifier.fillMaxWidth().height(3.dp),
+                modifier = Modifier.fillMaxWidth().height(2.dp),
                 color = SuccessColor.copy(alpha = 0.7f),
                 backgroundColor = SuccessColor.copy(alpha = 0.12f),
                 strokeCap = StrokeCap.Square,
             )
         } else {
-            Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(ConsoleBorderColor))
+            Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(UnifiedBorderColor))
         }
     }
+}
+
+/** What a level's toggle says when the pointer rests on it */
+private fun levelTip(level: LogLevel): String = when (level) {
+    LogLevel.INTERNAL -> "Lines the app itself writes: build phases, metrics tables, charts, session messages. Click to hide or show them"
+    LogLevel.ERROR -> "Failures: script exceptions, backend and sign-in errors. Click to hide or show them"
+    LogLevel.DATA -> "What the script logs with data(...), and file dumps. Click to hide or show them"
+    LogLevel.INFO -> "log(...) and info(...) from the script, and the start and end of a run. Click to hide or show them"
 }
 
 @Composable
@@ -634,139 +684,5 @@ private fun PulsingDot(color: Color, pulsing: Boolean) {
             animationSpec = infiniteRepeatable(tween(700), RepeatMode.Reverse)
         ).value
     } else 1f
-    Box(modifier = Modifier.size(7.dp).clip(CircleShape).background(color.copy(alpha = alpha)))
-}
-
-@Composable
-private fun PanelHeader(title: String, subtitle: String) {
-    // Light tab strip sitting above the darker working panel
-    Column(modifier = Modifier.fillMaxWidth().background(TabBarBackground)) {
-        Row(modifier = Modifier.fillMaxWidth().height(34.dp)) {
-            Column(modifier = Modifier.fillMaxHeight().width(IntrinsicSize.Max).background(TabActiveBackground)) {
-                Box(modifier = Modifier.fillMaxWidth().height(2.dp).background(TabActiveIndicator))
-                Row(
-                    modifier = Modifier.weight(1f).padding(horizontal = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = title,
-                        style = TextStyle(color = FontColor, fontSize = 12.sp, fontFamily = FontFamily.SansSerif)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = subtitle,
-                        style = TextStyle(color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.SansSerif)
-                    )
-                }
-            }
-        }
-        Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(UnifiedBorderColor))
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun ConsoleHeader(
-    levels: Set<LogLevel>,
-    counts: Map<LogLevel, Int>,
-    onToggle: (LogLevel) -> Unit,
-    onShowAll: () -> Unit,
-    onClear: () -> Unit,
-) {
-    // Plain section label: the console is a docked panel, not an editor tab; level chips filter what it shows
-    Column(modifier = Modifier.fillMaxWidth().background(ConsoleBackground)) {
-        // Chips wrap onto a second line when the console is narrow
-        FlowRow(
-            modifier = Modifier.fillMaxWidth().padding(start = 14.dp, end = 10.dp, top = 8.dp, bottom = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Text(
-                text = "OUTPUT",
-                modifier = Modifier.padding(end = 8.dp, top = 2.dp),
-                style = TextStyle(
-                    color = MutedFontColor,
-                    fontSize = 11.sp,
-                    fontFamily = FontFamily.SansSerif,
-                    letterSpacing = 1.sp
-                )
-            )
-            for (level in listOf(LogLevel.INTERNAL, LogLevel.ERROR, LogLevel.DATA, LogLevel.INFO)) {
-                LevelChip(level, on = level in levels, count = counts[level] ?: 0, onClick = { onToggle(level) })
-            }
-            if (levels.size < LogLevel.entries.size) HeaderAction("Show all", onShowAll)
-            HeaderAction("Clear", onClear)
-        }
-        Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(ConsoleBorderColor))
-    }
-}
-
-@Composable
-private fun LevelChip(level: LogLevel, on: Boolean, count: Int, onClick: () -> Unit) {
-    val color = level.color()
-    // A filled chip in the level's own hue when on; outlined and dim when its lines are hidden
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .clip(RoundedCornerShape(5.dp))
-            .background(if (on) color.copy(alpha = 0.22f) else Color.Transparent)
-            .border(1.dp, if (on) color.copy(alpha = 0.7f) else ConsoleBorderColor, RoundedCornerShape(5.dp))
-            .clickable { onClick() }
-            .padding(horizontal = 8.dp, vertical = 3.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(7.dp)
-                .clip(CircleShape)
-                .background(if (on) color else MutedFontColor.copy(alpha = 0.35f))
-        )
-        Spacer(Modifier.width(6.dp))
-        Text(
-            text = level.name.lowercase().replaceFirstChar { it.uppercase() },
-            style = TextStyle(
-                color = if (on) color else MutedFontColor.copy(alpha = 0.55f),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold,
-                fontFamily = FontFamily.SansSerif,
-                letterSpacing = 0.2.sp
-            )
-        )
-        Spacer(Modifier.width(6.dp))
-        Text(
-            text = count.toString(),
-            style = TextStyle(
-                color = if (on) color.copy(alpha = 0.9f) else MutedFontColor.copy(alpha = 0.45f),
-                fontSize = 10.sp,
-                fontFamily = FontFamily.Monospace
-            ),
-            modifier = Modifier
-                .clip(RoundedCornerShape(3.dp))
-                .background(if (on) color.copy(alpha = 0.16f) else ConsoleBorderColor.copy(alpha = 0.6f))
-                .padding(horizontal = 4.dp, vertical = 1.dp)
-        )
-    }
-}
-
-@Composable
-private fun HeaderAction(label: String, onClick: () -> Unit) {
-    Text(
-        text = label,
-        style = TextStyle(color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.SansSerif),
-        modifier = Modifier.clip(RoundedCornerShape(4.dp)).clickable { onClick() }.padding(horizontal = 6.dp, vertical = 2.dp)
-    )
-}
-
-private val GutterWidth = 48.dp
-
-@Composable
-private fun LineNumberGutter(lineCount: Int, textStyle: TextStyle) {
-    // Top padding matches the TextField's built-in 16dp content padding so line 1 lines up
-    Text(
-        text = (1..lineCount).joinToString("\n"),
-        style = textStyle.copy(color = LineNumberColor, textAlign = TextAlign.End),
-        modifier = Modifier
-            .width(GutterWidth)
-            .background(GutterBackground)
-            .padding(top = 16.dp, end = 12.dp)
-    )
+    Box(modifier = Modifier.size(7.dp).background(color.copy(alpha = alpha), RectangleShape))
 }

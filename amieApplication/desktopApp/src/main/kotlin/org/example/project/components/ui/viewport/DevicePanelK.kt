@@ -1,9 +1,9 @@
 package org.example.project.components.ui.viewport
 
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -50,7 +50,7 @@ fun DevicePanelK(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isHovered by interactionSource.collectIsHoveredAsState()
-    val cardShape = RoundedCornerShape(12.dp)
+    val cardShape = RectangleShape
 
     Box(
         modifier = modifier
@@ -81,7 +81,7 @@ fun DevicePanelK(
                 Box(
                     modifier = Modifier
                         .size(36.dp)
-                        .clip(RoundedCornerShape(10.dp))
+                        .clip(RectangleShape)
                         .background(AccentSoft),
                     contentAlignment = Alignment.Center
                 ) {
@@ -150,7 +150,7 @@ private fun CardAction(
 private fun BadgeLabel(text: String) {
     Surface(
         color = UnifiedBodyBackground,
-        shape = RoundedCornerShape(6.dp),
+        shape = RectangleShape,
         border = androidx.compose.foundation.BorderStroke(1.dp, UnifiedBorderColor)
     ) {
         Text(

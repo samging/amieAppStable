@@ -45,7 +45,7 @@ localhost, 127.0.0.1 and the machine's LAN address. A 401 from the backend with 
 |---|---|---|---|
 | `render/templates/Client.kt` `rest()` | `/get-device-status`, `/update-device-status`, `/fetch-endpoints`, `/list-github`, `/list-github-metadata`, `/handle-login-error` | bearer when signed in | device dashboard, endpoints, plugins, device terminal |
 | `backend/AmieBackend.kt` | `/me`, `/user-packages`, `/upload` (`POST`, `DELETE`) | bearer, required | Models page: **Publish** on a model or a jar, **Remove from the website** |
-| `backend/AmieBackend.kt` | site `/api/sso/handoff` | the session's tokens, in the body | **Open website**: the signed-in handoff to the browser |
+| `backend/AmieBackend.kt` | site `/api/sso/handoff` | the session's tokens, in the body | `AmieBackend.websiteUrl(path)`: the signed-in handoff to the browser (kept in the client; no button opens it since the Models page lost its Website button) |
 | `backend/AmieBackend.kt` | `/errors` (`POST`, `GET`) | bearer; a guest's report goes to `/handle-login-error` | `ErrorReporter`: every ERROR console line |
 | `backend/AmieBackend.kt` | `/state`, `/state/{name}` (`GET`, `PUT`, `DELETE`) | bearer, required | the sandbox's `saveState` / `loadState` / `listStates` |
 | `util/DownloadService.kt` | `/list-github` | none | package list text |
@@ -65,10 +65,12 @@ The Models page shows no backend status; it uses the Keycloak session for one th
 component calls `AmieBackend.publishModule`, which uploads `model.onnx` and `module.json` through `POST /upload`
 with `progLanguage=onnx` (stored as `uploads/<user>/onnx/<file>` in the S3 bucket). The backend answers 200
 "File uploaded successfully", 400 with the reasons it refused a jar (a package jar must have `run(String): List`
-and `close()`) or 502 when the store is unreachable; the page shows the reason. A guest pressing Publish is sent to
+and `close()`) or 502 when the store is unreachable; the page shows the reason. The package store keeps `guide.md` but leaves
+`.md` files out of its package listings (they are the description the website shows on a file's page), so the
+"is it on the website?" check after publishing only looks for `model.onnx` and `module.json`. A guest pressing Publish is sent to
 the sign-in page.
 
-**Open website** (always in the tab strip) opens `siteUrl/dashboard?username=<you>` signed in as the app's account.
+`AmieBackend.websiteUrl(path)` would open `siteUrl/dashboard?username=<you>` signed in as the app's account (the Models page no longer has a button for it; a publish notice names the plain address instead).
 The browser has no Keycloak session of its own, so `AmieBackend.websiteUrl(path)` hands the app's tokens to the
 site's server (`POST /api/sso/handoff`, the token JSON as Keycloak answers it), gets a one-time code back (dies
 after two minutes or its first use) and opens `siteUrl/sso?code=<code>&next=<path>`. The site's `/sso` page claims

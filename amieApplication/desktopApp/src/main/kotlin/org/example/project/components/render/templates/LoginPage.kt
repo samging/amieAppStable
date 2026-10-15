@@ -1,5 +1,6 @@
 package org.example.project.components.render.templates
 
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -12,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -87,7 +87,7 @@ fun LoginPage(onLoginSuccess: (String) -> Unit, onRegister: () -> Unit = {}) {
             Button(
                 onClick = { attempt("Signing in") { AuthState.client.passwordLogin(username, password) } },
                 modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = RoundedCornerShape(10.dp),
+                shape = RectangleShape,
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
                 enabled = busy == null
             ) {
@@ -98,7 +98,7 @@ fun LoginPage(onLoginSuccess: (String) -> Unit, onRegister: () -> Unit = {}) {
             OutlinedButton(
                 onClick = { attempt("Waiting for the browser") { AuthState.client.browserLogin() } },
                 modifier = Modifier.fillMaxWidth().height(48.dp),
-                shape = RoundedCornerShape(10.dp),
+                shape = RectangleShape,
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF878e9c)),
                 border = BorderStroke(1.dp, Color(UnifiedBorderColor.toArgb())),
                 enabled = busy == null
@@ -144,7 +144,7 @@ fun PrintErrorDialog(message: String, onDismiss: () -> Unit) {
             TextButton(onClick = onDismiss) { Text("OK", color = Color(0xFFc7cbd4)) }
         },
         containerColor = Color(UnifiedBoxColor.toArgb()),
-        shape = RoundedCornerShape(14.dp)
+        shape = RectangleShape
     )
 }
 

@@ -3,7 +3,33 @@ package org.example.project.components.terminal.window.controller
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material3.Icon
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
+import org.example.project.components.ui.viewport.AppTooltip
+import org.example.project.ui.theme.EditorCurrentLine
+import org.example.project.ui.theme.EditorCurrentLineEdge
+import org.example.project.ui.theme.EditorFoldBackground
+import org.example.project.ui.theme.GutterBackground
+import org.example.project.ui.theme.LineNumberColor
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,7 +37,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.Composable
@@ -27,6 +53,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isMetaPressed
 import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
@@ -131,16 +158,35 @@ internal fun highlightCode(highlights: Highlights): EditorHighlighting {
     return result
 }
 
-/** Paints [highlighting] over whatever text the field holds now; spans that outrun the text (stale analysis) are dropped */
-private fun highlightTransformation(highlighting: EditorHighlighting) = VisualTransformation { text ->
-    val length = text.length
-    val painted = buildAnnotatedString {
-        append(text.text)
-        highlighting.spans.forEach { span ->
-            if (span.start >= 0 && span.end <= length && span.end > span.start) addStyle(span.item, span.start, span.end)
+/**
+ * Paints [highlighting] over the text as the field shows it: with nothing folded the text itself; with folds, the
+ * transformed text of [folds], every span moved into the visible segment it falls in and each placeholder in the
+ * muted colour on its square. Spans that outrun the text (analysis a keystroke behind) are clipped or dropped.
+ */
+private fun foldTransformation(highlighting: EditorHighlighting, folds: FoldLayout) = VisualTransformation { text ->
+    if (folds.placeholders.isEmpty() || text.text != folds.original) {
+        val length = text.length
+        val painted = buildAnnotatedString {
+            append(text.text)
+            highlighting.spans.forEach { span ->
+                if (span.start >= 0 && span.end <= length && span.end > span.start) addStyle(span.item, span.start, span.end)
+            }
         }
+        return@VisualTransformation TransformedText(painted, OffsetMapping.Identity)
     }
-    TransformedText(painted, OffsetMapping.Identity)
+    val painted = buildAnnotatedString {
+        append(folds.transformed)
+        for (seg in folds.segments) {
+            if (seg.to <= seg.from) continue
+            for (span in highlighting.spans) {
+                val from = maxOf(span.start, seg.from)
+                val to = minOf(span.end, seg.to)
+                if (to > from) addStyle(span.item, seg.at + (from - seg.from), seg.at + (to - seg.from))
+            }
+        }
+        for (ph in folds.placeholders) addStyle(SpanStyle(color = MutedFontColor, background = EditorFoldBackground), ph.at, ph.at + ph.length)
+    }
+    TransformedText(painted, folds)
 }
 
 /** The dropdown: which identifier is being completed and what matches it */
@@ -173,19 +219,39 @@ private fun completionAt(text: String, caret: Int, highlighting: EditorHighlight
     return Completion(start, prefix, afterReceiver, items)
 }
 
+/** The column at the left of the text: line numbers and the fold markers */
+internal val GutterWidth = 56.dp
+
+/** One visible line of the gutter: its number in the file, and the block that starts on it, if any */
+private data class GutterLine(val number: Int, val region: FoldRegion?, val folded: Boolean)
+
+/**
+ * The editor: a gutter with the line numbers and a marker on every line that starts a foldable block, and the
+ * text with the current line in a faint box. A BasicTextField whose visual transformation paints the Highlights
+ * analysis (keywords, strings, numbers, comments) plus the SandboxApi names, and hides the folded blocks behind
+ * " … "; the text behind it is always the whole script, so saving and running never see a fold. A completion
+ * dropdown opens under the caret while an identifier is typed (or on Ctrl+Space). Cmd/Ctrl+Enter runs,
+ * Cmd/Ctrl+Minus folds the block the caret is in, Cmd/Ctrl+Equals opens it; with Shift, all of them.
+ */
 @Composable
 internal fun SandboxEditor(
     initialCode: String,
     highlights: Highlights,
     onCodeChange: (String) -> Unit,
     textStyle: TextStyle,
-    modifier: Modifier = Modifier,
+    viewportWidth: Dp,
+    viewportHeight: Dp,
+    onRun: () -> Unit = {},
 ) {
     var value by remember { mutableStateOf(TextFieldValue(initialCode)) }
     var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
     var completion by remember { mutableStateOf<Completion?>(null) }
+    var folded by remember { mutableStateOf(setOf<String>()) }
     val highlighting = remember(highlights) { highlightCode(highlights) }
-    val transformation = remember(highlighting) { highlightTransformation(highlighting) }
+    val regions = remember(value.text) { EditorFolding.regions(value.text) }
+    val folds = remember(value.text, regions, folded) { EditorFolding.layout(value.text, regions, folded) }
+    val transformation = remember(highlighting, folds) { foldTransformation(highlighting, folds) }
+    val density = LocalDensity.current
 
     fun replace(from: Int, to: Int, insert: String, caretOffset: Int = insert.length) {
         val text = value.text
@@ -207,84 +273,239 @@ internal fun SandboxEditor(
         replace(current.prefixStart, value.selection.start, insert, caretOffset)
     }
 
-    // The Popup is a child of this inner Box, whose origin is the text field's, so the caret rect maps straight to an offset
-    Box(modifier = modifier.padding(start = 12.dp, top = 16.dp, end = 24.dp, bottom = 16.dp)) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            BasicTextField(
-                value = value,
-                onValueChange = { change ->
-                    val textChanged = change.text != value.text
-                    value = change
-                    if (textChanged) {
-                        onCodeChange(change.text)
-                        // Stale highlighting is fine here: it only decides whether the caret sits in a string or comment
-                        completion = if (change.selection.collapsed) completionAt(change.text, change.selection.start, highlighting, forced = false) else null
-                    } else if (completion != null && change.selection != value.selection) {
-                        completion = null
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxSize()
-                    .onFocusChanged { if (!it.isFocused) completion = null }
-                    .onPreviewKeyEvent { event ->
-                        val down = event.type == KeyEventType.KeyDown
-                        val open = completion
-                        when {
-                            event.isCtrlPressed && event.key == Key.Spacebar -> {
-                                if (down) completion = completionAt(value.text, value.selection.start, highlighting, forced = true)
-                                true
-                            }
-                            open != null && event.key == Key.DirectionUp -> {
-                                if (down) completion = open.copy(selected = (open.selected - 1 + open.items.size) % open.items.size)
-                                true
-                            }
-                            open != null && event.key == Key.DirectionDown -> {
-                                if (down) completion = open.copy(selected = (open.selected + 1) % open.items.size)
-                                true
-                            }
-                            open != null && (event.key == Key.Enter || event.key == Key.NumPadEnter || event.key == Key.Tab) -> {
-                                if (down) accept(open.items[open.selected])
-                                true
-                            }
-                            open != null && event.key == Key.Escape -> {
-                                if (down) completion = null
-                                true
-                            }
-                            // Tab indents with spaces instead of moving focus out of the editor
-                            event.key == Key.Tab && !event.isShiftPressed -> {
-                                if (down && value.selection.collapsed) replace(value.selection.start, value.selection.start, "    ")
-                                true
-                            }
-                            else -> false
-                        }
-                    },
-                textStyle = textStyle,
-                visualTransformation = transformation,
-                onTextLayout = { layout = it },
-                cursorBrush = SolidColor(FontColor),
-            )
+    // Folding. A caret inside a block that gets folded is moved in front of its brace, so it cannot type out of sight
+    fun fold(region: FoldRegion) {
+        folded = folded + region.key
+        val s = value.selection
+        if (region.covers(s.start) || region.covers(s.end)) value = value.copy(selection = TextRange(maxOf(0, region.hiddenStart - 1)))
+        completion = null
+    }
+    fun unfold(region: FoldRegion) { folded = folded - region.key }
+    fun caretLineInFile() = EditorFolding.lineOf(value.text, value.selection.start)
+    fun foldAtCaret() {
+        val line = caretLineInFile()
+        regions.filter { it.coversLine(line) && it.key !in folded }.maxByOrNull { it.headerLine }?.let { fold(it) }
+    }
+    fun unfoldAtCaret() {
+        val line = caretLineInFile()
+        (regions.firstOrNull { it.headerLine == line && it.key in folded } ?: regions.filter { it.coversLine(line) && it.key in folded }.maxByOrNull { it.headerLine })?.let { unfold(it) }
+    }
+    fun foldAll() { regions.forEach { fold(it) } }
+    fun unfoldAll() { folded = emptySet() }
 
-            completion?.let { open ->
-                val caret = value.selection.start
-                val rect = layout?.let { result ->
-                    runCatching { result.getCursorRect(caret.coerceIn(0, result.layoutInput.text.length)) }.getOrNull()
-                }
-                val anchor = rect?.let { IntOffset(it.left.roundToInt(), it.bottom.roundToInt() + 2) } ?: IntOffset(0, 0)
-                Popup(
-                    offset = anchor,
-                    onDismissRequest = { completion = null },
-                    properties = PopupProperties(focusable = false),
-                ) {
-                    CompletionList(open, onPick = { accept(it) })
+    // The current line, counted in what is shown (folded blocks take one line)
+    val transformedCaret = folds.originalToTransformed(value.selection.start.coerceIn(0, value.text.length))
+    val caretLine = layout?.let { l -> runCatching { l.getLineForOffset(transformedCaret.coerceIn(0, l.layoutInput.text.length)) }.getOrNull() } ?: 0
+    val lineHeightPx = with(density) { textStyle.lineHeight.toPx() }
+    val gutterLines = remember(value.text, regions, folds, folded) {
+        val byHeader = regions.associateBy { it.headerLine }
+        val total = value.text.count { it == '\n' } + 1
+        (0 until total).filter { it !in folds.hiddenLines }.map { i -> GutterLine(i + 1, byHeader[i], byHeader[i]?.let { it.key in folded } == true) }
+    }
+    // The text's own size decides how wide the current line's box is and how tall the gutter
+    val textWidth = layout?.let { with(density) { it.size.width.toDp() } } ?: 0.dp
+    val textHeight = layout?.let { with(density) { it.size.height.toDp() } } ?: 0.dp
+    val paneWidth = maxOf(viewportWidth - GutterWidth, textWidth + 36.dp)
+    val paneHeight = maxOf(viewportHeight, textHeight + 32.dp)
+
+    Row(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        Gutter(
+            lines = gutterLines,
+            caretLine = caretLine,
+            layout = layout,
+            lineHeightPx = lineHeightPx,
+            height = paneHeight,
+            textStyle = textStyle,
+            onFold = { fold(it) },
+            onUnfold = { unfold(it) },
+        )
+        Box(modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState())) {
+            Box(modifier = Modifier.width(paneWidth).height(paneHeight)) {
+                CurrentLineBox(layout, caretLine, width = paneWidth, topPadding = 16.dp)
+                // The Popup is a child of this inner Box, whose origin is the text field's, so the caret rect maps straight to an offset
+                Box(modifier = Modifier.fillMaxSize().padding(start = 12.dp, top = 16.dp, end = 24.dp, bottom = 16.dp)) {
+                    BasicTextField(
+                        value = value,
+                        onValueChange = { change ->
+                            val textChanged = change.text != value.text
+                            val caretMoved = change.selection != value.selection
+                            value = change
+                            if (textChanged) {
+                                onCodeChange(change.text)
+                                // Stale highlighting is fine here: it only decides whether the caret sits in a string or comment
+                                completion = if (change.selection.collapsed) completionAt(change.text, change.selection.start, highlighting, forced = false) else null
+                            } else if (completion != null && caretMoved) {
+                                completion = null
+                            }
+                            // Typing or moving into a folded block opens it, so nothing happens out of sight
+                            val current = if (textChanged) EditorFolding.regions(change.text) else regions
+                            val hit = current.filter { it.key in folded && (it.covers(change.selection.start) || it.covers(change.selection.end)) }
+                            if (hit.isNotEmpty()) folded = folded - hit.map { it.key }.toSet()
+                        },
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .onFocusChanged { if (!it.isFocused) completion = null }
+                            .onPreviewKeyEvent { event ->
+                                val down = event.type == KeyEventType.KeyDown
+                                val cmd = event.isMetaPressed || event.isCtrlPressed
+                                val open = completion
+                                when {
+                                    cmd && (event.key == Key.Enter || event.key == Key.NumPadEnter) -> {
+                                        if (down) onRun()
+                                        true
+                                    }
+                                    cmd && (event.key == Key.Minus || event.key == Key.NumPadSubtract) -> {
+                                        if (down) { if (event.isShiftPressed) foldAll() else foldAtCaret() }
+                                        true
+                                    }
+                                    cmd && (event.key == Key.Equals || event.key == Key.Plus || event.key == Key.NumPadAdd) -> {
+                                        if (down) { if (event.isShiftPressed) unfoldAll() else unfoldAtCaret() }
+                                        true
+                                    }
+                                    event.isCtrlPressed && event.key == Key.Spacebar -> {
+                                        if (down) completion = completionAt(value.text, value.selection.start, highlighting, forced = true)
+                                        true
+                                    }
+                                    open != null && event.key == Key.DirectionUp -> {
+                                        if (down) completion = open.copy(selected = (open.selected - 1 + open.items.size) % open.items.size)
+                                        true
+                                    }
+                                    open != null && event.key == Key.DirectionDown -> {
+                                        if (down) completion = open.copy(selected = (open.selected + 1) % open.items.size)
+                                        true
+                                    }
+                                    open != null && (event.key == Key.Enter || event.key == Key.NumPadEnter || event.key == Key.Tab) -> {
+                                        if (down) accept(open.items[open.selected])
+                                        true
+                                    }
+                                    open != null && event.key == Key.Escape -> {
+                                        if (down) completion = null
+                                        true
+                                    }
+                                    // Tab indents with spaces instead of moving focus out of the editor
+                                    event.key == Key.Tab && !event.isShiftPressed -> {
+                                        if (down && value.selection.collapsed) replace(value.selection.start, value.selection.start, "    ")
+                                        true
+                                    }
+                                    else -> false
+                                }
+                            },
+                        textStyle = textStyle,
+                        visualTransformation = transformation,
+                        onTextLayout = { layout = it },
+                        cursorBrush = SolidColor(FontColor),
+                    )
+
+                    completion?.let { open ->
+                        val caret = value.selection.start
+                        val rect = layout?.let { result ->
+                            runCatching { result.getCursorRect(folds.originalToTransformed(caret).coerceIn(0, result.layoutInput.text.length)) }.getOrNull()
+                        }
+                        val anchor = rect?.let { IntOffset(it.left.roundToInt(), it.bottom.roundToInt() + 2) } ?: IntOffset(0, 0)
+                        Popup(
+                            offset = anchor,
+                            onDismissRequest = { completion = null },
+                            properties = PopupProperties(focusable = false),
+                        ) {
+                            CompletionList(open, onPick = { accept(it) })
+                        }
+                    }
                 }
             }
         }
     }
 }
 
+/** The faint box on the line the caret is on, across the whole text pane */
+@Composable
+private fun CurrentLineBox(layout: TextLayoutResult?, line: Int, width: Dp, topPadding: Dp) {
+    val l = layout ?: return
+    if (line < 0 || line >= l.lineCount) return
+    val density = LocalDensity.current
+    val top = l.getLineTop(line)
+    val height = with(density) { (l.getLineBottom(line) - top).toDp() }
+    val topPx = with(density) { topPadding.toPx() }
+    Box(
+        modifier = Modifier
+            .offset { IntOffset(0, (top + topPx).roundToInt()) }
+            .width(width)
+            .height(height)
+            .background(EditorCurrentLine, RectangleShape)
+            .border(1.dp, EditorCurrentLineEdge, RectangleShape)
+    )
+}
+
+/**
+ * The gutter: one row per visible line at the exact height the text lays that line out, with its number (bright
+ * on the current line, which is tinted like the text's box) and, where a block starts, a marker that folds or
+ * opens it.
+ */
+@Composable
+private fun Gutter(
+    lines: List<GutterLine>,
+    caretLine: Int,
+    layout: TextLayoutResult?,
+    lineHeightPx: Float,
+    height: Dp,
+    textStyle: TextStyle,
+    onFold: (FoldRegion) -> Unit,
+    onUnfold: (FoldRegion) -> Unit,
+) {
+    val density = LocalDensity.current
+    Box(modifier = Modifier.width(GutterWidth).height(height).background(GutterBackground).padding(top = 16.dp)) {
+        lines.forEachIndexed { v, line ->
+            val laid = layout?.takeIf { v < it.lineCount }
+            val top = laid?.getLineTop(v) ?: (v * lineHeightPx)
+            val rowHeight = laid?.let { it.getLineBottom(v) - it.getLineTop(v) } ?: lineHeightPx
+            val current = v == caretLine
+            Row(
+                modifier = Modifier
+                    .offset { IntOffset(0, top.roundToInt()) }
+                    .fillMaxWidth()
+                    .height(with(density) { rowHeight.toDp() })
+                    .background(if (current) EditorCurrentLine else Color.Transparent, RectangleShape),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                BasicText(
+                    text = line.number.toString(),
+                    style = textStyle.copy(color = if (current) FontColor else LineNumberColor, textAlign = TextAlign.End),
+                    modifier = Modifier.width(34.dp),
+                )
+                Box(modifier = Modifier.width(22.dp).fillMaxHeight(), contentAlignment = Alignment.Center) {
+                    line.region?.let { region -> FoldMarker(folded = line.folded) { if (line.folded) onUnfold(region) else onFold(region) } }
+                }
+            }
+        }
+    }
+}
+
+/** The small arrow beside a line that starts a block: down while it is open, right while it is folded */
+@Composable
+private fun FoldMarker(folded: Boolean, onClick: () -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
+    AppTooltip(if (folded) "Open the block (⌘= / Ctrl+=)" else "Fold the block down to its first line (⌘- / Ctrl+-)") {
+        Box(
+            modifier = Modifier
+                .size(16.dp)
+                .hoverable(interactionSource)
+                .pointerHoverIcon(PointerIcon.Hand)
+                .clickable(interactionSource = interactionSource, indication = null) { onClick() },
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = if (folded) Icons.Default.KeyboardArrowRight else Icons.Default.KeyboardArrowDown,
+                contentDescription = if (folded) "folded" else "open",
+                tint = if (hovered || folded) FontColor else LineNumberColor,
+                modifier = Modifier.size(14.dp),
+            )
+        }
+    }
+}
+
 @Composable
 private fun CompletionList(open: Completion, onPick: (SandboxApi.Entry) -> Unit) {
-    val shape = RoundedCornerShape(6.dp)
+    val shape = RectangleShape
     Column(
         modifier = Modifier
             .width(480.dp)

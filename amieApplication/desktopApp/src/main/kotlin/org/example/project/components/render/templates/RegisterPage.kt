@@ -1,5 +1,6 @@
 package org.example.project.components.render.templates
 
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
@@ -112,7 +112,7 @@ fun RegisterPage(onRegistered: (String) -> Unit, onBackToLogin: () -> Unit) {
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = RoundedCornerShape(10.dp),
+                shape = RectangleShape,
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
                 enabled = busy == null
             ) {
@@ -123,7 +123,7 @@ fun RegisterPage(onRegistered: (String) -> Unit, onBackToLogin: () -> Unit) {
             OutlinedButton(
                 onClick = { attempt("Waiting for the browser") { AuthState.client.browserRegister() } },
                 modifier = Modifier.fillMaxWidth().height(48.dp),
-                shape = RoundedCornerShape(10.dp),
+                shape = RectangleShape,
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF878e9c)),
                 border = BorderStroke(1.dp, Color(UnifiedBorderColor.toArgb())),
                 enabled = busy == null

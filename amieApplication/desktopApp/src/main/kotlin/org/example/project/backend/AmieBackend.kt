@@ -235,10 +235,12 @@ object AmieBackend {
      */
     suspend fun publishModule(name: String, dir: File, username: String): Published {
         val files = listOf(File(dir, "module.json"), File(dir, "model.onnx"), File(dir, "guide.md")).filter { it.isFile }
-        if (files.isEmpty()) throw BackendException("Module '$name' has no module.json or model.onnx in ${dir.path}")
+        if (files.none { it.name != "guide.md" }) throw BackendException("Module '$name' has no module.json or model.onnx in ${dir.path}")
         files.forEach { upload(it, "onnx", username) }
         val names = files.map { it.name }
-        val listed = websiteLists(username, names)
+        // The package store keeps guide.md next to the model but leaves .md files out of its package listings (they
+        // are the description the website shows on the file's page), so only the model and manifest are looked for
+        val listed = websiteLists(username, names.filter { !it.endsWith(".md", ignoreCase = true) })
         return Published(names, listed, config.siteDashboardUrl(username))
     }
 

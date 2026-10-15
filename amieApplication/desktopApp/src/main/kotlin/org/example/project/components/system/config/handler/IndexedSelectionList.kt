@@ -1,9 +1,9 @@
 package org.example.project.components.system.config.handler
 
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -131,7 +131,7 @@ fun IndexedSelectionList(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 6.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(RectangleShape)
                         .background(Color(0xFF171b23))
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -153,7 +153,7 @@ fun IndexedSelectionList(
                             .height(32.dp)
                             .width(80.dp),
                         contentPadding = PaddingValues(horizontal = 8.dp),
-                        shape = RoundedCornerShape(6.dp),
+                        shape = RectangleShape,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFF262b36),
                             contentColor = Color(0xFFc7cbd4)

@@ -12,13 +12,15 @@ an environment, since a bare `import(...)` reads as a Kotlin import.
 ## Running a script
 
 1. Type in the editor. The script is saved to `AMP/pluginDir/main.kts` as you type.
-2. Press the green **Run** button at the bottom of the left sidebar.
-3. While the script runs the button becomes a spinning ring (it fills with the model build's progress when
-   `modelBuilder` is working), the status line under the console header reads `Running main.kts · 12s`,
-   and pressing Run again only logs "Script is already running".
-4. When it ends the status line shows `Finished in 41s` or `Failed after 3s`, and the console gets the same line.
+2. Press **Run** over the editor, **⌘↵** (Ctrl+Enter elsewhere) inside it, or the play button at the bottom of
+   the sidebar.
+3. While the script runs the console strip reads `running 12s` (with the model build's phase and progress when
+   `modelBuilder` is working) and the play button becomes a square that fills with that progress; pressing Run
+   again only logs "Script is already running".
+4. When it ends the strip shows `finished in 41s` or `failed after 3s`, and the console gets the same line.
 
-The console chips (Internal, Error, Data, Info) filter what is shown; **Clear** empties the view, the log file keeps it all.
+The level toggles on the console strip (internal, error, data, info) filter what is shown; **Clear** empties the
+view, the log file keeps it all.
 
 ### Run phases
 
@@ -170,12 +172,12 @@ rows of `[text, ..., label]`.
 step: text *n* of *N* while embedding, epoch *n* of 150 while training, each validation sample, then export. Phases are
 weighted (embedding 60%, training 30%, ...) into one fraction that drives:
 
-- the **Run** button ring in the sandbox sidebar,
-- the **status line** under the console header (`modelBuilder 'intents' · training 72/150 · epoch 72 loss 0.3102 accuracy 0.912` with a bar),
-- the **BUILDING** card on the Models page.
+- the sandbox sidebar's play button, which becomes a square that fills with it,
+- the **console strip** (`running 12s · modelBuilder 'intents' training 72/150 · epoch 72 loss 0.3102 accuracy 0.912 · 48%`, with a thin bar under it),
+- the build line at the top of the Models page's list, with its thin bar.
 
 Every 25 epochs the loss and accuracy are also logged to the console. Finished builds (with their duration and
-outcome) stay in `ModelBuildProgress.history`; the status line shows the last one while idle.
+outcome) stay in `ModelBuildProgress.history`; the console strip's tooltip names the last one while idle.
 
 ## Saved states
 

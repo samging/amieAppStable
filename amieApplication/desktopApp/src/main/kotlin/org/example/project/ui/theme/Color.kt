@@ -13,7 +13,9 @@ val Pink40 = Color(0xFF7D5260)
 val UnifiedBodyBackground = Color(0xFF0E0E0E)
 val UnifiedBoxColor = Color(0xFF171717)
 val UnifiedBorderColor = Color(0xFF262626)
-val AddButton = Color(0XFF4C8DF6)
+// The one blue in the app is a dark one; nothing on screen is vivid. The brightest things are white text and the
+// running green, and that one is muted too (the three below used to be #4C8DF6, #3FB950 and #F85149)
+val AddButton = Color(0xFF2B5797)
 val FontColor = Color(0XFFE8EAED)
 
 // Extended palette
@@ -22,8 +24,8 @@ val SidebarBackground = Color(0xFF1E1E1E)
 val SurfaceHover = Color(0xFF2C2C2C)
 val MutedFontColor = Color(0xFF8E8E8E)
 val AccentSoft = AddButton.copy(alpha = 0.14f)
-val SuccessColor = Color(0xFF3FB950)
-val DangerColor = Color(0xFFF85149)
+val SuccessColor = Color(0xFF5F9469)   // running, met, the Run button: a muted green
+val DangerColor = Color(0xFFB85C55)    // failed, not met, the window's close button: a muted red
 
 // Editor palette: gray chrome and tabs, near-black working panels
 val TabBarBackground = Color(0xFF1A1A1A)
@@ -52,14 +54,20 @@ val LogInternalTextColor = Color(0xFFC4C8CE)
 // Alternate rows get a faint stripe so wrapped lines stay grouped
 val LogRowStripe = Color(0x0AFFFFFF)
 
-// Sandbox editor: syntax colours over EditorBackground and the completion dropdown
-val EditorKeywordColor = Color(0xFFC792EA)   // purple/pink: fun, val, if
-val EditorApiColor = Color(0xFF56D4BC)       // teal: amie and the script API names
-val EditorStringColor = Color(0xFFF2A65A)    // warm orange
-val EditorCommentColor = Color(0xFF6B7280)   // muted grey
-val EditorNumberColor = Color(0xFF82AAFF)    // light blue
-val EditorAnnotationColor = Color(0xFFE5C07B)
+// Sandbox editor: a calm palette over EditorBackground. Keywords a steel blue, the script API names the one
+// accent (a muted teal), strings sand, numbers gray-blue, comments gray; nothing vivid, the code stays readable
+val EditorKeywordColor = Color(0xFF9FB4CC)
+val EditorApiColor = Color(0xFF8FBFB3)
+val EditorStringColor = Color(0xFFC9A77A)
+val EditorCommentColor = Color(0xFF6B7280)
+val EditorNumberColor = Color(0xFFA9B7C6)
+val EditorAnnotationColor = Color(0xFFB8A96E)
 val EditorPunctuationColor = Color(0xFFB4BCC8)
+// The line the caret is on: a faint band with a faint edge across the gutter and the text; folded blocks show
+// their " … " on a slightly lighter square
+val EditorCurrentLine = Color(0xFF121212)
+val EditorCurrentLineEdge = Color(0xFF222222)
+val EditorFoldBackground = Color(0xFF1E1E1E)
 val CompletionBackground = Color(0xFF1C1C1E)
 val CompletionBorder = Color(0xFF3A3A3C)
 val CompletionSelected = Color(0xFF2E3A44)

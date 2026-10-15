@@ -32,7 +32,7 @@ mkdocs build                        # static site in build/docs-site/
 
 1. Run `./gradlew :desktopApp:run`. No account is needed: press **Continue** on the welcome screen and then
    **Continue as guest** (signing in only matters for publishing, see [Signing in](sign-in.md)).
-2. In the sandbox, type a script and press the green **Run** button. The **dummy** model is there from the start:
+2. In the sandbox, type a script and press **Run** over the editor (or ⌘↵ / Ctrl+Enter). The **dummy** model is there from the start:
 
 ```kotlin
 val m = initMod("dummy")                              // opens a session, or returns the open one

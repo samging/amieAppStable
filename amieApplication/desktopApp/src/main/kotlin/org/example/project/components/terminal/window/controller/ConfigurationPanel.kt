@@ -1,12 +1,12 @@
 package org.example.project.components.terminal.window.controller
 
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -34,7 +34,7 @@ fun ConfigurationPanel(deviceId: String,
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(8.dp)).border(1.dp, Color(0xFF262b36), RoundedCornerShape(8.dp))) {
+        Box(modifier = Modifier.weight(1f).clip(RectangleShape).border(1.dp, Color(0xFF262b36), RectangleShape)) {
             TerminalWindow(
                 title = if (endPointNumber != null) "Endpoint configuration $endPointNumber" else "",
                 deviceId = deviceId,

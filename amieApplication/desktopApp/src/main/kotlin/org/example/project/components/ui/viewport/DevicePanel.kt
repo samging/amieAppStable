@@ -1,9 +1,9 @@
 package org.example.project.components.ui.viewport
 
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -43,9 +43,9 @@ fun DevicePanel(
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 6.dp, horizontal = 12.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RectangleShape)
             .background(Color(UnifiedBoxColor.toArgb()))
-            .border(width = 1.dp, color = Color(UnifiedBorderColor.toArgb()), shape = RoundedCornerShape(12.dp))
+            .border(width = 1.dp, color = Color(UnifiedBorderColor.toArgb()), shape = RectangleShape)
     ) {
         Column {
             // Header Row with Name, Endpoint, Port inlined
@@ -139,7 +139,7 @@ fun DevicePanel(
 private fun BadgeLabel(text: String) {
     Surface(
         color = Color(UnifiedBoxColor.toArgb()),
-        shape = RoundedCornerShape(4.dp),
+        shape = RectangleShape,
         border = androidx.compose.foundation.BorderStroke(1.dp, Color(UnifiedBorderColor.toArgb()))
     ) {
         Text(
@@ -166,8 +166,8 @@ private fun ActionItem(
         modifier = modifier
             .padding(4.dp)
             .height(56.dp)
-            .border(1.dp, color = Color(UnifiedBorderColor.toArgb()), shape = RoundedCornerShape(10.dp))
-            .clip(RoundedCornerShape(10.dp)),
+            .border(1.dp, color = Color(UnifiedBorderColor.toArgb()), shape = RectangleShape)
+            .clip(RectangleShape),
         color = Color(UnifiedBoxColor.toArgb()),
         contentColor = Color(0xFFc7cbd4)
     ) {

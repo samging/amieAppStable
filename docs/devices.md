@@ -21,7 +21,7 @@ Each card shows the name, endpoint and port, and four actions:
 | Action | Screen |
 |---|---|
 | **Connect** | The connection panel: shows the endpoint and status, with a **Connect / Disconnect** switch |
-| **Manage** | A terminal bound to the device (`terminal/<deviceId>` in the console source column) where you can send commands and see its output |
+| **Manage** | A terminal bound to the device (source `terminal/<deviceId>`, shown by the console's columns switch) where you can send commands and see its output |
 | **Configure** | The device's configuration page |
 | **Remove** | Deletes the device from the configuration and refreshes the dashboard |
 

@@ -1,5 +1,6 @@
 package org.example.project.components.terminal.window.controller
 
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -10,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
@@ -54,9 +54,9 @@ fun ConnectionPanel(name: String,
         val rowModifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RectangleShape)
             .background(color = Color(UnifiedBoxColor.toArgb()))
-            .border(width = 1.dp, color = Color(UnifiedBorderColor.toArgb()), shape = RoundedCornerShape(8.dp))
+            .border(width = 1.dp, color = Color(UnifiedBorderColor.toArgb()), shape = RectangleShape)
             .padding(horizontal = 16.dp, vertical = 12.dp)
 
         Row(modifier = rowModifier, verticalAlignment = Alignment.CenterVertically) {
@@ -83,7 +83,7 @@ fun ConnectionPanel(name: String,
                     containerColor = Color(AddButton.toArgb()),
                     contentColor = Color(FontColor.toArgb())
                 ),
-                shape = RoundedCornerShape(8.dp),
+                shape = RectangleShape,
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 Text(if (status) "Disconnect" else "Connect", fontWeight = FontWeight.Medium)
@@ -92,7 +92,7 @@ fun ConnectionPanel(name: String,
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(8.dp)).border(1.dp, Color(UnifiedBorderColor.toArgb()), RoundedCornerShape(8.dp))) {
+        Box(modifier = Modifier.weight(1f).clip(RectangleShape).border(1.dp, Color(UnifiedBorderColor.toArgb()), RectangleShape)) {
             TerminalWindow(title = name, deviceId = deviceId, modifier = Modifier.fillMaxSize(), source = "connection/$deviceId")
         }
     }

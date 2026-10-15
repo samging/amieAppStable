@@ -35,11 +35,11 @@ In IntelliJ or Android Studio open the repository root and use the run configura
 
 ## The three screens
 
-- **Sandbox** (console icon in the left sidebar): the editor, the output console and the green **Run** button.
+- **Sandbox** (console icon in the left sidebar): the editor with **Run** over it, and the output console.
   [The sandbox](sandbox.md).
-- **Models** (second sidebar icon): the app's resource use and every model's uptime, traffic, latency, validation
-  metrics and serving settings. Open to everyone; only the Amie backend card needs a sign-in.
-  [Models and metrics](models.md).
+- **Models** (second sidebar icon): every intent model with its metrics, data, requirements, console and
+  sessions; the package jars and their collections; every open session; and Help. Open to everyone; only
+  **Publish** needs a sign-in. [Models page](models-page.md), [Models and metrics](models.md).
 - **Dashboard** (first sidebar icon): device cards with configure, manage, connect and disconnect screens.
   [Devices](devices.md).
 

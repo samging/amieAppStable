@@ -68,6 +68,7 @@ dependencies {
     //runtimeOnly("org.bytedeco:tensorflow:1.15.5-1.5.8:macosx-arm64")
     //runtimeOnly("org.bytedeco:tensorflow:1.15.5-1.5.8:macosx-x86_64")
     implementation(gradleApi())
+    testImplementation(kotlin("test"))
     kotlin("plugin.serialization")
 }
 

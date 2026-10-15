@@ -1,5 +1,6 @@
 package org.example.project.components.terminal.window.controller
 
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
@@ -9,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.DriveFileRenameOutline
@@ -68,9 +68,9 @@ fun ManageablePage(
         val rowModifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RectangleShape)
             .background(Color(UnifiedBoxColor.toArgb()))
-            .border(width = 1.dp, color = Color(UnifiedBorderColor.toArgb()), shape = RoundedCornerShape(8.dp))
+            .border(width = 1.dp, color = Color(UnifiedBorderColor.toArgb()), shape = RectangleShape)
             .padding(horizontal = 16.dp, vertical = 12.dp)
 
         ConfigurationRow(

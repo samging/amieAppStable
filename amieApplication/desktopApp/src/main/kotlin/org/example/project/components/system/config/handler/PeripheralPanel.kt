@@ -1,5 +1,6 @@
 package org.example.project.components.system.config.handler
 
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -37,7 +38,6 @@ import org.example.project.ui.theme.UnifiedBoxColor
 import org.example.project.ui.theme.DangerColor
 import org.example.project.ui.theme.MutedFontColor
 import org.example.project.ui.theme.SuccessColor
-import androidx.compose.foundation.shape.RoundedCornerShape
 
 /**
  * A device discovery and management panel that provides an input field for querying peripheral profiles
@@ -96,7 +96,7 @@ fun PeripheralPanel(name: String,
                 },
                 placeholder = { Text(text = name, color = MutedFontColor.copy(alpha = 0.6f), fontSize = 14.sp) },
                 singleLine = true,
-                shape = RoundedCornerShape(10.dp),
+                shape = RectangleShape,
                 modifier = Modifier.weight(1f),
                 interactionSource = interactionSource,
                 colors = OutlinedTextFieldDefaults.colors(
@@ -145,7 +145,7 @@ fun PeripheralPanel(name: String,
                         }
                     },
                     modifier = Modifier.height(56.dp).padding(top = 8.dp),
-                    shape = RoundedCornerShape(10.dp),
+                    shape = RectangleShape,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = AddButton,
                         contentColor = Color.White
