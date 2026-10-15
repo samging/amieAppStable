@@ -88,7 +88,7 @@ object SandboxApi {
         fn("data", "Prints a data line in the console", Param("message", STRING)),
         fn("initAmie", "Runs text through the Amie pilot and prints its answer", Param("text", STRING)),
         fn("initMod", "Opens the default interaction model", returns = INTERACTION_MODEL),
-        fn("initMod", "The session of the module modelBuilder exported to AMP/modules/<modelName>: the one already open on it, else a new one. A new instance of a package jar when the name ends in .jar (local or fetched from the Amie server)", Param("modelName", STRING), returns = INTERACTION_MODEL),
+        fn("initMod", "The session of the module modelBuilder exported to AMP/modules/<modelName>: the one already open on it, else a new one. A new instance of a package jar when the name ends in .jar (local or fetched from the Amie server). .predict(text) is the label, .scores(text) every label with its score, .inference(text) the raw label:score lines", Param("modelName", STRING), returns = INTERACTION_MODEL),
         prop("packages", JAR_PACKAGES, "Package jar sessions: packages.available(), packages.fetch(\"x.jar\"), packages.print(), packages.closeAll()"),
         fn("saveState", "Stores a JSON text as the signed-in user's saved state <name> on the Amie backend (uploads/<user>/state/<name>.json)", Param("name", STRING), Param("json", STRING)),
         fn("loadState", "The JSON text of the saved state <name> on the Amie backend, null when there is none", Param("name", STRING), returns = "String?"),

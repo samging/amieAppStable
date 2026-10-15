@@ -36,6 +36,7 @@ mkdocs build                        # static site in build/docs-site/
 
 ```kotlin
 val m = initMod("dummy")                              // opens a session, or returns the open one
+log(m.predict("turn the lights on"))                  // lights
 log(m.inference("turn the lights on").first())        // lights:0.61
 ```
 

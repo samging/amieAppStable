@@ -45,7 +45,7 @@ Defined in `ScriptLogger.kt`. The most used calls (prefix `amie.` optional):
 | `sourceFile("file.csv", column = "")` | Raw rows keyed by index, optionally one column |
 | `modelBuilder("name", data)` | Trains and exports an intent classifier (below) |
 | `modelBuilder("name") { ... }` | Same, the lambda returns the data |
-| `initMod("name")` | The session of an exported model: the one already open, else a new one (listed on the Models page, terminable there); `.inference("text")` returns `label:probability` sorted best first; `.close()`. `initMod("dummy")` works on a fresh checkout. How sessions live and die: [Running sessions](sessions.md) |
+| `initMod("name")` | The session of an exported model: the one already open, else a new one (listed on the Models page, terminable there); `.predict("text")` returns the predicted label, `.scores("text")` every label with its score (best first), `.inference("text")` the raw `label:probability` lines sorted best first; `.close()`. `initMod("dummy")` works on a fresh checkout. How sessions live and die: [Running sessions](sessions.md) |
 | `initMod()` | The bundled BERT NER model |
 | `initMod("name.jar")` | A new instance of a package jar behind the same interface: `.inference("text")` calls its `run(text)`, `.close()` its `close()`. Looked up in the env, `AMP/pluginDir`, as a path, then fetched from the Amie server (below) |
 | `validateMetrics("name", labels = listOf(...))` | Prints the stored validation table of a model |
@@ -63,6 +63,31 @@ Defined in `ScriptLogger.kt`. The most used calls (prefix `amie.` optional):
 | `environment(SettingsEnv("name", "profile"))`, `amie.import(SettingsEnv(...))` | Select the script environment (must be written literally) |
 | `internalEnv()` | Print what the environment contains |
 
+## Reading a prediction
+
+Every model session, whatever opened it (`initMod("name")`, `initMod("x.jar")`, `importModelOnnx(...)`), answers
+through the same three calls on top of `inference`:
+
+| Call | Returns | Example |
+|---|---|---|
+| `predict("text")` | The predicted label: the best answer of `inference` without its score (the argmax of a classifier). Throws when the model answers nothing | `"lights"` |
+| `scores("text")` | Every label with its score, best first, as a `Map<String, Float>`. Answers without a score are left out | `{lights=0.67, weather=0.50, greeting=0.33}` |
+| `predictions("text")` | The raw answers parsed into `Prediction(label, score)`, in the model's order; `score` is null when the answer had none | `[lights:0.67, weather:0.50, …]` |
+| `inference("text")` | The raw lines a model answers: `label:score` for a classifier, one tag per token for the NER model, whatever `run(text)` returned for a package | `["lights:0.67", "weather:0.50", …]` |
+
+```kotlin
+val m = initMod("intents")
+log(m.predict("turn the lights on"))                        // lights
+val scores = m.scores("turn the lights on")                 // {lights=0.97, weather=0.02, greeting=0.01}
+log("confidence ${scores.values.first()}")                  // 0.97
+if (scores.values.first() < 0.5f) log("not sure", LogLevel.ERROR)
+m.predictions("turn the lights on").forEach { p -> log("${p.label} ${p.score}") }
+```
+
+Each of the three calls runs the model once, so ask once and keep the result instead of calling `predict` and
+`scores` on the same text. A package's answers (`echo: hello`) have no score: `predict` returns the first line
+whole and `scores` is empty.
+
 ## Building a model
 
 ```kotlin
@@ -73,7 +98,8 @@ model.modelStatus()                        // the stored validation table
 model.modelChart()                         // bars, build history and confusion matrix
 
 val m = initMod("intents")
-log(m.inference("turn the lights on").first())
+log(m.predict("turn the lights on"))                 // lights
+log(m.scores("turn the lights on").toString())       // {lights=0.97, weather=0.02, greeting=0.01}
 m.close()
 ```
 

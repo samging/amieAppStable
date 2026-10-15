@@ -115,6 +115,7 @@ log (what it was asked and answered) read. Details in [Models page](models-page.
 
 ```kotlin
 val m = initMod("intents")
+log(m.predict("turn the lights on"))             // "lights"
 log(m.inference("turn the lights on").first())   // "lights:0.97"
 m.close()
 ```

@@ -14,7 +14,7 @@ and close it. The function reference is in [Scripting API](sandbox-scripting.md)
 
 | Kind | Opened by | How many | What `inference(text)` returns |
 |---|---|---|---|
-| **Intent model** | `initMod("name")` in a script, **Open session** on the Models page | **One per model.** A second `initMod("name")` returns the session that is already open | `label:probability` lines, best first (`lights:0.91`, `weather:0.06`, …) |
+| **Intent model** | `initMod("name")` in a script, **Open session** on the Models page | **One per model.** A second `initMod("name")` returns the session that is already open | `label:probability` lines, best first (`lights:0.91`, `weather:0.06`, …); `predict(text)` is the label alone, `scores(text)` a label → score map |
 | **Package** | `initMod("name.jar")` | **One per call.** Every `initMod` makes a fresh instance of the jar's class in its own class loader | What the package's `run(text)` returned, one line per element |
 | **ONNX session** | `importModelOnnx("file.onnx")` | One per call | The raw model's output; no log is kept |
 
@@ -28,10 +28,15 @@ before anything was trained:
 
 ```kotlin
 val m = initMod("dummy")                              // opens the session, or returns the open one
+log(m.predict("turn the lights on"))                  // lights: the predicted label
 log(m.inference("turn the lights on").first())        // lights:0.61
 m.inference("hello there").forEach { log(it) }        // every label with its probability
+val scores = m.scores("hello there")                  // {greeting=0.65, weather=0.48, lights=0.36}
 log(m.getStatus().toString())                         // the module manifest: encoder, dims, labels
 ```
+
+`predict` is the label alone, `scores` every label with its score, `inference` the raw lines; all three are
+described in [Reading a prediction](sandbox-scripting.md#reading-a-prediction).
 
 Press **Run**. The console shows `initMod: 'dummy' session ready (…)`, then your lines, then `Finished in 2s`.
 Open **Models** (second sidebar icon) and the **Sessions** tab: `dummy  #1`, *intent model*, *idle*, `2 runs`,
@@ -66,7 +71,7 @@ and **not** close it:
 ```kotlin
 val m = initMod("intents")                            // first run: loads; every later run: instant
 listOf("turn the lights on", "what's the weather", "hi").forEach { text ->
-    log("$text -> ${m.inference(text).first()}")
+    log("$text -> ${m.predict(text)}")               // the label; m.inference(text) for every label:score line
 }
 ```
 
