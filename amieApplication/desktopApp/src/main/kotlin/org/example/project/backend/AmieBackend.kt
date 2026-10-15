@@ -1,6 +1,7 @@
 package org.example.project.backend
 
 import io.ktor.client.HttpClient
+import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.java.Java
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.request.bearerAuth
@@ -79,7 +80,11 @@ object AmieBackend {
     // Only for failures that must stay out of the console (reporting an error must not produce another one)
     private val logger = LoggerFactory.getLogger("AmieBackend")
     private val stateNamePattern = Regex("[A-Za-z0-9._-]{1,64}")
-    private val http = HttpClient(Java) {
+    @Volatile
+    internal var http: HttpClient = client(Java.create())
+
+    /** The client every call goes through; tests hand in a mock engine that answers as the backend and the site */
+    internal fun client(engine: HttpClientEngine): HttpClient = HttpClient(engine) {
         install(HttpTimeout) {
             requestTimeoutMillis = 120_000
             connectTimeoutMillis = 5_000
@@ -134,7 +139,7 @@ object AmieBackend {
      * Uploads a file to the signed-in user's package folder (`uploads/<user>/<language>/<name>` in the
      * backend's S3 bucket) through `POST /upload`. The website's dashboard lists it afterwards.
      */
-    suspend fun upload(file: File, language: String, username: String): String = reach("publish ${file.name}") {
+    suspend fun upload(file: File, language: String, username: String, asName: String = file.name): String = reach("publish $asName") {
         if (!file.isFile) throw BackendException("${file.name} is not a file")
         val response = http.post(config.url("upload")) {
             bearerAuth(token())
@@ -147,7 +152,7 @@ object AmieBackend {
                             "file", file.readBytes(),
                             Headers.build {
                                 append(HttpHeaders.ContentType, "application/octet-stream")
-                                append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+                                append(HttpHeaders.ContentDisposition, "filename=\"$asName\"")
                             }
                         )
                     }
@@ -158,8 +163,8 @@ object AmieBackend {
         if (!response.status.isSuccess()) throw BackendException(describe(response.status, body), response.status.value)
         // The backend answers 200 "File uploaded successfully", 400 with the reasons a jar was refused and 502 when
         // the store is unreachable; an "Error ..." body on a 2xx is kept as a failure in case an older backend answers
-        if (body.trimStart().startsWith("Error", ignoreCase = true)) throw BackendException("The backend couldn't store ${file.name}: ${body.take(200)}", response.status.value)
-        logInternal("backend: uploaded ${file.name} (${file.length()} bytes) for $username as $language")
+        if (body.trimStart().startsWith("Error", ignoreCase = true)) throw BackendException("The backend couldn't store $asName: ${body.take(200)}", response.status.value)
+        logInternal("backend: uploaded ${file.name} (${file.length()} bytes) for $username as $language/$asName")
         body
     }
 
@@ -233,11 +238,15 @@ object AmieBackend {
      * Afterwards the website is told to forget its cached listing for [username] (as its own upload page does)
      * and asked whether it now lists the files, so the caller can say where they are, or that they are not there yet.
      */
+    /** The names a module's files are published under: the model's own name, so two models never overwrite each other */
+    fun publishedNames(name: String): Map<String, String> =
+        mapOf("model.onnx" to "$name.onnx", "module.json" to "$name.module.json", "guide.md" to "$name.guide.md")
+
     suspend fun publishModule(name: String, dir: File, username: String): Published {
-        val files = listOf(File(dir, "module.json"), File(dir, "model.onnx"), File(dir, "guide.md")).filter { it.isFile }
-        if (files.none { it.name != "guide.md" }) throw BackendException("Module '$name' has no module.json or model.onnx in ${dir.path}")
-        files.forEach { upload(it, "onnx", username) }
-        val names = files.map { it.name }
+        val files = publishedNames(name).mapNotNull { (local, published) -> File(dir, local).takeIf { it.isFile }?.let { it to published } }
+        if (files.none { it.first.name != "guide.md" }) throw BackendException("Module '$name' has no module.json or model.onnx in ${dir.path}")
+        files.forEach { (file, published) -> upload(file, "onnx", username, asName = published) }
+        val names = files.map { it.second }
         // The package store keeps guide.md next to the model but leaves .md files out of its package listings (they
         // are the description the website shows on the file's page), so only the model and manifest are looked for
         val listed = websiteLists(username, names.filter { !it.endsWith(".md", ignoreCase = true) })
@@ -271,7 +280,8 @@ object AmieBackend {
     /** Removes a published module's files from the website again (`DELETE /upload`); returns how many were there */
     suspend fun unpublishModule(name: String, username: String): Int = reach("remove '$name' from the website") {
         var removed = 0
-        listOf("module.json", "model.onnx", "guide.md").forEach { fileName ->
+        // The names of today, and the fixed names an older app published every model under
+        (publishedNames(name).values + listOf("module.json", "model.onnx", "guide.md")).forEach { fileName ->
             val response = http.delete(config.url("upload")) {
                 bearerAuth(token())
                 parameter("filename", fileName)

@@ -137,3 +137,18 @@ loaded from on port 8080, overridable per browser with `localStorage.setItem("am
 (`/api/keycloak/token`), which adds the client secret from `KEYCLOAK_CLIENT_SECRET`, so the secret is no longer in
 browser JavaScript and the password login on the site works again. The server also reads `KEYCLOAK_URL` and
 `AMIE_SITE_URL` for the redirect URI.
+
+## What the website shows of a published model
+
+A published module appears on the website under the author's `onnx` folder, in a tree beside the author's other
+folders, under its own name: `intents.onnx`, `intents.module.json` and `intents.guide.md` for a model called
+intents, so two models never overwrite each other. Opening the `.onnx` file there shows the model's structure (inputs, every node of the graph with its inputs,
+outputs and attributes, the weights with their shapes and sizes, outputs, metadata) read from the file on the
+site's server; `module.json` and `guide.md` open as text with syntax highlighting. Nothing runs on the website.
+
+## Checking the whole chain
+
+`scripts/e2e-auth-publish.py` in the Amie repository exercises everything on this page against the running
+services: a Keycloak sign-in the way the app does it, `/me`, publishing a jar with the token, the site's listing
+and upload proxy, the SSO handoff and its one-time code, saved states and the error log. Run it after changing
+the backend, the site or the realm; it cleans up after itself.

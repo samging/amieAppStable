@@ -229,7 +229,6 @@ private enum class PageTab(val title: String, val icon: ImageVector, val tip: St
     MODELS("Models", Icons.Default.Memory, "Intent models: build one from a csv, then validate, serve and publish it"),
     PACKAGES("Packages", Icons.Default.Inventory2, "Package jars a script opens with initMod(\"name.jar\"), in collections and by where they live"),
     SESSIONS("Sessions", Icons.Default.Sensors, "Everything open right now: model, package and ONNX sessions, each with its log and Terminate"),
-    GUIDE("Help", Icons.Default.HelpOutline, "How the page works: models, metrics, serving, scripts, packages, sessions and memory"),
 }
 
 /** Any open session on this page, named after its owner: an intent model, a package jar or a bare ONNX file */
@@ -635,7 +634,6 @@ private fun ModelsContent(user: String?, onLogin: () -> Unit) {
                     onTerminate = { session -> background("terminate:${session.key}") { session.terminate() } },
                     onTerminateAll = { background("terminate:all") { ModelSessions.closeAll(); JarPackages.closeAll(); OrtSessions.cancelAll() } },
                 )
-                PageTab.GUIDE -> GuideTab()
             }
         }
 
@@ -1009,7 +1007,7 @@ private fun ModelDetail(
                 when { publishing -> "Publishing…"; signedIn -> "Publish"; else -> "Publish (sign in)" },
                 enabled = !publishing,
                 icon = Icons.Default.CloudUpload,
-                tip = if (signedIn) "Upload model.onnx, module.json and guide.md to the Amie server under your account; the website lists it" else "Publish uploads the model under your account, so it opens the sign-in page first",
+                tip = if (signedIn) "Upload the model to the Amie server under your account as <name>.onnx, <name>.module.json and <name>.guide.md; the website lists it" else "Publish uploads the model under your account, so it opens the sign-in page first",
                 onClick = onPublish,
             )
         }
@@ -1124,37 +1122,45 @@ private fun AboutBlock(model: ModelInfo, onDescribe: (String) -> Unit) {
         AccentButton("Save description", icon = Icons.Default.Save, tip = "Write the description to module.json") { onDescribe(text) }
     }
 
-    SubTitle("WHERE")
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        SelectionContainer(modifier = Modifier.weight(1f)) {
-            Text(model.dir.absolutePath, color = LogMessageColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    Section("WHERE", key = "${model.name}:where") {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            SelectionContainer(modifier = Modifier.weight(1f)) {
+                Text(model.dir.absolutePath, color = LogMessageColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, lineHeight = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            Spacer(Modifier.width(8.dp))
+            SmallButton("Reveal folder", icon = Icons.Default.FolderOpen, tip = "Show the model's folder in the file browser") { openInBrowser(model.dir.toURI().toString()) }
         }
-        Spacer(Modifier.width(8.dp))
-        SmallButton("Reveal folder", icon = Icons.Default.FolderOpen, tip = "Show the model's folder in the file browser") { openInBrowser(model.dir.toURI().toString()) }
+        KeyValues(
+            "created" to m.createdAt.take(19).replace('T', ' '),
+            "encoder" to "${File(m.encoder).name}  ·  ${m.encoder}",
+            "head" to "${m.model}  ·  ${m.format}  ·  ${m.input} [${m.inputDim}] → ${m.output} [${m.outputDim}]",
+            "labels" to m.labels.joinToString().ifEmpty { "—" },
+        )
     }
-    KeyValues(
-        "created" to m.createdAt.take(19).replace('T', ' '),
-        "encoder" to "${File(m.encoder).name}  ·  ${m.encoder}",
-        "head" to "${m.model}  ·  ${m.format}  ·  ${m.input} [${m.inputDim}] → ${m.output} [${m.outputDim}]",
-        "labels" to m.labels.joinToString().ifEmpty { "—" },
-    )
 
-    SubTitle("TRAINING")
-    if (m.epochs == null && m.architecture == null) Hint("not recorded (built before the training details were kept)")
-    KeyValues(
-        *listOfNotNull(
-            m.architecture?.let { "architecture" to it },
-            "data" to (m.data ?: if (model.name == "dummy") "none: written, not trained" else "unknown"),
-            m.trainRows?.let { "train rows" to it.toString() },
-            m.validationRows?.let { "validation" to "$it rows of ${m.validation ?: "a split"}" },
-            m.epochs?.let { "epochs" to it.toString() },
-            m.batchSize?.let { "batch size" to it.toString() },
-            m.learningRate?.let { "learning rate" to it.toString() },
-            m.hiddenDim?.let { "hidden units" to it.toString() },
-            m.finalLoss?.let { "final loss" to fmt(it) },
-            m.trainAccuracy?.let { "train accuracy" to pct(it) },
-        ).toTypedArray()
-    )
+    Section("TRAINING", key = "${model.name}:training") {
+        if (m.epochs == null && m.architecture == null) Hint("not recorded (built before the training details were kept)")
+        KeyValues(
+            *listOfNotNull(
+                m.architecture?.let { "architecture" to it },
+                "data" to (m.data ?: if (model.name == "dummy") "none: written, not trained" else "unknown"),
+                m.trainRows?.let { "train rows" to it.toString() },
+                m.validationRows?.let { "validation" to "$it rows of ${m.validation ?: "a split"}" },
+                m.epochs?.let { "epochs" to it.toString() },
+                m.batchSize?.let { "batch size" to it.toString() },
+                m.learningRate?.let { "learning rate" to it.toString() },
+                m.hiddenDim?.let { "hidden units" to it.toString() },
+                m.finalLoss?.let { "final loss" to fmt(it) },
+                m.trainAccuracy?.let { "train accuracy" to pct(it) },
+                m.search?.let { "heads tried" to it },
+            ).toTypedArray()
+        )
+        val lastRun = model.lastRun
+        if (lastRun != null && lastRun.preprocessing.isNotEmpty()) {
+            Hint("What the preprocessor did to the rows before the last build:")
+            KeyValues(*lastRun.preprocessing.mapIndexed { n, line -> (if (n == 0) "rows" else "") to line }.toTypedArray())
+        }
+    }
 }
 
 /**
@@ -1301,8 +1307,7 @@ private fun MetricsBlock(model: ModelInfo, validating: ValidationProgress?, onVa
     }
 
     val session = listOfNotNull(plot("confidence.png"), plot("latency.png"))
-    if (session.isNotEmpty()) {
-        SubTitle("FROM THE SESSIONS")
+    if (session.isNotEmpty()) Section("FROM THE SESSIONS", key = "${model.name}:session-plots") {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             session.forEach { PlotImage(it) }
         }
@@ -1335,53 +1340,55 @@ private fun rememberCsv(file: File): CsvFacts? = remember(file.path, file.lastMo
 @Composable
 private fun DataBlock(model: ModelInfo) {
     val files = listOfNotNull(model.dataFile?.let { "trained on" to it }, model.validationFile?.takeIf { it != model.dataFile }?.let { "validated on" to it })
-    SubTitle("FILES")
-    if (files.isEmpty()) Hint(if (model.manifest.data != null) "${model.manifest.data} is not in AMP/ any more" else "no data file (the dummy is written, not trained)")
-    files.forEach { (role, file) ->
-        val facts = rememberCsv(file)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(role, color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.width(92.dp))
-            Text(file.name, color = FontColor, fontSize = 12.sp, fontFamily = FontFamily.Monospace, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Spacer(Modifier.width(10.dp))
-            Meta(facts?.let { "${it.rows.size} rows · ${it.labels.size} labels" } ?: "no text and label columns")
-            Spacer(Modifier.weight(1f))
-            SmallButton("Open in viewer", icon = Icons.Default.OpenInNew, tip = "Open ${file.name} in whatever this machine uses for csv files") { openFile(file) }
-        }
-        if (facts != null) {
-            val known = model.manifest.labels.toSet()
-            val balance = facts.labels.entries.sortedByDescending { it.value }
-            Fold("rows per label", balance.size, open = true, key = "${model.name}:${file.path}:labels") {
-                BarRows(balance.map { (label, n) -> BarRow(label, n, if (label in known || known.isEmpty()) null else "not a label of ${model.name}") })
+    Section("FILES", key = "${model.name}:files") {
+        if (files.isEmpty()) Hint(if (model.manifest.data != null) "${model.manifest.data} is not in AMP/ any more" else "no data file (the dummy is written, not trained)")
+        files.forEach { (role, file) ->
+            val facts = rememberCsv(file)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(role, color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.width(92.dp))
+                Text(file.name, color = FontColor, fontSize = 12.sp, fontFamily = FontFamily.Monospace, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Spacer(Modifier.width(10.dp))
+                Meta(facts?.let { "${it.rows.size} rows · ${it.labels.size} labels" } ?: "no text and label columns")
+                Spacer(Modifier.weight(1f))
+                SmallButton("Open in viewer", icon = Icons.Default.OpenInNew, tip = "Open ${file.name} in whatever this machine uses for csv files") { openFile(file) }
             }
-            val words = facts.wordCounts
-            if (words.isNotEmpty()) {
-                val buckets = listOf("1–2 words" to 1..2, "3–4" to 3..4, "5–6" to 5..6, "7–9" to 7..9, "10+" to 10..Int.MAX_VALUE)
-                Fold("text length", null, open = false, key = "${model.name}:${file.path}:lengths") {
-                    BarRows(buckets.map { (name, range) -> BarRow(name, words.count { it in range }) })
+            if (facts != null) {
+                val known = model.manifest.labels.toSet()
+                val balance = facts.labels.entries.sortedByDescending { it.value }
+                Fold("rows per label", balance.size, open = true, key = "${model.name}:${file.path}:labels") {
+                    BarRows(balance.map { (label, n) -> BarRow(label, n, if (label in known || known.isEmpty()) null else "not a label of ${model.name}") })
+                }
+                val words = facts.wordCounts
+                if (words.isNotEmpty()) {
+                    val buckets = listOf("1–2 words" to 1..2, "3–4" to 3..4, "5–6" to 5..6, "7–9" to 7..9, "10+" to 10..Int.MAX_VALUE)
+                    Fold("text length", null, open = false, key = "${model.name}:${file.path}:lengths") {
+                        BarRows(buckets.map { (name, range) -> BarRow(name, words.count { it in range }) })
+                    }
                 }
             }
+            Fold("preview ${file.name}", null, open = false, key = "${model.name}:${file.path}") { CsvPreview(file) }
         }
-        Fold("preview ${file.name}", null, open = false, key = "${model.name}:${file.path}") { CsvPreview(file) }
-    }
 
+    }
     val logFile = SessionRuns.logFile(model.dir)
     val logged = remember(model.name, logFile.lastModified()) { SessionRuns.read(model.dir, limit = 2000) }
     val incomingFile = SessionRuns.incomingFile(model.dir)
     val incoming = remember(model.name, incomingFile.lastModified()) { SessionRuns.incoming(model.dir) }
-    SubTitle("RAN ON")
-    if (logged.isEmpty() && incoming == 0) Hint("nothing yet")
-    else {
-        KeyValues(
-            "sessions" to "${logged.size} texts answered, in ${logFile.name}",
-            "served" to if (incoming == 0) "no requests yet" else "$incoming requests, in ${incomingFile.name}",
-        )
-        if (logged.isNotEmpty()) {
-            val byLabel = logged.mapNotNull { it.top }.groupingBy { it }.eachCount().entries.sortedByDescending { it.value }
-            Fold("answered with", byLabel.size, open = true, key = "${model.name}:answered") {
-                BarRows(byLabel.map { (label, n) -> BarRow(label, n) })
-            }
-            Fold("last texts", null, open = false, key = "${model.name}:last") {
-                KeyValues(*logged.takeLast(12).reversed().map { r -> (r.top ?: "-") to "${r.text.take(70)}  (${r.millis} ms)" }.toTypedArray())
+    Section("RAN ON", key = "${model.name}:ran-on") {
+        if (logged.isEmpty() && incoming == 0) Hint("nothing yet")
+        else {
+            KeyValues(
+                "sessions" to "${logged.size} texts answered, in ${logFile.name}",
+                "served" to if (incoming == 0) "no requests yet" else "$incoming requests, in ${incomingFile.name}",
+            )
+            if (logged.isNotEmpty()) {
+                val byLabel = logged.mapNotNull { it.top }.groupingBy { it }.eachCount().entries.sortedByDescending { it.value }
+                Fold("answered with", byLabel.size, open = true, key = "${model.name}:answered") {
+                    BarRows(byLabel.map { (label, n) -> BarRow(label, n) })
+                }
+                Fold("last texts", null, open = false, key = "${model.name}:last") {
+                    KeyValues(*logged.takeLast(12).reversed().map { r -> (r.top ?: "-") to "${r.text.take(70)}  (${r.millis} ms)" }.toTypedArray())
+                }
             }
         }
     }
@@ -1962,13 +1969,13 @@ private fun SessionsTab(sessions: List<SessionInfo>, onTerminate: (SessionInfo) 
 /** The sessions one owner has open, inside its detail panel; without [title] where a tab already names them */
 @Composable
 private fun SessionsOf(sessions: List<SessionInfo>, onTerminate: (SessionInfo) -> Unit, title: Boolean = true) {
-    if (title || sessions.size > 1) Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
-        if (title) SubTitle("SESSIONS  ${sessions.size}")
-        Spacer(Modifier.weight(1f))
-        if (sessions.size > 1) DangerButton("Terminate all", icon = Icons.Default.StopCircle, tip = "Close every session of it") { sessions.forEach(onTerminate) }
+    val terminateAll: (@Composable () -> Unit)? = if (sessions.size > 1) ({ DangerButton("Terminate all", icon = Icons.Default.StopCircle, tip = "Close every session of it") { sessions.forEach(onTerminate) } }) else null
+    if (title) Section("SESSIONS  ${sessions.size}", key = "sessions:${sessions.firstOrNull()?.owner ?: ""}", actions = terminateAll) {
+        if (sessions.isEmpty()) Hint("none open") else SessionList(sessions, showOwner = false, onTerminate)
+    } else {
+        terminateAll?.let { Row(modifier = Modifier.fillMaxWidth().padding(top = 2.dp)) { Spacer(Modifier.weight(1f)); it() } }
+        if (sessions.isEmpty()) Hint("none open") else SessionList(sessions, showOwner = false, onTerminate)
     }
-    if (sessions.isEmpty()) Hint("none open")
-    else SessionList(sessions, showOwner = false, onTerminate)
 }
 
 /** Sessions as flat rows with a divider between them, each with its Log toggle and Terminate */
@@ -2509,9 +2516,33 @@ private fun FileField(label: String, file: File?, hint: String, onClear: (() -> 
     }
 }
 
+/**
+ * One block of a detail tab: the uppercase title on a line that folds the block away (open by default, so nothing
+ * is hidden until it is asked to be), a rule under it, and the content with a little air below the line.
+ * [actions] sit at the right of the title line and stay visible while the block is closed.
+ */
 @Composable
-private fun SubTitle(title: String) {
-    Text(title, color = FontColor, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.6.sp)
+private fun Section(title: String, key: Any, actions: (@Composable () -> Unit)? = null, content: @Composable () -> Unit) {
+    var expanded by remember(key) { mutableStateOf(true) }
+    Column(modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().pointerHoverIcon(PointerIcon.Hand).clickable { expanded = !expanded }.padding(vertical = 3.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = if (expanded) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowRight,
+                contentDescription = if (expanded) "Fold $title away" else "Open $title",
+                tint = MutedFontColor,
+                modifier = Modifier.size(14.dp),
+            )
+            Spacer(Modifier.width(4.dp))
+            Text(title, color = FontColor, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.6.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Spacer(Modifier.weight(1f))
+            actions?.invoke()
+        }
+        Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(PanelBorder))
+        if (expanded) Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) { content() }
+    }
 }
 
 @Composable

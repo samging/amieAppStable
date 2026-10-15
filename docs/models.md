@@ -127,8 +127,8 @@ and can terminate; what it was asked and answered is logged per session (behind 
 
 ## Publishing
 
-Signed in with Keycloak, expand a model on the Models page and press **Publish**: `model.onnx` and `module.json`
-are uploaded to your package folder on the Amie backend (`POST /upload`, `progLanguage=onnx`) and the website's
-dashboard lists them. A guest pressing it is sent to the sign-in page. Requires the backend from
+Signed in with Keycloak, expand a model on the Models page and press **Publish**: the model goes up to your package folder on the Amie backend (`POST /upload`,
+`progLanguage=onnx`) as `<name>.onnx`, `<name>.module.json` and `<name>.guide.md`, so two models never overwrite
+each other, and the website's dashboard lists them. A guest pressing it is sent to the sign-in page. Requires the backend from
 [Amie backend](backend-integration.md), which stores the files in the Amie S3 bucket. Package jars go the other way: a
 script opens one the server lists with `initMod("name.jar")` (see [Packages](sandbox-scripting.md#packages)).

@@ -74,6 +74,8 @@ object SandboxApi {
     private const val JAR_INTERPRETER = "$PKG.pluginEngine.JarInterpreter"
     private const val JAR_PACKAGES = "$PKG.pluginEngine.JarPackages"
     private const val MODEL_INTERFACE = "$PKG.ModelCreationalInterface"
+    private const val ARCHITECTURE = "$PKG.jetbrainDLBuilder.Architecture"
+    private const val BUILD_OPTIONS = "$PKG.jetbrainDLBuilder.BuildOptions"
     private const val DATABASE = "$PKG.databases.Database"
     private const val DATABASES = "$PKG.databases.Databases"
 
@@ -119,8 +121,14 @@ object SandboxApi {
             Param("it", STRING), Param("column", STRING, "\"\""), returns = "Pair<Int, Map<Int, List<String>>>"),
         fn("source", "Labeled data file with its text/label columns inferred", Param("path", STRING), returns = "$DATA_SOURCE?"),
         fn("relate", "Gives the model a test file to validate on after training on train", Param("train", "$DATA_SOURCE?"), Param("test", STRING), returns = "$DATA_SOURCE?"),
-        fn("modelBuilder", "Trains a classifier on the data source and exports it to AMP/modules/<modelName>",
+        fn("modelBuilder", "Preprocesses the data, trains the candidate heads, keeps the best and exports it to AMP/modules/<modelName>",
             Param("modelName", STRING), Param("data", "$DATA_SOURCE?"), returns = MODEL_INTERFACE),
+        fn("modelBuilder", "The same build with your own options: buildOptions(candidates = listOf(architecture(...)), pickBy, preprocess, validationFraction)",
+            Param("modelName", STRING), Param("data", "$DATA_SOURCE?"), Param("options", BUILD_OPTIONS), returns = MODEL_INTERFACE),
+        fn("architecture", "One head to try: hidden layer widths (empty list = linear), epochs, batch size, learning rate, Relu or Tanh",
+            Param("hidden", "List<Int>", "listOf(16)"), Param("epochs", "Int", "150"), Param("batchSize", "Int", "16"), Param("learningRate", "Double", "0.01"), Param("activation", STRING, "\"Relu\""), returns = ARCHITECTURE),
+        fn("buildOptions", "How a build goes: the heads to compare, macroF1 or accuracy to pick by, preprocessing on or off, the validation share",
+            Param("candidates", "List<$ARCHITECTURE>", "$ARCHITECTURE.DEFAULT_CANDIDATES"), Param("pickBy", STRING, "\"macroF1\""), Param("preprocess", "Boolean", "true"), Param("validationFraction", "Double", "0.2"), returns = BUILD_OPTIONS),
         fn("importPlugin", "Runs a plugin jar's static run() or main; a missing jar or a failure is one ERROR line, never an exception", Param("plugin", STRING)),
         fn("database", "A database from AMP/databases.json: .query(sql, params), .execute(sql, params), .print(sql), .scalar(sql), .tables(), .close()", Param("name", STRING, "\"main\""), returns = DATABASE),
         prop("databases", DATABASES, "The configured databases: databases.print(), databases.names(), databases.closeAll()"),
@@ -129,6 +137,7 @@ object SandboxApi {
         fn("stopServing", "Stops serving the model and remembers it", Param("modelName", STRING)),
         fn("servingUrl", "The predict URL of a model being served now, null when it is not", Param("modelName", STRING), returns = "String?"),
         fn("modelBuilder", "Trains a classifier on the labeled data the lambda supplies", Param("modelName", STRING), Param("it", "(Any) -> Any"), returns = MODEL_INTERFACE),
+        fn("modelBuilder", "The lambda form with options", Param("modelName", STRING), Param("options", BUILD_OPTIONS), Param("it", "(Any) -> Any"), returns = MODEL_INTERFACE),
         // prelude-only aliases: `import` cannot be a top-level function name in a script
         fn("dependency", "Alias of implementation: adds \"group:module:version\" or a jar file name to the environment", Param("notation", STRING), target = "implementation", aliasOf = "implementation"),
         fn("environment", "Alias of amie.import(SettingsEnv(...)): selects the package environment the script is sourced with", Param("it", SETTINGS_ENV), target = "import", aliasOf = "import"),

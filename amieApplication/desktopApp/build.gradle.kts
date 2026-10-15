@@ -71,6 +71,9 @@ dependencies {
     //runtimeOnly("org.bytedeco:tensorflow:1.15.5-1.5.8:macosx-x86_64")
     implementation(gradleApi())
     testImplementation(kotlin("test"))
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
+    testImplementation("io.ktor:ktor-client-mock:3.1.0")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.1")
     kotlin("plugin.serialization")
 }
 
@@ -159,4 +162,14 @@ tasks.configureEach {
     if (name == "prepareAppResources") dependsOn(prepareBundledAmp)
     // Every installer is built from the app image, so the models go in before it is packaged
     if (name in setOf("packageDmg", "packageMsi", "packageDeb", "packageDistributionForCurrentOS")) dependsOn(bundleModels)
+}
+
+// Tests get their own AMP folder and fake service addresses, so they never touch AMP/session.json or probe the
+// real backend and Keycloak; the HTTP clients under test are given a mock engine instead
+tasks.withType<Test>().configureEach {
+    environment("AMIE_AMP_DIR", layout.buildDirectory.dir("test-amp").get().asFile.path)
+    environment("AMIE_BACKEND_URL", "http://backend.test")
+    environment("AMIE_SITE_URL", "http://site.test")
+    environment("AMIE_S3_URL", "http://s3.test")
+    environment("KEYCLOAK_URL", "http://keycloak.test")
 }

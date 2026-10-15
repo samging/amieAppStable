@@ -49,6 +49,8 @@ data class ModuleManifest(
     val validation: String? = null,
     val finalLoss: Double? = null,
     val trainAccuracy: Double? = null,
+    // The heads the build compared and which one it kept; null when one head was trained
+    val search: String? = null,
 )
 
 @Serializable

@@ -2,6 +2,7 @@ package org.example.project.auth
 
 import com.sun.net.httpserver.HttpServer
 import io.ktor.client.HttpClient
+import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.java.Java
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.request.forms.submitForm
@@ -79,11 +80,12 @@ data class RegistrationForm(
  *  - refresh and logout through the realm endpoints
  * Every access token is verified against the realm's JWKS, issuer and expiry before it becomes a session.
  */
-class KeycloakClient(val config: KeycloakConfig) {
+class KeycloakClient(val config: KeycloakConfig, engine: HttpClientEngine = Java.create()) {
     private val json = Json { ignoreUnknownKeys = true }
     private val random = SecureRandom()
 
-    private val http = HttpClient(Java) {
+    // The engine is a parameter so tests can answer as Keycloak with a mock engine
+    private val http = HttpClient(engine) {
         install(HttpTimeout) {
             requestTimeoutMillis = 15_000
             connectTimeoutMillis = 5_000

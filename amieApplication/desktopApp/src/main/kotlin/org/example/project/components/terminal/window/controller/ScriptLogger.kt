@@ -22,6 +22,8 @@ import org.example.project.components.terminal.window.controller.modules.ModelSe
 import org.example.project.components.terminal.window.controller.modules.readServing
 import org.example.project.components.terminal.window.controller.databases.Database
 import org.example.project.components.terminal.window.controller.databases.Databases
+import org.example.project.components.terminal.window.controller.jetbrainDLBuilder.Architecture
+import org.example.project.components.terminal.window.controller.jetbrainDLBuilder.BuildOptions
 
 /**
  * A stable interface for logging from scripts.
@@ -102,9 +104,18 @@ interface ScriptLogger {
     // Gives the model a test file to validate on after training on train: amie.relate(train, "test.csv")
     fun relate(train: DataSource?, test: String): DataSource? = train?.relate(test)
         ?: null.also { logInternal("relate: no training source to relate $test to", LogLevel.ERROR) }
-    fun modelBuilder(modelName: String, data: DataSource?): ModelCreationalInterface = modelBuilder(modelName) { data ?: emptyList<String>() }
+    fun modelBuilder(modelName: String, data: DataSource?): ModelCreationalInterface = modelBuilder(modelName, BuildOptions()) { data ?: emptyList<String>() }
+    // The same build with its own options: which heads to try, how to pick, whether to preprocess, the split
+    fun modelBuilder(modelName: String, data: DataSource?, options: BuildOptions): ModelCreationalInterface = modelBuilder(modelName, options) { data ?: emptyList<String>() }
     fun importPlugin(plugin: String) {}
-    fun modelBuilder(modelName: String, it: (Any) -> Any): ModelCreationalInterface = object : ModelCreationalInterface() {}
+    fun modelBuilder(modelName: String, it: (Any) -> Any): ModelCreationalInterface = modelBuilder(modelName, BuildOptions(), it)
+    fun modelBuilder(modelName: String, options: BuildOptions, it: (Any) -> Any): ModelCreationalInterface = object : ModelCreationalInterface() {}
+    // One head to try: hidden layer widths (none = linear), epochs, batch size, learning rate, Relu or Tanh
+    fun architecture(hidden: List<Int> = listOf(16), epochs: Int = 150, batchSize: Int = 16, learningRate: Double = 0.01, activation: String = "Relu"): Architecture =
+        Architecture(hidden, epochs, batchSize, learningRate, activation)
+    // How a build goes: the heads to compare (the four defaults unless given), macroF1 or accuracy to pick by, preprocessing on or off, the validation share
+    fun buildOptions(candidates: List<Architecture> = Architecture.DEFAULT_CANDIDATES, pickBy: String = "macroF1", preprocess: Boolean = true, validationFraction: Double = 0.2): BuildOptions =
+        BuildOptions(candidates, pickBy, preprocess, validationFraction)
 
     // A database from AMP/databases.json: database("main").query("select …"); the same object while the app runs
     fun database(name: String = "main"): Database = Databases.open(name)

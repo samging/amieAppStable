@@ -27,6 +27,10 @@ data class MetricsRun(
     val warnings: List<String> = emptyList(),
     // Related test file the run was validated on, or "split 20%"
     val validation: String = "split 20%",
+    // Every head the build tried on the same rows, the chosen one marked; empty for a validation-only run
+    val candidates: List<org.example.project.components.terminal.window.controller.jetbrainDLBuilder.CandidateResult> = emptyList(),
+    // What the preprocessor did to the rows: the summary, what was read differently, what was dropped and why
+    val preprocessing: List<String> = emptyList(),
 )
 
 @Serializable

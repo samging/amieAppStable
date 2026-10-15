@@ -43,7 +43,7 @@ with the page. On-screen words are kept short; the explanations live in the tool
 ## Layout
 
 Under the window header sits a tab strip like the sandbox's, with four tabs and their counts: **Models**,
-**Packages**, **Sessions** and **Help**, and nothing else. Signing in happens in the window header (**Log in**) and
+**Packages** and **Sessions**, and nothing else. Signing in happens in the window header (**Log in**) and
 is only needed for **Publish**; everything else works without an account. (The website is not opened from the
 page any more; a publish notice names the address that lists what you published.) Each tab is a flat list on the left, a 1dp rule that can be dragged to resize the list, and one bordered
 detail panel on the right for the selected item. The tab strip already names the section and counts its items,
@@ -71,14 +71,14 @@ line (listening address, the data it was trained on) under its name and the acti
 | **Open session / Terminate session** | The filled button. Loads the model (encoder and head) as a session, the same as `initMod("name")` in the sandbox, or closes it. A model has one session at most |
 | **Listen on :port / Stop** | Starts or stops the HTTP listener (`modules/ModelServer.kt`) with the settings as shown; the label names the port it will use |
 | **⚙** | Opens the serving settings under the header: **Host / Port / Path / Methods** and **Save** write `AMP/modules/<name>/serving.json`; a port outside 1–65535 is named and keeps Save disabled; the POST and GET URLs are listed under them with **Copy** and **Copy curl**. The gear stays lit while the block is open |
-| **Publish** | Uploads `model.onnx`, `module.json` and `guide.md` to the Amie backend (`POST /upload`, `progLanguage=onnx`) with the Keycloak token, then asks the website to refresh its listing and says in the notice strip whether `/dashboard?username=<you>` lists the files, naming that address; a guest is sent to the sign-in page. A backend that cannot be reached ("Host is down", "Connection refused") is an address problem in `AMP/backend.json`, not a sign-in one |
+| **Publish** | Uploads the model as `<name>.onnx`, `<name>.module.json` and `<name>.guide.md` to the Amie backend (`POST /upload`, `progLanguage=onnx`) with the Keycloak token, then asks the website to refresh its listing and says in the notice strip whether `/dashboard?username=<you>` lists the files, naming that address; a guest is sent to the sign-in page. A backend that cannot be reached ("Host is down", "Connection refused") is an address problem in `AMP/backend.json`, not a sign-in one |
 | **⋯** | The whole menu: Open session, Listen/Stop, Validate on sample data, Validate on file…, Publish to the website, Remove from the website, Reveal folder, Copy `initMod("name")`, Terminate model, Destroy model… |
 
 Under the header the panel has its own tabs, each with a tooltip that says what it holds:
 
 | Tab | What it shows |
 |---|---|
-| **About** | The description (editable; **Save description** appears under it once it has changed and writes `module.json`), where the model lives with **Reveal folder**, created / encoder / head / labels, and **TRAINING**: architecture, data, rows, epochs, batch size, learning rate, hidden units, final loss, train accuracy |
+| **About** | The description (editable; **Save description** appears under it once it has changed and writes `module.json`), then the **WHERE** and **TRAINING** blocks. Every uppercase block title on these tabs is a line that folds its block away and back (open by default): where the model lives with **Reveal folder**, created / encoder / head / labels, and **TRAINING**: architecture, data, rows, epochs, batch size, learning rate, hidden units, final loss, train accuracy |
 | **Guide** | `AMP/modules/<name>/guide.md`, the guide shipped inside the model, rendered as light markdown; **Edit** and **Save** change it, and it goes along when the model is published |
 | **Metrics** | One line: the run chips (the latest first, each chip's tooltip names its data, rows, accuracy and time) and **Validate**, which offers **On the sample data** and **On a file…** and adds a run (`modules/ModelValidation.kt`). The chosen run's charts follow: scores per label, the confusion matrix, then scores by run and, from the sessions log, how sure the model is and how long an answer takes. The charts are PNG files drawn by `modules/MetricsImages.kt` into `AMP/modules/<name>/plots/` whenever the metrics or the log change, in one muted slate hue |
 | **Data** | The csv files it was trained and validated on, each with rows per label and text lengths as bars, a folded preview and **Open in viewer**; then **RAN ON**: what its sessions answered and what the server served |
@@ -182,8 +182,3 @@ terminating cancels in-flight runs; these keep no log). The ORT session inside a
 twice; it goes with the model session. **Terminate all** ends all of them. Right-click a row, or its ⋯ button,
 for Terminate, Show log, Copy log and Copy `#id`.
 
-## Help
-
-The fourth tab is the page's own guide, one fold per subject: what an intent model is, building one, reading the
-metrics, serving it, the same from a script, packages, sessions and memory, requirements, and the files under
-`AMP/`. A model's own guide (`guide.md`) is on its Guide tab.

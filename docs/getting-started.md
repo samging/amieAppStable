@@ -24,6 +24,22 @@ All commands run from the repository root.
 
 In IntelliJ or Android Studio open the repository root and use the run configurations in the toolbar.
 
+## Running the tests
+
+```bash
+./gradlew :desktopApp:test
+```
+
+The desktop module's tests need no services and never touch your `AMP/` folder: the test task points `AMIE_AMP_DIR`
+at `build/test-amp` and the backend, site and Keycloak addresses at fake hosts, and the HTTP clients under test
+get a mock engine. They cover the editor (folding, formatting), the prediction helpers, the Postgres driver and
+config, every script of the cookbook and the Examples menu (compiled through the sandbox's assembler), the
+Keycloak client (password grant, refresh, logout, what each failure says, issuer, signature and expiry checks on
+the token), the backend client (profile, upload, publishing, the SSO handoff, saved states, error reports, an
+unreachable backend) and a model session over a Mockito model. The services themselves are tested in the Amie
+repository (`README.md` there, "Testing"): unit tests for the backend and the S3 service, and
+`scripts/e2e-auth-publish.py`, which runs sign-in, registration, publishing and SSO against the running stack.
+
 ## First start
 
 1. The window stays blank for a moment while the app checks `AMP/session.json`. When a valid session comes back
@@ -39,7 +55,7 @@ In IntelliJ or Android Studio open the repository root and use the run configura
 - **Sandbox** (console icon in the left sidebar): the editor with **Run** over it, and the output console.
   [The sandbox](sandbox.md).
 - **Models** (second sidebar icon): every intent model with its metrics, data, requirements, console and
-  sessions; the package jars and their collections; every open session; and Help. Open to everyone; only
+  sessions; the package jars and their collections; and every open session. Open to everyone; only
   **Publish** needs a sign-in. [Models page](models-page.md), [Models and metrics](models.md).
 - **Dashboard** (first sidebar icon): device cards with configure, manage, connect and disconnect screens.
   [Devices](devices.md).

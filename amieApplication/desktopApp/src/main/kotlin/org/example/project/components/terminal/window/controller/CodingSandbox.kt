@@ -419,7 +419,7 @@ fun CodingSandbox(navController: NavController) {
                     }
 
 
-                    override fun modelBuilder(modelName: String, it: (Any) -> Any): ModelCreationalInterface {
+                    override fun modelBuilder(modelName: String, options: org.example.project.components.terminal.window.controller.jetbrainDLBuilder.BuildOptions, it: (Any) -> Any): ModelCreationalInterface {
                         // The lambda supplies labeled data: sourceFile rows of [text, label], List<Pair<text, label>> or Map<label, texts>
                         // or amie.source("train.csv"), whose related test file becomes the validation set
                         val produced = it(Pair(0, emptyList<String>()))
@@ -429,6 +429,7 @@ fun CodingSandbox(navController: NavController) {
                             org.example.project.components.terminal.window.controller.jetbrainDLBuilder.buildClassifier(
                                 samples, modelName, validation = test?.samples(), validationName = test?.name,
                                 dataName = (produced as? org.example.project.components.terminal.window.controller.sourceFile.DataSource)?.name,
+                                options = options,
                             )
                         } catch (e: java.lang.reflect.InvocationTargetException) {
                             e.cause?.printStackTrace()
