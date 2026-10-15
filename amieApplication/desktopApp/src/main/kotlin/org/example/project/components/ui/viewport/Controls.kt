@@ -68,6 +68,25 @@ internal fun AccentButton(label: String, enabled: Boolean = true, icon: ImageVec
     } }
 }
 
+/** The accent button as a square with only its icon, for the one action a strip is about (Run) */
+@Composable
+internal fun AccentIconButton(icon: ImageVector, tip: String?, enabled: Boolean = true, fill: Color = PageAccent, fillHover: Color = AccentButtonHover, onClick: () -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val hovered by interactionSource.collectIsHoveredAsState()
+    val colour = if (enabled) Color.White else Color.White.copy(alpha = 0.5f)
+    AppTooltip(tip) { Box(
+        modifier = Modifier
+            .size(24.dp)
+            .background(when { !enabled -> fill.copy(alpha = 0.35f); hovered -> fillHover; else -> fill }, RectangleShape)
+            .hoverable(interactionSource)
+            .pointerHoverIcon(PointerIcon.Hand)
+            .clickable(enabled = enabled, interactionSource = interactionSource, indication = null) { onClick() },
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, contentDescription = null, tint = colour, modifier = Modifier.size(14.dp))
+    } }
+}
+
 @Composable
 internal fun DangerButton(label: String, enabled: Boolean = true, icon: ImageVector? = null, tip: String? = null, onClick: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }

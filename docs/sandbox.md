@@ -5,8 +5,8 @@ and the sidebar. It keeps to the app's quiet scheme: two thin strips (one over t
 no borders, one filled button (**Run**), and tooltips on everything instead of words on the screen. The rule
 between the editor and the console can be dragged to share the width; the split is kept while the app runs.
 
-Both side panes can be put away with the two icon chips left of **Run**. The navigation sidebar is hidden or
-shown by its chip, and that choice is kept in `AMP/settings.json`. The console follows the output instead: it
+Both side panes can be put away with their chips, each at the edge of the pane it hides: the sidebar's at the
+far left of the strip, the console's at the far right. The sidebar's choice is kept in `AMP/settings.json`. The console follows the output instead: it
 starts hidden, since there is nothing to show, and opens by itself at the first line a run logs (one the level
 toggles let through). Its chip hides it at any time, output or not; what it holds is kept, it stays hidden for
 the rest of that run, and the first line of the next run (which empties it first) brings it back. With the console hidden the editor takes the whole width and the run's status (`ready`,
@@ -23,9 +23,12 @@ elsewhere) re-indents the whole script by its braces and parentheses, continuing
 one level in, and leaves the inside of strings and comments alone; the caret stays where it was in its line.
 
 - There is one script and it is always `AMP/pluginDir/main.kts`, so the strip over the editor shows no file tab.
-  It says instead which **env** the script is sourced in (`default` unless the text says
-  `environment(SettingsEnv("name"))`), with **saved** beside it for a moment after each write, and the green
-  **Run** at its right end (**Running…** while the script runs).
+  At its left end sits the sidebar's chip, right where the sidebar meets it; then the **env** chooser: the env
+  the script is sourced in (`default` unless the text says `environment(SettingsEnv("name"))`), and choosing
+  another from its list writes that line into the script (or rewrites the one there, keeping its profile) so the
+  choice is in the text. **saved** shows beside it for a moment after each write. At the right end are the
+  green square with the play icon, the one thing that runs (dimmed while the script runs), and the console's
+  chip, at the edge the console opens from.
 - The file is saved as you type (a third of a second after the last keystroke). You can edit
   `AMP/pluginDir/main.kts` with anything else too; the editor loads it at start.
 - **Highlighting** in a calm palette: keywords a steel blue, strings sand, numbers gray-blue, comments gray, and

@@ -13,6 +13,29 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.InsertDriveFile
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.example.project.components.ui.viewport.DangerButton
+import org.example.project.components.ui.viewport.SmallButton
 import androidx.compose.material.Slider
 import androidx.compose.material.SliderDefaults
 import androidx.compose.material3.Text
@@ -104,6 +127,114 @@ fun SettingsPage(navController: NavController) {
                 Spacer(Modifier.height(2.dp))
                 Text("stored in AMP/settings.json", color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
             }
+
+            Text("FILES", color = FontColor, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.6.sp, modifier = Modifier.padding(top = 14.dp, bottom = 4.dp))
+            AmpFileTree(modifier = Modifier.widthIn(max = 760.dp).fillMaxWidth().weight(1f))
         }
     }
+}
+
+/**
+ * The AMP folder as a tree: every folder opens and closes, every file shows its size, and a file or folder can
+ * be deleted (asked once, on the row). A folder that is left empty deletes itself: after a delete the empty
+ * parents go, and every read of the tree prunes the empty folders, since the app makes what it needs again.
+ */
+@Composable
+private fun AmpFileTree(modifier: Modifier = Modifier) {
+    val root = remember { java.io.File(org.example.project.getDirectory().toString()) }
+    var version by remember { mutableStateOf(0) }
+    var pruned by remember { mutableStateOf<List<java.io.File>>(emptyList()) }
+    val expanded = remember { mutableStateMapOf<String, Boolean>() }
+    var confirming by remember { mutableStateOf<String?>(null) }
+    // Read off the UI thread; the empty folders are pruned on each read
+    var tree by remember { mutableStateOf<List<TreeRow>?>(null) }
+    LaunchedEffect(version) {
+        tree = withContext(Dispatchers.IO) {
+            pruned = AmpFiles.pruneEmptyFolders(root)
+            readTree(root)
+        }
+    }
+    Column(
+        modifier = modifier
+            .background(PanelSurface, RectangleShape)
+            .border(1.dp, PanelBorder, RectangleShape)
+            .padding(10.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(root.absolutePath, color = FontColor, fontSize = 12.sp, fontFamily = FontFamily.Monospace, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    "everything the app writes; a folder left empty deletes itself" + (if (pruned.isNotEmpty()) " · pruned ${pruned.joinToString { it.name }}" else ""),
+                    color = MutedFontColor, fontSize = 11.sp, lineHeight = 16.sp,
+                )
+            }
+            SmallButton("Refresh", icon = Icons.Default.Refresh, tip = "Read the folder again; empty folders are pruned") { version++ }
+            Spacer(Modifier.width(6.dp))
+            SmallButton("Reveal", icon = Icons.Default.FolderOpen, tip = "Show the AMP folder in the file browser") {
+                runCatching { java.awt.Desktop.getDesktop().browse(root.toURI()) }
+            }
+        }
+        Spacer(Modifier.height(6.dp))
+        Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(PanelBorder))
+        val rows = tree
+        if (rows == null) { Text("reading…", color = MutedFontColor, fontSize = 11.sp, modifier = Modifier.padding(top = 6.dp)); return@Column }
+        val shown = rows.filter { row -> row.parents.all { expanded[it] ?: (it == root.path) } }
+        Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+            if (shown.isEmpty()) Text("empty", color = MutedFontColor, fontSize = 11.sp, modifier = Modifier.padding(top = 6.dp))
+            shown.forEach { row ->
+                val open = expanded[row.file.path] ?: false
+                val interactionSource = remember(row.file.path) { MutableInteractionSource() }
+                val hovered by interactionSource.collectIsHoveredAsState()
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(if (hovered) ChipBackground else Color.Transparent)
+                        .hoverable(interactionSource)
+                        .clickable(interactionSource = interactionSource, indication = null) { if (row.directory) expanded[row.file.path] = !open }
+                        .padding(start = (row.depth * 16).dp, end = 4.dp, top = 3.dp, bottom = 3.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = when { !row.directory -> Icons.Default.InsertDriveFile; open -> Icons.Default.KeyboardArrowDown; else -> Icons.Default.KeyboardArrowRight },
+                        contentDescription = null,
+                        tint = MutedFontColor,
+                        modifier = Modifier.size(13.dp),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(row.file.name, color = FontColor, fontSize = 12.sp, fontFamily = FontFamily.Monospace, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                    Spacer(Modifier.width(10.dp))
+                    Text(if (row.directory) "${row.count} item${if (row.count == 1) "" else "s"}" else AmpFiles.size(row.file.length()), color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+                    Spacer(Modifier.weight(1f))
+                    if (confirming == row.file.path) {
+                        DangerButton("Delete ${row.file.name}", icon = Icons.Default.Delete, tip = "Gone for good; folders left empty above it go too") {
+                            confirming = null
+                            AmpFiles.delete(root, row.file)
+                            version++
+                        }
+                        Spacer(Modifier.width(4.dp))
+                        SmallButton("Keep", tip = "Change nothing") { confirming = null }
+                    } else if (hovered) {
+                        SmallButton("Delete", icon = Icons.Default.Delete, tip = if (row.directory) "Delete the folder and everything in it (asks first)" else "Delete the file (asks first)") { confirming = row.file.path }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** One line of the tree: the file, how deep it is, the folders above it (for folding) and how many things a folder holds */
+private class TreeRow(val file: java.io.File, val depth: Int, val parents: List<String>, val directory: Boolean, val count: Int)
+
+private fun readTree(root: java.io.File): List<TreeRow> {
+    val out = mutableListOf<TreeRow>()
+    fun walk(dir: java.io.File, depth: Int, parents: List<String>) {
+        val children = dir.listFiles()?.sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() })) ?: return
+        children.forEach { child ->
+            val count = if (child.isDirectory) child.listFiles()?.size ?: 0 else 0
+            out += TreeRow(child, depth, parents, child.isDirectory, count)
+            if (child.isDirectory) walk(child, depth + 1, parents + child.path)
+        }
+    }
+    walk(root, 0, listOf(root.path))
+    return out
 }

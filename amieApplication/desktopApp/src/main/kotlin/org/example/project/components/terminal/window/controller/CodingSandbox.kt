@@ -20,6 +20,7 @@ import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import org.example.project.components.ui.viewport.AccentButton
+import org.example.project.components.ui.viewport.AccentIconButton
 import org.example.project.components.ui.viewport.AppTooltip
 import org.example.project.components.ui.viewport.IconChip
 import org.example.project.components.ui.viewport.SmallButton
@@ -528,6 +529,8 @@ fun CodingSandbox(navController: NavController) {
                         EditorHeader(
                             saved = savedFlash,
                             env = envName,
+                            envs = ScriptEnvironments.names(),
+                            onEnv = { chosen -> if (chosen != envName) loadCode(EnvPlan.withEnv(codeField.value, chosen)) },
                             running = running,
                             shortcut = runShortcut,
                             onRun = { run() },
@@ -633,6 +636,9 @@ private fun EditorHeader(
     saved: Boolean,
     /** The env the script is sourced in, in the place a file tab would take: the file is always AMP/pluginDir/main.kts */
     env: String,
+    /** The envs there are, for the chooser; choosing one rewrites the script's environment(SettingsEnv(...)) line */
+    envs: List<String>,
+    onEnv: (String) -> Unit,
     running: Boolean,
     shortcut: String,
     onRun: () -> Unit,
@@ -649,18 +655,21 @@ private fun EditorHeader(
 ) {
     Column(modifier = Modifier.fillMaxWidth().background(TabBarBackground)) {
         Row(modifier = Modifier.fillMaxWidth().height(32.dp), verticalAlignment = Alignment.CenterVertically) {
+            // The sidebar's chip sits where the sidebar meets the strip, at the far left
+            Spacer(modifier = Modifier.width(6.dp))
+            IconChip(Icons.Default.ViewSidebar, tip = if (sidebarShown) "Hide the navigation sidebar" else "Show the navigation sidebar", active = sidebarShown) { onSidebar() }
+            Spacer(modifier = Modifier.width(6.dp))
             // No file tab: there is one script, AMP/pluginDir/main.kts (the docs say so), and what matters is the
-            // env it runs in, so that is what the strip says
-            AppTooltip("The script is AMP/pluginDir/main.kts, saved as you type; it is sourced in the env '$env' (environment(SettingsEnv(\"name\")) picks another)") {
-                Row(modifier = Modifier.fillMaxHeight().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = "env", style = TextStyle(color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.SansSerif))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(text = env, style = TextStyle(color = FontColor, fontSize = 12.sp, fontFamily = FontFamily.Monospace))
-                    if (saved) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = "saved", style = TextStyle(color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.SansSerif))
-                    }
-                }
+            // env it runs in, so that is what the strip says: a chooser over the envs there are
+            DropButton(
+                "env $env",
+                accent = false,
+                tip = "The env the script is sourced in: its packages and model groups. Choosing one writes environment(SettingsEnv(\"name\")) into the script (AMP/pluginDir/main.kts, saved as you type); the folder is AMP/env/<name>",
+                items = envs.map { e -> ContextMenuItem(if (e == env) "$e (current)" else e) { onEnv(e) } },
+            )
+            if (saved) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = "saved", style = TextStyle(color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.SansSerif))
             }
             if (status != null) {
                 Spacer(modifier = Modifier.width(12.dp))
@@ -670,9 +679,17 @@ private fun EditorHeader(
             DropButton("Examples", accent = false, tip = "Complete scripts to run as they are: a model, training, NER, a database, serving… Your current script is kept under AMP/pluginDir/backup", items = examples)
             Spacer(modifier = Modifier.width(6.dp))
             IconChip(Icons.Default.FormatAlignLeft, tip = "Format: re-indent the whole script by its braces (${if (shortcut.startsWith("⌘")) "⌘⇧F" else "Ctrl+Shift+F"})") { onFormat() }
-            Spacer(modifier = Modifier.width(4.dp))
-            IconChip(Icons.Default.ViewSidebar, tip = if (sidebarShown) "Hide the navigation sidebar" else "Show the navigation sidebar", active = sidebarShown) { onSidebar() }
-            Spacer(modifier = Modifier.width(4.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            // Only the icon: the green square is the one thing that runs
+            AccentIconButton(
+                Icons.Default.PlayArrow,
+                tip = if (running) "The script is running; the console follows it" else "Run the script ($shortcut) in the env '$env'. It is AMP/pluginDir/main.kts, saved as you type",
+                enabled = !running,
+                fill = RunButton,
+                fillHover = RunButtonHover,
+            ) { onRun() }
+            Spacer(modifier = Modifier.width(8.dp))
+            // The console's chip sits at the edge the console opens from
             IconChip(
                 Icons.Default.Terminal,
                 tip = when {
@@ -682,10 +699,7 @@ private fun EditorHeader(
                 },
                 active = consoleShown,
             ) { onConsole() }
-            Spacer(modifier = Modifier.width(8.dp))
-            if (running) SmallButton("Running…", enabled = false, icon = Icons.Default.PlayArrow, tip = "main.kts is running; the console follows it") {}
-            else AccentButton("Run", icon = Icons.Default.PlayArrow, tip = "Run the script ($shortcut) in the env '$env'. It is AMP/pluginDir/main.kts, saved as you type", fill = RunButton, fillHover = RunButtonHover) { onRun() }
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(6.dp))
         }
         Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(UnifiedBorderColor))
     }

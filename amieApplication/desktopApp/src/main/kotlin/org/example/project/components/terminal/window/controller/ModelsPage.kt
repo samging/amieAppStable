@@ -140,6 +140,11 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.res.loadSvgPainter
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
@@ -271,6 +276,7 @@ import java.util.Locale
 /** The sections of the page; the tip is what the tab's tooltip says */
 private enum class PageTab(val title: String, val icon: ImageVector, val tip: String) {
     MODELS("Models", Icons.Default.Memory, "Intent models: build one from a csv, then validate, serve and publish it"),
+    GROUPS("Groups", Icons.Default.Hub, "Model groups: sets of models a script asks together with group(\"name\"), each kept in its env"),
     PACKAGES("Packages", Icons.Default.Inventory2, "Package jars a script opens with initMod(\"name.jar\"), in collections and by where they live"),
     SESSIONS("Sessions", Icons.Default.Sensors, "Everything open right now: model, package and ONNX sessions, each with its log and Terminate"),
 }
@@ -304,6 +310,30 @@ private val iconCatalog: List<Pair<String, ImageVector>> = listOf(
 
 private fun iconNamed(name: String?, default: ImageVector): ImageVector = iconCatalog.firstOrNull { it.first == name }?.second ?: default
 
+private val iconExtensions = listOf("png", "jpg", "jpeg", "svg")
+
+/** The painter of an uploaded icon file, decoded once per file version; null when it does not decode */
+@Composable
+private fun rememberIconPainter(file: File?): Painter? {
+    val density = LocalDensity.current
+    return remember(file?.path, file?.lastModified()) {
+        file ?: return@remember null
+        runCatching {
+            if (file.extension.equals("svg", ignoreCase = true)) file.inputStream().use { loadSvgPainter(it, density) }
+            else BitmapPainter(file.inputStream().use { loadImageBitmap(it) })
+        }.getOrNull()
+    }
+}
+
+/** Copies the chosen image into the module folder as icon.<ext>, replacing any icon file there; null clears it */
+private fun setIconFile(dir: File, image: File?) {
+    iconExtensions.forEach { File(dir, "icon.$it").delete() }
+    if (image != null) image.copyTo(File(dir, "icon.${image.extension.lowercase()}"), overwrite = true)
+}
+
+/** The status words the rows do not show: the green underline says running, its absence idle; only the other states are worth a word */
+private val quietStatus = setOf("idle", "running", "stopped", "open", "closed")
+
 /** A coloured tag: text and its colour; the colour names are what a flag in the metadata may say */
 private data class Flag(val text: String, val color: Color, val tip: String? = null)
 
@@ -333,6 +363,8 @@ private data class ModelInfo(
     val groups: List<String> = emptyList(),
 ) {
     val icon: ImageVector get() = iconNamed(manifest.icon, Icons.Default.Memory)
+    /** An image of the model's own, AMP/modules/<name>/icon.(png|jpg|jpeg|svg), which wins over the catalog icon */
+    val iconFile: File? get() = iconExtensions.map { File(dir, "icon.$it") }.firstOrNull { it.isFile }
     val url: String? get() = stats?.url
     val listening: Boolean get() = stats != null
     val busy: Boolean get() = sessions.any { it.running }
@@ -397,6 +429,8 @@ private data class JarInfo(
     val requirements: List<Requirement> = emptyList(),
     /** The last test run, from <jar>.tests.json */
     val report: PackageTestReport? = null,
+    /** Who published it to the website's store, for a jar that is there */
+    val author: String? = null,
 ) {
     val local: Boolean get() = file != null
     val unmet: Int get() = requirements.count { it.ok == false }
@@ -422,7 +456,7 @@ private data class JarInfo(
     }
 
     /** Where the jar lives, as a group of the list */
-    val location: String get() = when (source) { "server" -> "On the server"; "env" -> "In the env"; "maven" -> "From Maven Central"; else -> "In AMP/pluginDir" }
+    val location: String get() = when (source) { "server" -> "On the server"; "store" -> "In the store"; "env" -> "In the env"; "maven" -> "From Maven Central"; else -> "In AMP/pluginDir" }
 
     /** Name, version, Java, collection, entry class, a class or a resource name contain the query */
     fun matches(query: String): Boolean {
@@ -529,7 +563,7 @@ private fun readSnapshot(remote: Boolean): ModelsSnapshot {
             requirements = PackageMetadata.requirements(file, contents, meta, contents?.entryClass), report = PackageMetadata.lastReport(file.name),
         )
     } + mavenJars + remoteJars.map {
-        JarInfo(it.name, "server", null, JarPackages.downloadUrl(it.name), page, it.version, null, null, collectionsOf(it.name), sessions.filter { s -> s.kind == KIND_PACKAGE && s.owner == it.name })
+        JarInfo(it.name, if (it.where == "store") "store" else "server", null, it.downloadUrl ?: JarPackages.downloadUrl(it.name), it.page ?: page, it.version, null, null, collectionsOf(it.name), sessions.filter { s -> s.kind == KIND_PACKAGE && s.owner == it.name }, author = it.author)
     }).sortedBy { it.name }
 
     return ModelsSnapshot(models, groups, jars, sessions, collections, env.mavenPackages().map { it.declared }.toSet())
@@ -625,7 +659,7 @@ private fun ModelsContent(user: String?, onLogin: () -> Unit, sidebarShown: Bool
     Column(modifier = Modifier.fillMaxSize()) {
         PageTabs(
             tab = tab,
-            counts = mapOf(PageTab.MODELS to snapshot.models.size, PageTab.PACKAGES to snapshot.jars.size, PageTab.SESSIONS to snapshot.sessions.size),
+            counts = mapOf(PageTab.MODELS to snapshot.models.size, PageTab.GROUPS to snapshot.groups.size, PageTab.PACKAGES to snapshot.jars.size, PageTab.SESSIONS to snapshot.sessions.size),
             onTab = { tab = it },
             sidebarShown = sidebarShown,
             onSidebar = onSidebar,
@@ -699,23 +733,14 @@ private fun ModelsContent(user: String?, onLogin: () -> Unit, sidebarShown: Bool
                     validating = validating,
                     pending = pending,
                     selectedName = selectedModel,
-                    selectedGroupKey = selectedGroup,
                     signedIn = user != null,
                     creating = creating || (snapshot.models.isEmpty() && build == null),
                     onCreating = { creating = it },
-                    onSelect = { selectedModel = it; selectedGroup = null },
-                    onSelectGroup = { selectedGroup = it },
+                    onSelect = { selectedModel = it },
                     onIcon = { model, icon -> background("icon:${model.name}") { updateModule(model.name) { it.copy(icon = icon) } } },
+                    onIconFile = { model, image -> background("icon:${model.name}") { setIconFile(model.dir, image) } },
                     onAddToGroup = { model, group -> background("group:${group.name}") { ModelGroups.add(group.name, model.name, group.env) } },
                     onNewGroup = { models -> grouping = models },
-                    onGroupOpen = { g -> background("open:group:${g.name}") { ModelGroups.open(g.name, g.env) } },
-                    onGroupTerminate = { g -> background("terminate:group:${g.name}") { g.swarm?.terminate() } },
-                    onGroupRemove = { g, model -> background("group:${g.name}") { ModelGroups.remove(g.name, model, g.env) } },
-                    onGroupIcon = { g, icon -> background("group:${g.name}") { ModelGroups.setIcon(g.name, icon, g.env) } },
-                    onGroupDelete = { g ->
-                        if (selectedGroup == "${g.name}@${g.env}") selectedGroup = null
-                        background("group:${g.name}") { ModelGroups.delete(g.name, g.env); notice = Notice("the group ${g.name} is gone; its models stay") }
-                    },
                     onBuild = { name, data, test, description ->
                         if (build != null) notice = Notice("a build is already running: ${build?.modelName}; wait for it to end")
                         else background("build") {
@@ -776,6 +801,24 @@ private fun ModelsContent(user: String?, onLogin: () -> Unit, sidebarShown: Bool
                             })
                         }
                     },
+                )
+                PageTab.GROUPS -> GroupsTab(
+                    snapshot = snapshot,
+                    pending = pending,
+                    selectedKey = selectedGroup,
+                    onSelect = { selectedGroup = it },
+                    onShowModel = { selectedModel = it; tab = PageTab.MODELS },
+                    onAddToGroup = { model, group -> background("group:${group.name}") { ModelGroups.add(group.name, model.name, group.env) } },
+                    onGroupOpen = { g -> background("open:group:${g.name}") { ModelGroups.open(g.name, g.env) } },
+                    onGroupTerminate = { g -> background("terminate:group:${g.name}") { g.swarm?.terminate() } },
+                    onGroupRemove = { g, model -> background("group:${g.name}") { ModelGroups.remove(g.name, model, g.env) } },
+                    onGroupIcon = { g, icon -> background("group:${g.name}") { ModelGroups.setIcon(g.name, icon, g.env) } },
+                    onGroupDelete = { g ->
+                        if (selectedGroup == "${g.name}@${g.env}") selectedGroup = null
+                        background("group:${g.name}") { ModelGroups.delete(g.name, g.env); notice = Notice("the group ${g.name} is gone; its models stay") }
+                    },
+                    onTerminate = { session -> background("terminate:${session.key}") { session.terminate() } },
+                    onNewGroup = { models -> grouping = models },
                 )
                 PageTab.PACKAGES -> PackagesTab(
                     snapshot = snapshot,
@@ -966,22 +1009,16 @@ private fun ColumnScope.ModelsTab(
     validating: ValidationProgress?,
     pending: Set<String>,
     selectedName: String?,
-    selectedGroupKey: String?,
     signedIn: Boolean,
     creating: Boolean,
     onCreating: (Boolean) -> Unit,
     onSelect: (String) -> Unit,
-    onSelectGroup: (String) -> Unit,
     /** Sets the model's icon (a catalog name, null for the default) in module.json */
     onIcon: (ModelInfo, String?) -> Unit,
+    onIconFile: (ModelInfo, File?) -> Unit,
     onAddToGroup: (ModelInfo, GroupInfo) -> Unit,
     /** Opens the strip that makes a new group with these models */
     onNewGroup: (List<String>) -> Unit,
-    onGroupOpen: (GroupInfo) -> Unit,
-    onGroupTerminate: (GroupInfo) -> Unit,
-    onGroupRemove: (GroupInfo, String) -> Unit,
-    onGroupIcon: (GroupInfo, String?) -> Unit,
-    onGroupDelete: (GroupInfo) -> Unit,
     onBuild: (String, File, File?, String) -> Unit,
     /** Trains the model again under the same name: on the given csv, or on the one it was trained on */
     onRetrain: (ModelInfo, File?) -> Unit,
@@ -998,14 +1035,6 @@ private fun ColumnScope.ModelsTab(
     onPublish: (ModelInfo) -> Unit,
 ) {
     val clipboard = LocalClipboardManager.current
-
-    // The actions of a group: open or close its swarm, take models out, copy the call, remove it
-    fun menuOfGroup(g: GroupInfo): List<ContextMenuItem> = listOfNotNull(
-        if (g.open) ContextMenuItem("Terminate swarm") { onGroupTerminate(g) } else ContextMenuItem("Open swarm") { onGroupOpen(g) },
-        ContextMenuItem("Copy group(\"${g.name}\")") { clipboard.setText(AnnotatedString("group(\"${g.name}\")")) },
-    ) + g.group.models.map { m -> ContextMenuItem("Take $m out") { onGroupRemove(g, m) } } + listOf(
-        ContextMenuItem("Remove group") { onGroupDelete(g) },
-    )
 
     // The actions of a model: one list for its row's right-click, its ⋯ button and its panel header
     fun menuOf(model: ModelInfo): List<ContextMenuItem> = listOfNotNull(
@@ -1031,19 +1060,16 @@ private fun ColumnScope.ModelsTab(
     var query by remember { mutableStateOf("") }
     val shown = snapshot.models.filter { it.matches(query) }
     val ordered = shown.sortedWith(compareByDescending<ModelInfo> { it.running }.thenByDescending { it.accuracy }.thenBy { it.name })
-    val shownGroups = snapshot.groups.filter { it.matches(query.trim().lowercase()) }.sortedWith(compareByDescending<GroupInfo> { it.open }.thenBy { it.env }.thenBy { it.name })
-    // A model dragged onto a group joins it; onto another model, the two make a new group; onto the zone over the list, a new group with it
+    // A model dragged onto another model: the two make a new group; onto the zone over the list, a new group with it (the Groups tab has the groups)
     val drag = remember { DragState { model, target ->
         when {
             target == "new-group" -> onNewGroup(listOf(model))
-            target.startsWith("group:") -> snapshot.groups.firstOrNull { "group:${it.name}@${it.env}" == target }?.let { g -> snapshot.models.firstOrNull { it.name == model }?.let { m -> onAddToGroup(m, g) } }
             target.startsWith("model:") -> onNewGroup(listOf(model, target.removePrefix("model:")))
         }
     } }
     var overlayOrigin by remember { mutableStateOf(Offset.Zero) }
     Box(modifier = Modifier.fillMaxWidth().weight(1f).onGloballyPositioned { overlayOrigin = it.positionInRoot() }) {
-    val selectedGroupInfo = selectedGroupKey?.let { key -> snapshot.groups.firstOrNull { "${it.name}@${it.env}" == key } }
-    val selected = if (selectedGroupInfo != null) null else snapshot.models.firstOrNull { it.name == selectedName } ?: ordered.firstOrNull()
+    val selected = snapshot.models.firstOrNull { it.name == selectedName } ?: ordered.firstOrNull()
     Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         var listWidth by remember { mutableStateOf(ModelsCache.listWidth) }
         Column(modifier = Modifier.width(listWidth.dp).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -1058,31 +1084,7 @@ private fun ColumnScope.ModelsTab(
             }
             build?.let { BuildLine(it) }
             if (drag.dragging != null) NewGroupDropZone(drag)
-            if (shown.isEmpty() && shownGroups.isEmpty()) { if (query.isNotBlank()) NoMatches(query) { query = "" } else Hint("no models yet") }
-            // The groups first: each a swarm a script opens with group("name"), kept in its env
-            if (shownGroups.isNotEmpty()) Fold("groups", shownGroups.size, open = true, key = "groups") {
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    shownGroups.forEach { g ->
-                        ListRow(
-                            name = g.label,
-                            active = g.open,
-                            selected = selectedGroupInfo?.let { it.name == g.name && it.env == g.env } == true,
-                            meta = listOfNotNull(
-                                when (g.group.models.size) { 0 -> "no models"; 1 -> "1 model"; else -> "${g.group.models.size} models" },
-                                if (g.missing.isNotEmpty()) "${g.missing.size} missing" else null,
-                                "env ${g.env}",
-                            ).joinToString(" · "),
-                            status = if (g.open) "open" else "closed",
-                            statusTip = if (g.open) "open: the swarm #${g.swarm?.id} answers group(\"${g.name}\") with ${g.present.size} models" else "closed: no swarm on it; Open swarm, or group(\"${g.name}\") in a script, opens one",
-                            underline = g.open,
-                            icon = g.icon,
-                            menu = menuOfGroup(g),
-                            drag = drag,
-                            dropKey = "group:${g.name}@${g.env}",
-                        ) { onSelectGroup("${g.name}@${g.env}") }
-                    }
-                }
-            }
+            if (shown.isEmpty()) { if (query.isNotBlank()) NoMatches(query) { query = "" } else Hint("no models yet") }
             val groups = ordered.groupBy { it.dataName }
             val groupOrder = groups.keys.sortedWith(compareByDescending<String> { groups.getValue(it).any { m -> m.running } }.thenByDescending { groups.getValue(it).maxOf { m -> m.accuracy } })
             groupOrder.forEach { data ->
@@ -1104,6 +1106,7 @@ private fun ColumnScope.ModelsTab(
                                 statusTip = statusTip(model),
                                 underline = model.running,
                                 icon = model.icon,
+                                painter = rememberIconPainter(model.iconFile),
                                 menu = menuOf(model),
                                 drag = drag,
                                 dragKey = model.name,
@@ -1117,20 +1120,6 @@ private fun ColumnScope.ModelsTab(
         VerticalSeparator { listWidth = it; ModelsCache.listWidth = it }
         when {
             creating && build == null -> NewModelPanel(Modifier.weight(1f).fillMaxHeight(), onBuild = onBuild, onClose = { onCreating(false) })
-            selectedGroupInfo != null -> GroupDetail(
-                group = selectedGroupInfo,
-                models = snapshot.models,
-                pending = pending,
-                menu = menuOfGroup(selectedGroupInfo),
-                modifier = Modifier.weight(1f).fillMaxHeight(),
-                onOpen = { onGroupOpen(selectedGroupInfo) },
-                onTerminate = { onGroupTerminate(selectedGroupInfo) },
-                onAdd = { model -> onAddToGroup(model, selectedGroupInfo) },
-                onRemove = { onGroupRemove(selectedGroupInfo, it) },
-                onIcon = { onGroupIcon(selectedGroupInfo, it) },
-                onSelectModel = onSelect,
-                onTerminateSession = onTerminate,
-            )
             selected != null -> ModelDetail(
                 model = selected,
                 signedIn = signedIn,
@@ -1141,6 +1130,7 @@ private fun ColumnScope.ModelsTab(
                 onValidate = { data -> onValidate(selected, data) },
                 onRetrain = { data -> onRetrain(selected, data) },
                 onIcon = { onIcon(selected, it) },
+                onIconFile = { onIconFile(selected, it) },
                 building = build != null,
                 onSave = { onSave(selected, it) },
                 onDescribe = { onDescribe(selected, it) },
@@ -1155,9 +1145,9 @@ private fun ColumnScope.ModelsTab(
     // The ghost: the dragged model's name beside the pointer, and what dropping would do
     drag.dragging?.let { name ->
         val action = when (val t = drag.over) {
-            null -> "drop on a group, a model, or the zone over the list"
+            null -> "drop on a model to pair them, or on the zone over the list"
             "new-group" -> "new group with $name"
-            else -> if (t.startsWith("group:")) "join ${t.removePrefix("group:").substringBefore('@')}" else "new group with ${t.removePrefix("model:")}"
+            else -> "new group with ${t.removePrefix("model:")}"
         }
         Text(
             "$name · $action",
@@ -1297,6 +1287,8 @@ private fun ModelDetail(
     onValidate: (File) -> Unit,
     onRetrain: (File?) -> Unit,
     onIcon: (String?) -> Unit,
+    /** An image of the model's own as its icon, copied into its folder; null removes it */
+    onIconFile: (File?) -> Unit,
     /** A build is running, so Retrain waits */
     building: Boolean,
     onSave: (ServingSettings) -> Unit,
@@ -1340,9 +1332,10 @@ private fun ModelDetail(
         DetailHeader(
             name = model.name,
             icon = model.icon,
+            painter = rememberIconPainter(model.iconFile),
             active = model.running,
             status = listOfNotNull(
-                model.status,
+                model.status.takeIf { it !in quietStatus },
                 if (model.listening) "listening ${model.serving.host}:${model.serving.port}" else "not serving",
                 "trained on ${model.dataName}",
                 if (model.groups.isNotEmpty()) "in ${model.groups.joinToString()}" else null,
@@ -1399,7 +1392,7 @@ private fun ModelDetail(
 
         Column(modifier = Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 14.dp).padding(top = 10.dp, bottom = 14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             when (tab) {
-                DetailTab.ABOUT -> AboutBlock(model, onDescribe, onIcon)
+                DetailTab.ABOUT -> AboutBlock(model, onDescribe, onIcon, onIconFile)
                 DetailTab.GUIDE -> GuideBlock(model)
                 DetailTab.METRICS -> MetricsBlock(model, validating, onValidate)
                 DetailTab.DATA -> DataBlock(model, building, onRetrain)
@@ -1449,7 +1442,7 @@ private fun DetailTabs(tabs: List<Pair<DetailTab, Int?>>, selected: DetailTab, o
  * what it was trained on and how. Models built before the training details were kept say so.
  */
 @Composable
-private fun AboutBlock(model: ModelInfo, onDescribe: (String) -> Unit, onIcon: (String?) -> Unit) {
+private fun AboutBlock(model: ModelInfo, onDescribe: (String) -> Unit, onIcon: (String?) -> Unit, onIconFile: (File?) -> Unit) {
     val m = model.manifest
     var text by remember(model.name, m.description) { mutableStateOf(m.description ?: "") }
     val dirty = text.trim() != (m.description ?: "")
@@ -1474,8 +1467,20 @@ private fun AboutBlock(model: ModelInfo, onDescribe: (String) -> Unit, onIcon: (
         AccentButton("Save description", icon = Icons.Default.Save, tip = "Write the description to module.json") { onDescribe(text) }
     }
 
-    Section("ICON", key = "${model.name}:icon") {
-        Hint("the glyph of the model in the list and on this header, kept in module.json")
+    Section("ICON", key = "${model.name}:icon", actions = {
+        SmallButton("Upload image", icon = Icons.Default.Image, tip = "Use an image of your own (png, jpg or svg); it is copied into the model's folder as icon.<ext> and shown in the list, on this header and in groups") {
+            chooseFile("Icon image", iconExtensions)?.let { onIconFile(it) }
+        }
+        if (model.iconFile != null) { Spacer(Modifier.width(4.dp)); SmallButton("Remove image", icon = Icons.Default.Delete, tip = "Back to the catalog icon; ${model.iconFile!!.name} is deleted from the model's folder") { onIconFile(null) } }
+    }) {
+        model.iconFile?.let { f ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                rememberIconPainter(f)?.let { Image(it, contentDescription = null, modifier = Modifier.size(28.dp).clip(RectangleShape)) }
+                Spacer(Modifier.width(8.dp))
+                Meta("${f.name} · ${f.length() / 1024} KB · in the model's folder, goes along when published")
+            }
+        }
+        Hint(if (model.iconFile != null) "the catalog icon below is used where the image cannot be drawn" else "the glyph of the model in the list and on this header, kept in module.json; or upload an image")
         IconPicker(chosen = m.icon, default = "memory") { onIcon(it) }
     }
 
@@ -2041,9 +2046,9 @@ private fun ColumnScope.PackagesTab(
                 CollectionFolder(collection, members, snapshot.jars, selected?.name, onSelect, onCollection)
             }
             val groups = shown.groupBy { it.location }
-            listOf("In AMP/pluginDir", "In the env", "From Maven Central", "On the server").forEach { location ->
+            listOf("In AMP/pluginDir", "In the env", "From Maven Central", "On the server", "In the store").forEach { location ->
                 val jars = groups[location] ?: return@forEach
-                Fold(location, jars.size, open = location != "On the server" || query.isNotBlank() || jars.any { it.name == selected?.name }, key = location) {
+                Fold(location, jars.size, open = (location != "On the server" && location != "In the store") || query.isNotBlank() || jars.any { it.name == selected?.name }, key = location) {
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         jars.forEach { jar -> JarRow(jar, selected = jar.name == selected?.name, onFetch = { onFetch(jar) }, onPublish = { onPublish(jar) }, onRemove = if (jar.maven) ({ onRemoveMaven(jar) }) else null, signedIn = signedIn, onSelect = { onSelect(jar.name) }) }
                     }
@@ -2090,6 +2095,7 @@ private fun JarRow(jar: JarInfo, selected: Boolean, onDetach: (() -> Unit)? = nu
         meta = listOfNotNull(
             jar.contents?.minJava?.let { "java $it+" },
             jar.version?.let { "v$it" },
+            jar.author?.let { "by $it" },
             jar.resolvedCoordinate?.takeIf { it != jar.coordinate }?.let { "declared ${jar.coordinate?.substringAfterLast(':')}" },
         ).joinToString(" · "),
         status = jar.status,
@@ -2097,6 +2103,7 @@ private fun JarRow(jar: JarInfo, selected: Boolean, onDetach: (() -> Unit)? = nu
             jar.sessions.any { it.running } -> "inferring: a session on it is answering right now"
             jar.open > 0 -> "${jar.open} open: sessions a script opened with initMod(\"${jar.name}\"); each is its own instance"
             jar.local -> "idle: on this machine, no session open"
+            jar.source == "store" -> "in the website's store, published by ${jar.author ?: "someone"}: not on this machine yet; Fetch downloads it, and the first initMod does too"
             else -> "on the server: not on this machine yet; Fetch downloads it, and the first initMod does too"
         },
         underline = jar.open > 0,
@@ -2313,7 +2320,7 @@ private fun JarDetail(jar: JarInfo, pending: Set<String>, modifier: Modifier = M
             name = jar.name,
             active = jar.open > 0,
             status = listOfNotNull(
-                jar.status,
+                jar.status.takeIf { it !in quietStatus },
                 contents?.let { it.minJava?.let { v -> "java $v+" } ?: "any java" },
                 contents?.let { if (it.kotlin) "kotlin" else "java" },
                 jar.version?.let { "v$it" },
@@ -2355,6 +2362,7 @@ private fun JarDetail(jar: JarInfo, pending: Set<String>, modifier: Modifier = M
                 "where" to when (jar.source) {
                     "maven" -> "AMP/env/caches, resolved from Maven Central with its dependencies"
                     "server" -> "on the server; fetched into AMP/pluginDir on the first open"
+                    "store" -> "in the website's store, published by ${jar.author ?: "someone"} under their account; fetched into AMP/pluginDir on the first open"
                     else -> if (jar.origin != null) "AMP/${if (jar.source == "env") "env/<env>/libs" else "pluginDir"}, downloaded from the server" else "AMP/${if (jar.source == "env") "env/<env>/libs" else "pluginDir"}, added on this machine"
                 },
                 "page" to jar.page,
@@ -2519,7 +2527,7 @@ private fun SessionRow(session: SessionInfo, showOwner: Boolean, onTerminate: ()
             Spacer(Modifier.width(8.dp))
             Text(if (showOwner) "${session.owner}  #${session.id}" else "#${session.id}", color = FontColor, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.width(10.dp))
-            Meta(listOfNotNull(if (showOwner) session.kind else null, if (session.running) "inferring" else "idle", "${session.runs} runs", uptime(Duration.between(session.openedAt, Instant.now()))).joinToString(" · "))
+            Meta(listOfNotNull(if (showOwner) session.kind else null, if (session.running) "inferring" else null, "${session.runs} runs", uptime(Duration.between(session.openedAt, Instant.now()))).joinToString(" · "))
             Spacer(Modifier.weight(1f))
             if (session.hasLog) {
                 SmallButton(if (showLog) "Hide log" else "Log ${session.log.size}", icon = Icons.Default.Notes, tip = "What this session was asked and answered, with the time of each") { showLog = !showLog }
@@ -2696,7 +2704,7 @@ private fun pct(value: Double) = "${(value * 100).toInt()}%"
  * underlined in green; a stopped one is not. With onDetach, a Detach button appears while the pointer is over it.
  */
 @Composable
-private fun ListRow(name: String, active: Boolean, selected: Boolean, meta: String, status: String, statusTip: String? = null, underline: Boolean = false, icon: ImageVector? = null, onDetach: (() -> Unit)? = null, menu: List<ContextMenuItem> = emptyList(), flags: List<Flag> = emptyList(), drag: DragState? = null, dragKey: String? = null, dropKey: String? = null, onSelect: () -> Unit) {
+private fun ListRow(name: String, active: Boolean, selected: Boolean, meta: String, status: String, statusTip: String? = null, underline: Boolean = false, icon: ImageVector? = null, painter: Painter? = null, onDetach: (() -> Unit)? = null, menu: List<ContextMenuItem> = emptyList(), flags: List<Flag> = emptyList(), drag: DragState? = null, dragKey: String? = null, dropKey: String? = null, onSelect: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
     val hovered by interactionSource.collectIsHoveredAsState()
     // Where the row is on the window, for the drag that starts on it and the drop that lands on it
@@ -2726,7 +2734,10 @@ private fun ListRow(name: String, active: Boolean, selected: Boolean, meta: Stri
             )
     ) {
         Row(modifier = Modifier.fillMaxWidth().padding(start = 10.dp, end = 4.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (icon != null) {
+            if (painter != null) {
+                Image(painter, contentDescription = null, modifier = Modifier.size(14.dp).clip(RectangleShape))
+                Spacer(Modifier.width(7.dp))
+            } else if (icon != null) {
                 Icon(icon, contentDescription = null, tint = if (active) FontColor else MutedFontColor, modifier = Modifier.size(13.dp))
                 Spacer(Modifier.width(7.dp))
             }
@@ -2740,7 +2751,7 @@ private fun ListRow(name: String, active: Boolean, selected: Boolean, meta: Stri
             Spacer(Modifier.width(6.dp))
             if (hovered && onDetach != null) {
                 SmallButton("Detach", icon = Icons.Default.LinkOff, tip = "Take it out of this collection; the file stays", onClick = onDetach)
-            } else {
+            } else if (status !in quietStatus) {
                 AppTooltip(statusTip) {
                     Text(status, color = if (active) FontColor else MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.Monospace, maxLines = 1)
                 }
@@ -2836,7 +2847,7 @@ private fun DetailPanel(modifier: Modifier = Modifier, content: @Composable Colu
 
 /** Name and one status line on the left of a detail panel's header, the actions on the right, then the ⋯ menu */
 @Composable
-private fun DetailHeader(name: String, active: Boolean, status: String, statusTip: String? = null, menu: List<ContextMenuItem> = emptyList(), mark: Boolean = true, icon: ImageVector? = null, actions: @Composable () -> Unit) {
+private fun DetailHeader(name: String, active: Boolean, status: String, statusTip: String? = null, menu: List<ContextMenuItem> = emptyList(), mark: Boolean = true, icon: ImageVector? = null, painter: Painter? = null, actions: @Composable () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -2846,7 +2857,8 @@ private fun DetailHeader(name: String, active: Boolean, status: String, statusTi
             StatusMark(active, statusTip)
             Spacer(Modifier.width(2.dp))
         }
-        if (icon != null) Icon(icon, contentDescription = null, tint = if (active) FontColor else MutedFontColor, modifier = Modifier.size(15.dp))
+        if (painter != null) Image(painter, contentDescription = null, modifier = Modifier.size(18.dp).clip(RectangleShape))
+        else if (icon != null) Icon(icon, contentDescription = null, tint = if (active) FontColor else MutedFontColor, modifier = Modifier.size(15.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(name, color = FontColor, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.SansSerif, maxLines = 1, overflow = TextOverflow.Ellipsis)
             AppTooltip(statusTip) { Meta(status) }
@@ -2907,7 +2919,7 @@ private fun NewGroupDropZone(drag: DragState) {
             .padding(horizontal = 10.dp, vertical = 8.dp),
         contentAlignment = Alignment.CenterStart,
     ) {
-        Text("drop here for a new group · on a group to join it · on a model to pair them", color = if (over) FontColor else MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.SansSerif)
+        Text("drop here for a new group · on another model to pair them · the Groups tab adds to a group", color = if (over) FontColor else MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.SansSerif)
     }
 }
 
@@ -3220,6 +3232,89 @@ private fun ConfirmBar(text: String, confirm: String, onConfirm: () -> Unit, onK
     }
 }
 
+/* ---------- GROUPS ---------- */
+
+/**
+ * The groups tab: every group of every env in a list (its icon, how many models, its env, the green underline
+ * while its swarm is open) and the selected one in the panel. A group is made from a model's ⋯ menu on the Models
+ * tab, by dragging models together there, or with + New group here (empty, to fill with Add model).
+ */
+@Composable
+private fun ColumnScope.GroupsTab(
+    snapshot: ModelsSnapshot,
+    pending: Set<String>,
+    selectedKey: String?,
+    onSelect: (String) -> Unit,
+    onShowModel: (String) -> Unit,
+    onAddToGroup: (ModelInfo, GroupInfo) -> Unit,
+    onGroupOpen: (GroupInfo) -> Unit,
+    onGroupTerminate: (GroupInfo) -> Unit,
+    onGroupRemove: (GroupInfo, String) -> Unit,
+    onGroupIcon: (GroupInfo, String?) -> Unit,
+    onGroupDelete: (GroupInfo) -> Unit,
+    onTerminate: (SessionInfo) -> Unit,
+    onNewGroup: (List<String>) -> Unit,
+) {
+    val clipboard = LocalClipboardManager.current
+    fun menuOfGroup(g: GroupInfo): List<ContextMenuItem> = listOfNotNull(
+        if (g.open) ContextMenuItem("Terminate swarm") { onGroupTerminate(g) } else ContextMenuItem("Open swarm") { onGroupOpen(g) },
+        ContextMenuItem("Copy group(\"${g.name}\")") { clipboard.setText(AnnotatedString("group(\"${g.name}\")")) },
+    ) + g.group.models.map { m -> ContextMenuItem("Take $m out") { onGroupRemove(g, m) } } + listOf(
+        ContextMenuItem("Remove group") { onGroupDelete(g) },
+    )
+    var query by remember { mutableStateOf("") }
+    val shown = snapshot.groups.filter { it.matches(query.trim().lowercase()) }.sortedWith(compareByDescending<GroupInfo> { it.open }.thenBy { it.env }.thenBy { it.name })
+    val selected = selectedKey?.let { key -> snapshot.groups.firstOrNull { "${it.name}@${it.env}" == key } } ?: shown.firstOrNull()
+    Row(modifier = Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+        var listWidth by remember { mutableStateOf(ModelsCache.listWidth) }
+        Column(modifier = Modifier.width(listWidth.dp).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Box(modifier = Modifier.weight(1f)) { SearchField(query, tip = "Filter the groups by name, env, model or open/closed") { query = it } }
+                AccentButton("New group", icon = Icons.Default.Add, tip = "Make an empty group in an env, then Add model to it; a model's ⋯ menu on the Models tab and dragging models together there make one too") { onNewGroup(emptyList()) }
+            }
+            if (shown.isEmpty()) { if (query.isNotBlank()) NoMatches(query) { query = "" } else Hint("no groups yet: New group, or on the Models tab a model's ⋯ menu > New group with…, or drag one model onto another") }
+            shown.groupBy { it.env }.toSortedMap().forEach { (env, groups) ->
+                Fold("env $env", groups.size, open = true, key = "groups:$env") {
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        groups.forEach { g ->
+                            ListRow(
+                                name = g.name,
+                                active = g.open,
+                                selected = selected?.let { it.name == g.name && it.env == g.env } == true,
+                                meta = listOfNotNull(
+                                    when (g.group.models.size) { 0 -> "no models"; 1 -> "1 model"; else -> "${g.group.models.size} models" },
+                                    if (g.missing.isNotEmpty()) "${g.missing.size} missing" else null,
+                                    g.group.models.takeIf { it.isNotEmpty() }?.joinToString(),
+                                ).joinToString(" · "),
+                                status = if (g.open) "open" else "closed",
+                                statusTip = if (g.open) "the swarm #${g.swarm?.id} answers group(\"${g.name}\") with ${g.present.size} models" else "no swarm on it; Open swarm, or group(\"${g.name}\") in a script, opens one",
+                                underline = g.open,
+                                icon = g.icon,
+                                menu = menuOfGroup(g),
+                            ) { onSelect("${g.name}@${g.env}") }
+                        }
+                    }
+                }
+            }
+        }
+        VerticalSeparator { listWidth = it; ModelsCache.listWidth = it }
+        if (selected != null) GroupDetail(
+            group = selected,
+            models = snapshot.models,
+            pending = pending,
+            menu = menuOfGroup(selected),
+            modifier = Modifier.weight(1f).fillMaxHeight(),
+            onOpen = { onGroupOpen(selected) },
+            onTerminate = { onGroupTerminate(selected) },
+            onAdd = { model -> onAddToGroup(model, selected) },
+            onRemove = { onGroupRemove(selected, it) },
+            onIcon = { onGroupIcon(selected, it) },
+            onSelectModel = onShowModel,
+            onTerminateSession = onTerminate,
+        ) else Spacer(Modifier.weight(1f))
+    }
+}
+
 /**
  * The selected group: its icon and status in the header, Open swarm / Terminate swarm, then its models (each a
  * row that selects the model, with Detach to take it out), the models that can still be added, the icon picker,
@@ -3250,7 +3345,7 @@ private fun GroupDetail(
             icon = group.icon,
             active = group.open,
             status = listOfNotNull(
-                if (group.open) "open as swarm #${group.swarm?.id}" else "closed",
+                if (group.open) "swarm #${group.swarm?.id}" else null,
                 "env ${group.env}",
                 when (group.group.models.size) { 0 -> "no models"; 1 -> "1 model"; else -> "${group.group.models.size} models" },
             ).joinToString(" · "),
@@ -3276,6 +3371,7 @@ private fun GroupDetail(
                             statusTip = model?.let { statusTip(it) } ?: "missing: the model was destroyed or renamed; take it out, or build one with this name",
                             underline = model?.running == true,
                             icon = model?.icon ?: Icons.Default.Memory,
+                            painter = rememberIconPainter(model?.iconFile),
                             onDetach = { onRemove(name) },
                             menu = listOfNotNull(model?.let { ContextMenuItem("Show $name") { onSelectModel(name) } }, ContextMenuItem("Take $name out") { onRemove(name) }),
                         ) { if (model != null) onSelectModel(name) }
@@ -3318,7 +3414,7 @@ private fun IconPicker(chosen: String?, default: String, onChoose: (String?) -> 
  */
 @Composable
 private fun NewGroupBar(models: List<String>, envs: List<String>, taken: List<Pair<String, String>>, onCreate: (String, String) -> Unit, onCancel: () -> Unit) {
-    val model = models.joinToString(" + ")
+    val model = models.joinToString(" + ").ifEmpty { "no models yet" }
     var text by remember(model) { mutableStateOf("") }
     var env by remember(model) { mutableStateOf(ModelGroups.currentEnv) }
     val value = text.trim()
@@ -3338,7 +3434,7 @@ private fun NewGroupBar(models: List<String>, envs: List<String>, taken: List<Pa
     ) {
         Box(modifier = Modifier.width(2.dp).fillMaxHeight().background(PanelBorderSelected))
         Spacer(Modifier.width(10.dp))
-        Text("New group with $model", color = LogMessageColor, fontSize = 12.sp, fontFamily = FontFamily.SansSerif, modifier = Modifier.padding(vertical = 6.dp))
+        Text(if (models.isEmpty()) "New group" else "New group with $model", color = LogMessageColor, fontSize = 12.sp, fontFamily = FontFamily.SansSerif, modifier = Modifier.padding(vertical = 6.dp))
         Spacer(Modifier.width(10.dp))
         BasicTextField(
             value = text,
@@ -3358,7 +3454,7 @@ private fun NewGroupBar(models: List<String>, envs: List<String>, taken: List<Pa
         Spacer(Modifier.width(10.dp))
         Text(problem ?: "kept in AMP/env/$env/groups.json; more models join from their ⋯ menu", color = MutedFontColor, fontSize = 11.sp, fontFamily = FontFamily.SansSerif, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
         Spacer(Modifier.width(8.dp))
-        AccentButton("Create", enabled = problem == null, icon = Icons.Default.Add, tip = problem ?: "Make the group $value in env $env with $model in it") { onCreate(value, env) }
+        AccentButton("Create", enabled = problem == null, icon = Icons.Default.Add, tip = problem ?: if (models.isEmpty()) "Make the empty group $value in env $env; Add model fills it" else "Make the group $value in env $env with $model in it") { onCreate(value, env) }
         Spacer(Modifier.width(4.dp))
         SmallButton("Cancel", tip = "Make no group", onClick = onCancel)
         Spacer(Modifier.width(4.dp))

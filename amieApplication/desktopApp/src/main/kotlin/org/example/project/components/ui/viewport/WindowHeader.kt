@@ -65,7 +65,7 @@ fun WindowHeader(name:String,
         Box(
             modifier = modifier
                 .fillMaxWidth()
-                .height(44.dp)
+                .height(34.dp)
                 .background(ChromeBackground)
         ) {
             Row(
@@ -105,7 +105,7 @@ fun WindowHeader(name:String,
                         tip = "Add a device",
                         background = AddButton,
                         tint = Color.White,
-                        size = 28.dp,
+                        size = 24.dp,
                         onClick = addComponentNav,
                     )
                     Spacer(modifier = Modifier.size(10.dp))
@@ -147,7 +147,7 @@ private fun HeaderIconButton(
     tip: String,
     background: Color = Color.Transparent,
     tint: Color = MutedFontColor,
-    size: androidx.compose.ui.unit.Dp = 32.dp,
+    size: androidx.compose.ui.unit.Dp = 26.dp,
     onClick: () -> Unit,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -182,7 +182,7 @@ private fun LoginButton(onClick: () -> Unit) {
                 .border(1.dp, UnifiedBorderColor, RectangleShape)
                 .hoverable(interactionSource)
                 .clickable(interactionSource = interactionSource, indication = null) { onClick() }
-                .padding(horizontal = 12.dp, vertical = 5.dp),
+                .padding(horizontal = 10.dp, vertical = 3.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
@@ -210,7 +210,7 @@ private fun AccountChip(user: String, onLogout: (() -> Unit)?) {
             modifier = Modifier
                 .background(UnifiedBoxColor, RectangleShape)
                 .border(1.dp, UnifiedBorderColor, RectangleShape)
-                .padding(horizontal = 10.dp, vertical = 4.dp),
+                .padding(horizontal = 8.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
@@ -255,7 +255,7 @@ private fun WindowControlButton(
     AppTooltip(tip) {
         Box(
             modifier = Modifier
-                .width(46.dp)
+                .width(40.dp)
                 .fillMaxHeight()
                 .background(if (isHovered) hoverColor else Color.Transparent)
                 .hoverable(interactionSource)

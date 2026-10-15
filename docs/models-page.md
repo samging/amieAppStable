@@ -104,22 +104,31 @@ Under the header the panel has its own tabs, each with a tooltip that says what 
 
 Every model has an icon: the chip by default, or one from a small catalog (lightbulb, cloud, chat, home, music,
 shield, star, bolt, heart, language, science, work, pets, school, cart, hub, groups) chosen under **ICON** on the
-About tab and kept in `module.json`. It shows in the list, on the panel header and in the groups that hold it.
+About tab and kept in `module.json`, or an image of your own: **Upload image** there copies a png, jpg or svg
+into the model's folder as `icon.<ext>`, which then shows in the list, on the panel header and in groups (and
+goes along when the model is published); **Remove image** goes back to the catalog icon.
+
+No row says *idle*, *running*, *stopped*, *open* or *closed*: the green underline under a row is running (a
+session open, a listener on, a swarm open), its absence idle. Only the other states keep a word (*inferring*,
+*on server*, *2 open*, *missing*).
+
+Groups have their own **Groups** tab: every group of every env in a list (icon, how many models, which, the
+underline while its swarm is open), folded by env, and the selected one in the panel. **+ New group** there makes
+an empty one to fill with **Add model**.
 
 A **group** is a named set of models that are asked together: a swarm. A model's ⋯ menu offers **Add to group
 <name>** for every group it is not in and **New group with <model>…**, which opens a strip at the top of the page
 asking for the name and the **env** the group belongs to. Groups live in the env, as packages do: each env keeps
 its own in `AMP/env/<env>/groups.json`, a script sourced in that env finds them with `group("name")`
-(the default env first, then any), and `internalEnv()` lists them with the packages. The list shows the groups in
-a **groups** fold above the data folds, each with its icon, how many models it holds (and how many are missing),
-its env and **open** or **closed**. Selecting one shows its panel: **Open swarm** / **Terminate swarm**, the
+(the default env first, then any), and `internalEnv()` lists them with the packages. Selecting a group on the Groups tab shows its panel: **Open swarm** / **Terminate swarm**, the
 models (a row each; **Detach** takes one out; **Add model** adds one), the icon picker, where it lives and, while
 open, the swarm's session with its log. **Remove group** leaves the models alone. A destroyed or renamed model is
 taken out of (or renamed in) every group.
 
-Groups are also made by **dragging**: take a model's row and drop it on a group's row to put it in that group, on
-another model's row to open the new-group strip with the two of them, or on the zone that appears over the list
-while you drag ("drop here for a new group") for a new group with that one. The ghost beside the pointer says what
+Groups are also made by **dragging** on the Models tab: take a model's row and drop it on another model's row
+to open the new-group strip with the two of them, or on the zone that appears over the list while you drag
+("drop here for a new group") for a new group with that one; adding to a group that exists is **Add to group**
+in the ⋯ menu or **Add model** on the Groups tab. The ghost beside the pointer says what
 the drop would do, and the row under it is lit. A click without movement still selects the row.
 
 ### New model
@@ -155,6 +164,11 @@ sample data** on the dummy (its weights are fixed, so expect poor numbers) and t
 **Sample data** to see what a trained model's metrics look like.
 
 ## Packages
+
+Jars come from five places, each a fold of the list: `AMP/pluginDir`, the env, Maven Central, the website's
+downloads page (**On the server**) and the website's **store**: the packages people published under their
+accounts (`/api/all-packages`), each with its author (**by name** on the row). **Fetch** downloads a store jar
+from the address its listing gives into `AMP/pluginDir`, as does the first `initMod("name.jar")`.
 
 The list has one line per package jar a script can open, first under the **collections** and then under three
 folding groups by place: **In AMP/pluginDir**, **In the env** and **On the server** (the website's `/api/jars`,

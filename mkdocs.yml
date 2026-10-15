@@ -51,4 +51,5 @@ nav:
       - Keycloak setup: authentication.md
       - Amie backend: backend-integration.md
       - Models page: models-page.md
+      - Settings: settings.md
       - Troubleshooting: troubleshooting.md

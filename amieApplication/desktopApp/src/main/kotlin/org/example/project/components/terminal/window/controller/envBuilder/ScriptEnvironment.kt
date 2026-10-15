@@ -87,6 +87,25 @@ data class EnvPlan(val envName: String, val activeProfile: String, val imports: 
         private val settingsCall = Regex("""(?<![\w.])(?:amie\.)?(?:import|environment)\(\s*SettingsEnv\(([^)]*)\)\s*\)""")
         private val stringArg = Regex("""(?:(\w+)\s*=\s*)?"([^"]*)"""")
 
+        /**
+         * The script with its env set to [env]: the `environment(SettingsEnv(...))` line it has is rewritten,
+         * else one is put at the top (after the leading comment lines, so a script that starts with notes keeps
+         * them first). The default env is written out too, so the choice is visible in the text.
+         */
+        fun withEnv(code: String, env: String): String {
+            val call = "environment(SettingsEnv(\"$env\"))"
+            settingsCall.find(code)?.let { found ->
+                // The profile is the second positional argument or the named one, as scan reads it
+                val profile = stringArg.findAll(found.groupValues[1]).mapIndexed { i, arg -> arg.groupValues[1].ifEmpty { if (i == 0) "envName" else "activeProfile" } to arg.groupValues[2] }.toList()
+                    .firstOrNull { (name, _) -> name == "activeProfile" }?.second
+                val rewritten = if (profile != null) "environment(SettingsEnv(\"$env\", \"$profile\"))" else call
+                return code.replaceRange(found.range, rewritten)
+            }
+            val lines = code.lines()
+            val lead = lines.takeWhile { it.trimStart().startsWith("//") || it.isBlank() }.size.let { n -> if (n == lines.size) 0 else n }
+            return (lines.take(lead) + call + lines.drop(lead)).joinToString("\n")
+        }
+
         fun scan(code: String): EnvPlan {
             var envName = DEFAULT_ENV
             var profile = DEFAULT_PROFILE
@@ -110,6 +129,12 @@ const val DEFAULT_PROFILE = "local"
 
 object ScriptEnvironments {
     private val envs = mutableMapOf<String, ScriptEnvironment>()
+
+    /** The envs that exist as folders under AMP/env, the default one first, for a chooser */
+    fun names(): List<String> {
+        val dirs = envRoot.listFiles { f -> f.isDirectory && f.name != "caches" }?.map { it.name }?.sorted() ?: emptyList()
+        return (listOf(DEFAULT_ENV) + dirs).distinct()
+    }
 
     // The env the running script sources; internalEnv() reports on it
     @Volatile

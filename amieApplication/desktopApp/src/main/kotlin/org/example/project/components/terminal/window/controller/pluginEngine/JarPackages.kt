@@ -34,6 +34,25 @@ data class ServerJar(
     val version: String? = null,
     val kind: String = "package",
     val lastModified: String? = null,
+    /** "downloads" for the site's downloads page, "store" for a jar someone published under their account */
+    val where: String = "downloads",
+    /** Who published it, for a store jar */
+    val author: String? = null,
+    /** The exact address the bytes come from, when the listing says */
+    val downloadUrl: String? = null,
+    /** The page that shows it */
+    val page: String? = null,
+)
+
+/** One row of the website's `/api/all-packages`: every file of the store with its author */
+@Serializable
+private data class StoreFile(
+    val name: String = "",
+    val path: String = "",
+    val author: String = "",
+    val size: Double = 0.0,
+    val download_url: String = "",
+    val html_url: String = "",
 )
 
 /**
@@ -326,7 +345,10 @@ object JarPackages {
         val fileName = File(name).name
         if (!fileName.endsWith(".jar", ignoreCase = true)) return null
         val config = BackendConfig.load()
-        val urls = listOf(
+        // A store jar is fetched from the address its listing gives; the downloads page's jars from the site, then the S3 service
+        val listed = available().firstOrNull { it.name == fileName }
+        val urls = listOfNotNull(
+            listed?.downloadUrl?.takeIf { it.isNotBlank() },
             "${config.site}/api/jar-download?name=${java.net.URLEncoder.encode(fileName, Charsets.UTF_8)}",
             "${config.s3}/api/aws/jars/${java.net.URLEncoder.encode(fileName, Charsets.UTF_8)}",
         )
@@ -343,8 +365,7 @@ object JarPackages {
             }
             val target = File(pluginDir(), fileName)
             target.writeBytes(bytes)
-            val listed = available().firstOrNull { it.name == fileName }
-            val origin = JarOrigin(fileName, url, downloadsPage(), listed?.version, bytes.size.toLong(), listed?.lastModified)
+            val origin = JarOrigin(fileName, url, listed?.page ?: downloadsPage(), listed?.version, bytes.size.toLong(), listed?.lastModified)
             runCatching { originFile(fileName).writeText(json.encodeToString(JarOrigin.serializer(), origin)) }
                 .onFailure { logInternal("package $fileName: couldn't record its origin: ${it.message}", LogLevel.ERROR) }
             logInternal("package $fileName: received ${bytes.size} bytes from $url into ${target.absolutePath}")
@@ -353,7 +374,12 @@ object JarPackages {
         return null
     }
 
-    /** The package jars the server lists, cached for a minute (an unreachable server is remembered as empty for as long) */
+    /**
+     * The package jars the website offers, cached for a minute (an unreachable server is remembered as empty
+     * for as long): the downloads page's jars (`/api/jars`, else the S3 service's listing) and every jar in the
+     * store, the packages people published under their accounts (`/api/all-packages`, each with its author and
+     * the address its bytes come from). A jar both places is listed once, as a download.
+     */
     fun available(refresh: Boolean = false): List<ServerJar> {
         val now = System.currentTimeMillis()
         listing?.let { (at, jars) -> if (!refresh && now - at < LISTING_TTL_MS) return jars }
@@ -361,19 +387,31 @@ object JarPackages {
         val urls = listOf("${config.site}/api/jars", "${config.s3}/api/aws/jars")
         var jars = emptyList<ServerJar>()
         for (url in urls) {
-            val text = runCatching {
-                runBlocking {
-                    val response = http.get(url)
-                    if (!response.status.isSuccess()) null else response.bodyAsText()
-                }
-            }.getOrNull() ?: continue
+            val text = get(url) ?: continue
             jars = runCatching { json.decodeFromString<List<ServerJar>>(text) }.getOrDefault(emptyList())
                 .filter { it.kind != "application" && it.name.endsWith(".jar", ignoreCase = true) }
+                .map { it.copy(where = "downloads", page = downloadsPage()) }
             break
         }
-        listing = now to jars
-        return jars
+        val store = get("${config.site}/api/all-packages")?.let { text ->
+            runCatching { json.decodeFromString<List<StoreFile>>(text) }.getOrDefault(emptyList())
+                .filter { it.name.endsWith(".jar", ignoreCase = true) && it.download_url.isNotBlank() }
+                .map { f -> ServerJar(f.name, f.size.toLong(), where = "store", author = f.author.ifBlank { null }, downloadUrl = f.download_url, page = f.html_url.ifBlank { null } ?: storePage(f.author)) }
+        }.orEmpty()
+        val all = jars + store.filter { s -> jars.none { it.name == s.name } }.distinctBy { it.name }
+        listing = now to all
+        return all
     }
+
+    private fun get(url: String): String? = runCatching {
+        runBlocking {
+            val response = http.get(url)
+            if (!response.status.isSuccess()) null else response.bodyAsText()
+        }
+    }.getOrNull()
+
+    /** The website page of someone's published packages */
+    fun storePage(author: String): String = "${BackendConfig.load().site}/dashboard?username=${java.net.URLEncoder.encode(author, Charsets.UTF_8)}"
 
     /** Where the jar was fetched from, when it was fetched from the server; null for a jar that was added locally */
     fun origin(name: String): JarOrigin? =
