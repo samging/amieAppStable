@@ -152,6 +152,14 @@ compose.desktop {
             macOS {
                 iconFile.set(project(":shared").file("src/commonMain/composeResources/drawable/amieDistributionIconNew.icns"))
                 bundleID = "com.amie.app"
+                // Packages like microphone.jar record through javax.sound inside this process; macOS only shows the
+                // microphone permission prompt to a bundle that says why it wants the microphone
+                infoPlist {
+                    extraKeysRawXml = """
+                        <key>NSMicrophoneUsageDescription</key>
+                        <string>Amie packages such as microphone.jar record audio from a script when you ask them to.</string>
+                    """.trimIndent()
+                }
             }
         }
     }
