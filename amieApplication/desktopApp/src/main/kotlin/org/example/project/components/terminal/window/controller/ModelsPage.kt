@@ -142,12 +142,14 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.res.loadSvgPainter
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
@@ -1475,7 +1477,7 @@ private fun AboutBlock(model: ModelInfo, onDescribe: (String) -> Unit, onIcon: (
     }) {
         model.iconFile?.let { f ->
             Row(verticalAlignment = Alignment.CenterVertically) {
-                rememberIconPainter(f)?.let { Image(it, contentDescription = null, modifier = Modifier.size(28.dp).clip(RectangleShape)) }
+                rememberIconPainter(f)?.let { IconImage(it, 36.dp) }
                 Spacer(Modifier.width(8.dp))
                 Meta("${f.name} · ${f.length() / 1024} KB · in the model's folder, goes along when published")
             }
@@ -2735,17 +2737,16 @@ private fun ListRow(name: String, active: Boolean, selected: Boolean, meta: Stri
     ) {
         Row(modifier = Modifier.fillMaxWidth().padding(start = 10.dp, end = 4.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             if (painter != null) {
-                Image(painter, contentDescription = null, modifier = Modifier.size(14.dp).clip(RectangleShape))
+                IconImage(painter, 18.dp)
                 Spacer(Modifier.width(7.dp))
             } else if (icon != null) {
                 Icon(icon, contentDescription = null, tint = if (active) FontColor else MutedFontColor, modifier = Modifier.size(13.dp))
                 Spacer(Modifier.width(7.dp))
             }
             Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(name, color = FontColor, fontSize = 12.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal, fontFamily = FontFamily.SansSerif, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
-                    flags.forEach { f -> Spacer(Modifier.width(4.dp)); FlagBadge(f) }
-                }
+                // The name has the whole line: the flags and the meta go under it, so a jar with several flags still shows its name
+                Text(name, color = FontColor, fontSize = 12.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal, fontFamily = FontFamily.SansSerif, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (flags.isNotEmpty()) FlagsLine(flags)
                 if (meta.isNotEmpty()) Meta(meta)
             }
             Spacer(Modifier.width(6.dp))
@@ -2857,7 +2858,7 @@ private fun DetailHeader(name: String, active: Boolean, status: String, statusTi
             StatusMark(active, statusTip)
             Spacer(Modifier.width(2.dp))
         }
-        if (painter != null) Image(painter, contentDescription = null, modifier = Modifier.size(18.dp).clip(RectangleShape))
+        if (painter != null) IconImage(painter, 22.dp)
         else if (icon != null) Icon(icon, contentDescription = null, tint = if (active) FontColor else MutedFontColor, modifier = Modifier.size(15.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(name, color = FontColor, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.SansSerif, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -2867,6 +2868,24 @@ private fun DetailHeader(name: String, active: Boolean, status: String, statusTi
         if (menu.isNotEmpty()) MoreButton(menu, tip = "Every action of $name, the same list the right-click on its row opens")
     }
     Box(modifier = Modifier.fillMaxWidth().height(if (active) 2.dp else 1.dp).background(if (active) SuccessColor else PanelBorder))
+}
+
+/**
+ * An uploaded icon drawn as a square of [side]: the image fills it edge to edge (cropped to the centre when it is
+ * not square), so no padding or letterbox shrinks it in a row or on a header
+ */
+@Composable
+private fun IconImage(painter: Painter, side: Dp) {
+    Image(painter, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(side).clip(RectangleShape))
+}
+
+/** The flags of a row under its name, wrapping onto more lines when they do not fit on one */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun FlagsLine(flags: List<Flag>) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.padding(top = 2.dp, bottom = 1.dp)) {
+        flags.forEach { FlagBadge(it) }
+    }
 }
 
 /** A coloured tag: a square of its colour with the text on it, the tooltip saying what it stands for */
